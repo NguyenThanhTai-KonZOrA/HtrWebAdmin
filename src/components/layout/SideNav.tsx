@@ -43,7 +43,7 @@ const navItems = [
     // },
     {
         key: 'admin-registration',
-        title: 'Patron Management',
+        title: 'Registration Management',
         href: '/admin-registration',
         icon: PersonAddIcon
     },
@@ -101,10 +101,18 @@ export function SideNav(): React.JSX.Element {
                 transition: 'transform 0.3s ease',
             }}
         >
-            <Stack spacing={2} sx={{ p: 3 }}>
-                <Box sx={{ display: 'inline-flex' }}>
-                    <Box sx={{ display: 'inline-flex' }}>
-                        <img src="/images/TheGrandHoTram.png" alt="Logo" style={{ height: 70, width: 'auto' }} />
+            <Stack spacing={2} sx={{ p: 1 }}>
+                <Box sx={{ display: 'inline-center', justifyContent: 'center', alignItems: 'center' }}>
+                    <Box sx={{ display: 'inline-center' , justifyContent: 'center', alignItems: 'center' }}>
+                        <img src="/images/TheGrandHoTram.png" alt="Logo" style={{ height: 90, width: 'auto' }} />
+                    </Box>
+                </Box>
+            </Stack>
+
+              <Stack spacing={1} sx={{ p: 1 }}>
+                <Box sx={{ display: 'inline-center', justifyContent: 'center', alignItems: 'center' }}>
+                    <Box sx={{ display: 'inline-center' , justifyContent: 'center', alignItems: 'center', color: 'white', fontSize: 20, fontWeight: 'bold' }}>
+                        HTR Admin Portal
                     </Box>
                 </Box>
             </Stack>

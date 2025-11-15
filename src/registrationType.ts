@@ -42,13 +42,14 @@ export interface PatronResponse {
     identificationCountry: string;
     identificationExpiration: string;
     incomeFiles: FileDataRequest[];
+    submitType: number;
 }
 
 export interface PatronImagesResponse {
-    PatronId: number;
-    FrontImage: string;
-    BackImage: string;
-    SelfieImage: string;
+    patronId: number;
+    frontImage: string;
+    backImage: string;
+    selfieImage: string;
 }
 
 export interface UpdatePatronRequest {
@@ -82,15 +83,15 @@ export interface PatronRegisterMembershipRequest {
 }
 
 export interface PatronRegisterMembershipResponse {
-    MembershipNumber: string;
-    PhoneNumber: string;
+    membershipNumber: string;
+    phoneNumber: string;
 }
 
 export interface CountryResponse {
-    CountryID: number;
-    CountryDescription: string;
-    Abrv2: string;
-    Abrv3: string;
+    countryID: number;
+    countryDescription: string;
+    abrv2: string;
+    abrv3: string;
 }
 
 export interface CurrentStaffDeviceResponse {

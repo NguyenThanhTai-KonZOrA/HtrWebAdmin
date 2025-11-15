@@ -10,6 +10,6 @@ export const PAGE_TITLES = {
     SERVICE_PERFORMANCE: "Service Report",
     EMPLOYEE_PERFORMANCE: "Employee Report",
     SYSTEM_SETTINGS: "System Settings",
-    REGISTRATION: "Patron Management",
+    REGISTRATION: "Registration Management",
     DEFAULT: "Queue Management System"
 } as const;

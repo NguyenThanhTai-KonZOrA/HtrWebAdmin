@@ -44,7 +44,7 @@ const navItems = [
     // },
     {
         key: 'admin-registration',
-        title: 'Patron Management',
+        title: 'Registration Management',
         href: '/admin-registration',
         icon: PersonAddIcon
     },

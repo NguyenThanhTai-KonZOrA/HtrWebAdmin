@@ -94,7 +94,7 @@ export const patronService = {
     },
 
     registerMembership: async (request: PatronRegisterMembershipRequest): Promise<PatronRegisterMembershipResponse> => {
-        const response = await api.post<ApiEnvelope<PatronRegisterMembershipResponse>>("/api/RegistrationAdmin/patron/membership", request);
+        const response = await api.post<ApiEnvelope<PatronRegisterMembershipResponse>>("/api/RegistrationAdmin/register/membership", request);
         return unwrapApiEnvelope(response);
     },
 };
@@ -136,11 +136,11 @@ export const staffDeviceService = {
 };
 
 export const renderDocumentService = {
-    renderDocumentFile: async (batchId: string, saveAs: string): Promise<File> => {
-        const response = await api.get<File>(`/api/Documents/policy/render`, {
-            params: { batchId, saveAs },
-            responseType: 'blob'
+    renderDocumentFile: async (pid: string, playerId: string): Promise<string> => {
+        const response = await api.get<ApiEnvelope<{ html: string }>>(`/api/Documents/policy/render`, {
+            params: { pid, playerId }
         });
-        return response.data;
+        unwrapApiEnvelope(response);
+        return response.data.html;
     }
 };

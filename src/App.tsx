@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import ProtectedRoute from './components/ProtectedRoute'
 import { SessionManager } from './components/SessionManager'
 import { PageTitleProvider } from './contexts/PageTitleContext'
+import { AppDataProvider } from './contexts/AppDataContext'
 import NetworkAlert from './components/NetworkAlert'
 import { useNetworkStatus } from './hooks/useNetworkStatus'
 import Login from './components/Login'
@@ -24,63 +25,17 @@ function AppContent() {
     <>
       {/* Network Alert - hiển thị trên toàn app */}
       <NetworkAlert {...networkStatus} />
-      
+
       <Routes>
         {/* Public route */}
         <Route path="/login" element={<Login />} />
 
+
+
         {/* Protected routes */}
         <Route path="/" element={
           <ProtectedRoute>
-            <Navigate to="/admin-dashboard" replace />
-          </ProtectedRoute>
-        } />
-
-        <Route path="/admin-call" element={
-          <ProtectedRoute>
-            <AdminCallPage />
-          </ProtectedRoute>
-        } />
-
-        <Route path="/admin-dashboard" element={
-          <ProtectedRoute>
-            <AdminDashboard />
-          </ProtectedRoute>
-        } />
-
-        <Route path="/admin-counter" element={
-          <ProtectedRoute>
-            <AdminCounterPage />
-          </ProtectedRoute>
-        } />
-
-        <Route path="/admin-ticket-archived" element={
-          <ProtectedRoute>
-            <AdminTicketArchivedPage />
-          </ProtectedRoute>
-        } />
-
-        <Route path="/admin-issued-processed-by-hour" element={
-          <ProtectedRoute>
-            <AdminIssuedProcessedByHourPage />
-          </ProtectedRoute>
-        } />
-
-        <Route path="/admin-service-report" element={
-          <ProtectedRoute>
-            <AdminServiceReport />
-          </ProtectedRoute>
-        } />
-
-        <Route path="/employee-report" element={
-          <ProtectedRoute>
-            <EmployeeReportPage />
-          </ProtectedRoute>
-        } />
-
-        <Route path="/admin-settings" element={
-          <ProtectedRoute>
-            <AdminSettingsPage />
+            <Navigate to="/admin-registration" replace />
           </ProtectedRoute>
         } />
 
@@ -89,6 +44,13 @@ function AppContent() {
             <AdminRegistrationPage />
           </ProtectedRoute>
         } />
+
+       <Route path="/admin-counter" element={
+          <ProtectedRoute>
+            <AdminCounterPage />
+          </ProtectedRoute>
+        } />
+
       </Routes>
     </>
   );
@@ -97,11 +59,13 @@ function AppContent() {
 function App() {
   return (
     <Router>
-      <PageTitleProvider>
-        <SessionManager>
-          <AppContent />
-        </SessionManager>
-      </PageTitleProvider>
+      <AppDataProvider>
+        <PageTitleProvider>
+          <SessionManager>
+            <AppContent />
+          </SessionManager>
+        </PageTitleProvider>
+      </AppDataProvider>
     </Router>
   )
 }
