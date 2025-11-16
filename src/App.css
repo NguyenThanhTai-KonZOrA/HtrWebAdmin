@@ -50,3 +50,38 @@
 .swal-high-zindex {
   z-index: 9999 !important;
 }
+
+/* Highlighted row animation for SignalR signature completed */
+@keyframes pulse-border {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7),
+                0 0 0 0 rgba(76, 175, 80, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(76, 175, 80, 0),
+                0 0 0 16px rgba(76, 175, 80, 0);
+  }
+}
+
+.highlighted-row {
+  background-color: rgba(76, 175, 80, 0.15) !important;
+  position: relative;
+  outline: 2px solid #4caf50;
+  outline-offset: -2px;
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: inset 0 0 20px rgba(76, 175, 80, 0.3),
+                0 0 10px rgba(76, 175, 80, 0.5);
+  }
+  50% {
+    box-shadow: inset 0 0 30px rgba(76, 175, 80, 0.5),
+                0 0 20px rgba(76, 175, 80, 0.8);
+  }
+}
+
+.highlighted-row:hover {
+  background-color: rgba(76, 175, 80, 0.25) !important;
+}

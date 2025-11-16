@@ -134,7 +134,24 @@ class SignalRService {
     // Listen to signature completed event
     public onSignatureCompleted(callback: (message: SignatureCompletedMessage) => void): void {
         if (!this.connection) {
-            console.error('❌ SignalR connection not initialized');
+            console.warn('⚠️ SignalR connection not initialized - event listener will be registered when connected');
+            // Delay registration until connection is ready
+            setTimeout(() => {
+                if (this.connection && this.connection.state === signalR.HubConnectionState.Connected) {
+                    this.onSignatureCompleted(callback);
+                }
+            }, 1000);
+            return;
+        }
+
+        if (this.connection.state !== signalR.HubConnectionState.Connected) {
+            console.warn('⚠️ SignalR not connected - event listener will be registered when connected');
+            // Delay registration until connection is ready
+            setTimeout(() => {
+                if (this.connection && this.connection.state === signalR.HubConnectionState.Connected) {
+                    this.onSignatureCompleted(callback);
+                }
+            }, 1000);
             return;
         }
 
@@ -153,7 +170,24 @@ class SignalRService {
     // Listen to new registration event
     public onNewRegistration(callback: (message: NewRegistrationMessage) => void): void {
         if (!this.connection) {
-            console.error('❌ SignalR connection not initialized');
+            console.warn('⚠️ SignalR connection not initialized - event listener will be registered when connected');
+            // Delay registration until connection is ready
+            setTimeout(() => {
+                if (this.connection && this.connection.state === signalR.HubConnectionState.Connected) {
+                    this.onNewRegistration(callback);
+                }
+            }, 1000);
+            return;
+        }
+
+        if (this.connection.state !== signalR.HubConnectionState.Connected) {
+            console.warn('⚠️ SignalR not connected - event listener will be registered when connected');
+            // Delay registration until connection is ready
+            setTimeout(() => {
+                if (this.connection && this.connection.state === signalR.HubConnectionState.Connected) {
+                    this.onNewRegistration(callback);
+                }
+            }, 1000);
             return;
         }
 
@@ -202,9 +236,19 @@ class SignalRService {
 
     // Get connection info
     public getConnectionInfo(): any {
+        if (!this.connection) {
+            return {
+                state: 'Disconnected',
+                connectionId: null,
+                baseUrl: this.hubUrl,
+                staffDeviceId: this.staffDeviceId,
+                isConnected: false
+            };
+        }
+
         return {
-            state: this.connection?.state,
-            connectionId: this.connection?.connectionId,
+            state: this.connection.state,
+            connectionId: this.connection.connectionId || null,
             baseUrl: this.hubUrl,
             staffDeviceId: this.staffDeviceId,
             isConnected: this.isConnected()

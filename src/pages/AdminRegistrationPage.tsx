@@ -190,6 +190,9 @@ const AdminRegistrationPage: React.FC = () => {
     const [imageViewerOpen, setImageViewerOpen] = useState(false);
     const [selectedImage, setSelectedImage] = useState<string>('');
 
+    // Highlighted patron state (for SignalR signature completed)
+    const [highlightedPatronId, setHighlightedPatronId] = useState<number | null>(null);
+
     // Load initial data
     useEffect(() => {
         loadNewRegistrations();
@@ -198,73 +201,80 @@ const AdminRegistrationPage: React.FC = () => {
 
     // Setup SignalR event listeners
     useEffect(() => {
-        // Listen for new registration
-        signalR.onNewRegistration((message) => {
-            console.log('🆕 New registration received:', message);
+        // Add a small delay to ensure connection is established
+        const timer = setTimeout(() => {
+            // Listen for new registration
+            signalR.onNewRegistration((message) => {
+                console.log('🆕 New registration received:', message);
 
-            // Show toast notification
-            const Toast = Swal.mixin({
-                toast: true,
-                position: 'top-end',
-                showConfirmButton: false,
-                timer: 6000,
-                timerProgressBar: true,
-                didOpen: (toast: HTMLElement) => {
-                    toast.addEventListener('mouseenter', Swal.stopTimer);
-                    toast.addEventListener('mouseleave', Swal.resumeTimer);
-                }
+                // Show toast notification
+                const Toast = Swal.mixin({
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 6000,
+                    timerProgressBar: true,
+                    didOpen: (toast: HTMLElement) => {
+                        toast.addEventListener('mouseenter', Swal.stopTimer);
+                        toast.addEventListener('mouseleave', Swal.resumeTimer);
+                    }
+                });
+
+                Toast.fire({
+                    icon: 'info',
+                    title: 'New Registration',
+                    html: `
+                        <strong>New Registration!</strong><br/>
+                        <strong>Patron ID:</strong> ${message.patronId}<br/>
+                        <strong>Name:</strong> ${message.fullName}<br/>
+                        <strong>Registration Type:</strong> ${message.submitType === 1 ? 'Online' : 'Manual'}
+                    `
+                });
+
+                // Play notification sound
+                signalR.playNotificationSound();
+
+                // Reload new registrations table
+                loadNewRegistrations();
             });
 
-            Toast.fire({
-                icon: 'info',
-                title: 'New Registration',
-                html: `
-                    <strong>New Registration!</strong><br/>
-                    <strong>Patron ID:</strong> ${message.patronId}<br/>
-                    <strong>Name:</strong> ${message.fullName}<br/>
-                    <strong>Registration Type:</strong> ${message.submitType === 1 ? 'Online' : 'Manual'}
-                `
+            // Listen for signature completed
+            signalR.onSignatureCompleted((message) => {
+                console.log('✅ Signature completed:', message);
+
+                // Show success notification
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Signature Completed!',
+                    html: `
+                        <p><strong>Patron ID:</strong> ${message.patronId}</p>
+                        <p><strong>Session ID:</strong> ${message.sessionId}</p>
+                        <p>The customer has successfully completed the signature.</p>
+                    `,
+                    confirmButtonText: 'OK',
+                    confirmButtonColor: '#28a745',
+                    timer: 8000,
+                    timerProgressBar: true,
+                    customClass: {
+                        container: 'swal-high-zindex'
+                    }
+                });
+
+                // Play notification sound
+                signalR.playNotificationSound();
+
+                // Highlight the patron row
+                setHighlightedPatronId(message.patronId);
+
+                // Reload data
+                loadNewRegistrations();
+                loadMemberships();
             });
-
-            // Play notification sound
-            signalR.playNotificationSound();
-
-            // Reload new registrations table
-            loadNewRegistrations();
-        });
-
-        // Listen for signature completed
-        signalR.onSignatureCompleted((message) => {
-            console.log('✅ Signature completed:', message);
-
-            // Show success notification
-            Swal.fire({
-                icon: 'success',
-                title: 'Signature Completed!',
-                html: `
-                    <p><strong>Patron ID:</strong> ${message.patronId}</p>
-                    <p><strong>Session ID:</strong> ${message.sessionId}</p>
-                    <p>The customer has successfully completed the signature.</p>
-                `,
-                confirmButtonText: 'OK',
-                confirmButtonColor: '#28a745',
-                timer: 8000,
-                timerProgressBar: true,
-                customClass: {
-                    container: 'swal-high-zindex'
-                }
-            });
-
-            // Play notification sound
-            signalR.playNotificationSound();
-
-            // Reload data
-            loadNewRegistrations();
-            loadMemberships();
-        });
+        }, 1500); // Wait 1.5s for connection to be ready
 
         // Cleanup
         return () => {
+            clearTimeout(timer);
             signalR.offNewRegistration();
             signalR.offSignatureCompleted();
         };
@@ -699,13 +709,28 @@ const AdminRegistrationPage: React.FC = () => {
                     </TableRow>
                 </TableHead>
                 <TableBody>
-                    {data.map((patron) => (
-                        <TableRow key={patron.pid} hover>
+                    {data.map((patron) => {
+                        const isHighlighted = highlightedPatronId === patron.pid;
+                        return (
+                            <TableRow
+                                key={patron.pid}
+                                hover
+                                onClick={() => {
+                                    if (isHighlighted) {
+                                        setHighlightedPatronId(null);
+                                    }
+                                }}
+                                className={isHighlighted ? 'highlighted-row' : ''}
+                                sx={{
+                                    cursor: isHighlighted ? 'pointer' : 'default',
+                                    transition: 'all 0.3s ease'
+                                }}
+                            >
                             <TableCell
                                 sx={{
                                     position: 'sticky',
                                     left: 0,
-                                    backgroundColor: 'background.paper',
+                                    backgroundColor: isHighlighted ? 'rgba(226, 132, 221, 0.15)' : 'background.paper',
                                     zIndex: 1,
                                     boxShadow: '2px 0 5px rgba(0,0,0,0.1)'
                                 }}
@@ -740,7 +765,8 @@ const AdminRegistrationPage: React.FC = () => {
                             </TableCell>
                             <TableCell>{formatDate(patron.createdTime)}</TableCell>
                         </TableRow>
-                    ))}
+                        );
+                    })}
                 </TableBody>
             </Table>
         </TableContainer>
