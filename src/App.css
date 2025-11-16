@@ -45,3 +45,8 @@
 .read-the-docs {
   color: #888;
 }
+
+/* SweetAlert2 high z-index for SignalR notifications */
+.swal-high-zindex {
+  z-index: 9999 !important;
+}

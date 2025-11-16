@@ -140,7 +140,7 @@ export const renderDocumentService = {
         const response = await api.get<ApiEnvelope<{ html: string }>>(`/api/Documents/policy/render`, {
             params: { pid, playerId }
         });
-        unwrapApiEnvelope(response);
-        return response.data.html;
+        const result = unwrapApiEnvelope(response);
+        return result.html;
     }
 };

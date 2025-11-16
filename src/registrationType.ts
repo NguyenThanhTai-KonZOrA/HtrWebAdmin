@@ -43,6 +43,7 @@ export interface PatronResponse {
     identificationExpiration: string;
     incomeFiles: FileDataRequest[];
     submitType: number;
+    isSigned: boolean;
 }
 
 export interface PatronImagesResponse {

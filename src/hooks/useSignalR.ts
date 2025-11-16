@@ -1,18 +1,17 @@
 // src/hooks/useSignalR.ts
 import { useEffect, useCallback } from 'react';
 import { signalRService } from '../services/signalRService';
-import type { ChangeQueueStatusResponse, TicketResponse } from '../type';
+import type { SignatureCompletedMessage, NewRegistrationMessage } from '../services/signalRService';
 
-export const useSignalR = () => {
+export const useSignalR = (staffDeviceId?: number) => {
     // Initialize SignalR connection
     useEffect(() => {
         const initializeSignalR = async () => {
             try {
-                await signalRService.startConnection();
+                await signalRService.startConnection(staffDeviceId);
                 // Expose debug commands in development
                 if (import.meta.env.DEV) {
                     signalRService.exposeToConsole();
-                    signalRService.listenToAllEvents();
                 }
             } catch (error) {
                 console.error('Failed to initialize SignalR:', error);
@@ -25,34 +24,34 @@ export const useSignalR = () => {
         return () => {
             signalRService.stopConnection();
         };
+    }, [staffDeviceId]);
+
+    // Hook for signature completed event
+    const onSignatureCompleted = useCallback((callback: (message: SignatureCompletedMessage) => void) => {
+        signalRService.onSignatureCompleted(callback);
     }, []);
 
-    // Hook for queue status changes
-    const useQueueStatusChanged = useCallback((callback: (data: ChangeQueueStatusResponse) => void) => {
-        useEffect(() => {
-            signalRService.onQueueStatusChanged(callback);
-            
-            return () => {
-                signalRService.offQueueStatusChanged();
-            };
-        }, [callback]);
+    // Hook for new registration event
+    const onNewRegistration = useCallback((callback: (message: NewRegistrationMessage) => void) => {
+        signalRService.onNewRegistration(callback);
     }, []);
 
-    // Hook for registration changes (new tickets)
-    const useRegistrationChanged = useCallback((callback: (data: TicketResponse) => void) => {
-        useEffect(() => {
-            signalRService.onRegistrationChanged(callback);
-            
-            return () => {
-                signalRService.offRegistrationChanged();
-            };
-        }, [callback]);
+    // Unregister events
+    const offSignatureCompleted = useCallback(() => {
+        signalRService.offSignatureCompleted();
+    }, []);
+
+    const offNewRegistration = useCallback(() => {
+        signalRService.offNewRegistration();
     }, []);
 
     return {
-        useQueueStatusChanged,
-        useRegistrationChanged,
+        onSignatureCompleted,
+        onNewRegistration,
+        offSignatureCompleted,
+        offNewRegistration,
         isConnected: () => signalRService.isConnected(),
-        getConnectionInfo: () => signalRService.getConnectionInfo()
+        getConnectionInfo: () => signalRService.getConnectionInfo(),
+        playNotificationSound: () => signalRService.playNotificationSound()
     };
 };

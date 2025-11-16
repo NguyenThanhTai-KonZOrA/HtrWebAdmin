@@ -62,6 +62,8 @@ import AdminLayout from '../layout/AdminLayout';
 import { useSetPageTitle } from '../hooks/useSetPageTitle';
 import { PAGE_TITLES } from '../constants/pageTitles';
 import { useAppData } from '../contexts/AppDataContext';
+import { useSignalR } from '../hooks/useSignalR';
+import Swal from 'sweetalert2';
 
 
 function formatDate(dateString: string): string {
@@ -118,10 +120,13 @@ const VIETNAM_COUNTRY_ID = 704;
 
 const AdminRegistrationPage: React.FC = () => {
     useSetPageTitle(PAGE_TITLES.REGISTRATION);
-    
+
     // Get global data from context
-    const { countries } = useAppData();
-    
+    const { countries, staffDevice } = useAppData();
+
+    // Initialize SignalR
+    const signalR = useSignalR(staffDevice?.staffDeviceId);
+
     // States
     const [loadingNewReg, setLoadingNewReg] = useState(true);
     const [loadingMembership, setLoadingMembership] = useState(true);
@@ -141,7 +146,7 @@ const AdminRegistrationPage: React.FC = () => {
     const [patronImages, setPatronImages] = useState<PatronImagesResponse | null>(null);
     const [isEditing, setIsEditing] = useState(false);
     const [editedPatron, setEditedPatron] = useState<PatronResponse | null>(null);
-    
+
     // Specify fields for "Other" selections
     const [specifyJobTitle, setSpecifyJobTitle] = useState('');
     const [specifyPosition, setSpecifyPosition] = useState('');
@@ -190,6 +195,80 @@ const AdminRegistrationPage: React.FC = () => {
         loadNewRegistrations();
         loadMemberships();
     }, []);
+
+    // Setup SignalR event listeners
+    useEffect(() => {
+        // Listen for new registration
+        signalR.onNewRegistration((message) => {
+            console.log('🆕 New registration received:', message);
+
+            // Show toast notification
+            const Toast = Swal.mixin({
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 6000,
+                timerProgressBar: true,
+                didOpen: (toast: HTMLElement) => {
+                    toast.addEventListener('mouseenter', Swal.stopTimer);
+                    toast.addEventListener('mouseleave', Swal.resumeTimer);
+                }
+            });
+
+            Toast.fire({
+                icon: 'info',
+                title: 'New Registration',
+                html: `
+                    <strong>New Registration!</strong><br/>
+                    <strong>Patron ID:</strong> ${message.patronId}<br/>
+                    <strong>Name:</strong> ${message.fullName}<br/>
+                    <strong>Registration Type:</strong> ${message.submitType === 1 ? 'Online' : 'Manual'}
+                `
+            });
+
+            // Play notification sound
+            signalR.playNotificationSound();
+
+            // Reload new registrations table
+            loadNewRegistrations();
+        });
+
+        // Listen for signature completed
+        signalR.onSignatureCompleted((message) => {
+            console.log('✅ Signature completed:', message);
+
+            // Show success notification
+            Swal.fire({
+                icon: 'success',
+                title: 'Signature Completed!',
+                html: `
+                    <p><strong>Patron ID:</strong> ${message.patronId}</p>
+                    <p><strong>Session ID:</strong> ${message.sessionId}</p>
+                    <p>The customer has successfully completed the signature.</p>
+                `,
+                confirmButtonText: 'OK',
+                confirmButtonColor: '#28a745',
+                timer: 8000,
+                timerProgressBar: true,
+                customClass: {
+                    container: 'swal-high-zindex'
+                }
+            });
+
+            // Play notification sound
+            signalR.playNotificationSound();
+
+            // Reload data
+            loadNewRegistrations();
+            loadMemberships();
+        });
+
+        // Cleanup
+        return () => {
+            signalR.offNewRegistration();
+            signalR.offSignatureCompleted();
+        };
+    }, [signalR]);
 
     const loadNewRegistrations = async () => {
         try {
@@ -291,14 +370,14 @@ const AdminRegistrationPage: React.FC = () => {
             // Set specify fields if job title or position is not in the predefined options
             const jobTitleExists = JOB_TITLE_OPTIONS.some(opt => opt.value === patronDetail.jobTitle);
             const positionExists = POSITION_OPTIONS.some(opt => opt.value === patronDetail.position);
-            
+
             if (!jobTitleExists && patronDetail.jobTitle) {
                 setSpecifyJobTitle(patronDetail.jobTitle);
                 setEditedPatron(prev => prev ? { ...prev, jobTitle: 'Other' } : null);
             } else {
                 setSpecifyJobTitle('');
             }
-            
+
             if (!positionExists && patronDetail.position) {
                 setSpecifyPosition(patronDetail.position);
                 setEditedPatron(prev => prev ? { ...prev, position: 'Other' } : null);
@@ -318,7 +397,7 @@ const AdminRegistrationPage: React.FC = () => {
     // Validate form
     const validateForm = (): boolean => {
         const errors: Record<string, string> = {};
-        
+
         if (!editedPatron) return false;
 
         // Personal Information validation
@@ -332,10 +411,10 @@ const AdminRegistrationPage: React.FC = () => {
             errors.mobilePhone = 'Mobile Phone is required';
         }
         if (!editedPatron.jobTitle?.trim()) {
-            errors.jobTitle = 'Job Title is required';
+            errors.jobTitle = 'Occupation is required';
         }
         if (editedPatron.jobTitle === 'Other' && !specifyJobTitle.trim()) {
-            errors.specifyJobTitle = 'Specify Job Title is required';
+            errors.specifyJobTitle = 'Specify Occupation is required';
         }
         if (!editedPatron.position?.trim()) {
             errors.position = 'Position is required';
@@ -387,7 +466,7 @@ const AdminRegistrationPage: React.FC = () => {
 
         try {
             setDialogError(null);
-            
+
             // Update job title and position with specify values if "Other" is selected
             const updatedPatron = { ...editedPatron };
             if (updatedPatron.jobTitle === 'Other') {
@@ -400,7 +479,7 @@ const AdminRegistrationPage: React.FC = () => {
             await patronService.updatePatron(updatedPatron);
             setDialogSuccess('Patron updated successfully!');
             setPatronUpdated(true);
-            
+
             // Update the edited patron with the new values
             setEditedPatron(updatedPatron);
             setSelectedPatron(updatedPatron);
@@ -493,9 +572,8 @@ const AdminRegistrationPage: React.FC = () => {
         try {
             setLoadingDocument(true);
             setDialogError(null);
-            
+
             // Call API with patron ID and playerId
-            debugger;
             const htmlContent = await renderDocumentService.renderDocumentFile(
                 String(selectedPatron.pid),
                 String(selectedPatron.playerId)
@@ -510,18 +588,13 @@ const AdminRegistrationPage: React.FC = () => {
         }
     };
 
-    // Handle file download
+    // Handle file download - This function seems to be for income files, not document rendering
     const handleDownloadFile = async (batchId: string, saveAs: string) => {
         try {
-            const file = await renderDocumentService.renderDocumentFile(batchId, saveAs);
-            const url = URL.createObjectURL(file);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = saveAs;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+            // Note: renderDocumentService returns HTML string, not a file
+            // This function might need a different service for downloading files
+            setDialogError('File download not implemented yet.');
+            console.log('Download file:', batchId, saveAs);
         } catch (err) {
             setDialogError('Failed to download file.');
             console.error('Error downloading file:', err);
@@ -579,11 +652,11 @@ const AdminRegistrationPage: React.FC = () => {
     // Determine if Enroll Player button should be enabled
     const canEnrollPlayer = (): boolean => {
         if (!areRequiredFieldsFilled()) return false;
-        
+
         if (isVietnamese()) {
             return incomeApproved;
         }
-        
+
         return true;
     };
 
@@ -599,10 +672,10 @@ const AdminRegistrationPage: React.FC = () => {
             <Table size="small" stickyHeader sx={{ minWidth: 1200 }}>
                 <TableHead>
                     <TableRow>
-                        <TableCell 
-                            sx={{ 
-                                position: 'sticky', 
-                                left: 0, 
+                        <TableCell
+                            sx={{
+                                position: 'sticky',
+                                left: 0,
                                 backgroundColor: 'background.paper',
                                 zIndex: 3,
                                 boxShadow: '2px 0 5px rgba(0,0,0,0.1)'
@@ -628,10 +701,10 @@ const AdminRegistrationPage: React.FC = () => {
                 <TableBody>
                     {data.map((patron) => (
                         <TableRow key={patron.pid} hover>
-                            <TableCell 
-                                sx={{ 
-                                    position: 'sticky', 
-                                    left: 0, 
+                            <TableCell
+                                sx={{
+                                    position: 'sticky',
+                                    left: 0,
                                     backgroundColor: 'background.paper',
                                     zIndex: 1,
                                     boxShadow: '2px 0 5px rgba(0,0,0,0.1)'
@@ -704,8 +777,8 @@ const AdminRegistrationPage: React.FC = () => {
                                     size="small"
                                     sx={{ width: 250 }}
                                 />
-                                <IconButton 
-                                    onClick={loadNewRegistrations} 
+                                <IconButton
+                                    onClick={loadNewRegistrations}
                                     disabled={loadingNewReg}
                                     color="primary"
                                 >
@@ -753,8 +826,8 @@ const AdminRegistrationPage: React.FC = () => {
                                     size="small"
                                     sx={{ width: 250 }}
                                 />
-                                <IconButton 
-                                    onClick={loadMemberships} 
+                                <IconButton
+                                    onClick={loadMemberships}
                                     disabled={loadingMembership}
                                     color="primary"
                                 >
@@ -911,7 +984,7 @@ const AdminRegistrationPage: React.FC = () => {
                                                 <Stack direction="row" spacing={2}>
                                                     {editedPatron.jobTitle === 'Other' && (
                                                         <TextField
-                                                            label="Specify Job Title *"
+                                                            label="Specify Occupation *"
                                                             value={specifyJobTitle}
                                                             onChange={(e) => setSpecifyJobTitle(e.target.value)}
                                                             disabled={!isEditing}
@@ -1101,10 +1174,10 @@ const AdminRegistrationPage: React.FC = () => {
                                                     {patronImages.frontImage ? (
                                                         <Avatar
                                                             src={patronImages.frontImage.startsWith('data:') ? patronImages.frontImage : `data:image/jpeg;base64,${patronImages.frontImage}`}
-                                                            sx={{ 
-                                                                width: 300, 
-                                                                height: 250, 
-                                                                mx: 'auto', 
+                                                            sx={{
+                                                                width: 300,
+                                                                height: 250,
+                                                                mx: 'auto',
                                                                 border: '2px solid #ddd',
                                                                 cursor: 'pointer',
                                                                 '&:hover': { opacity: 0.8 }
@@ -1125,10 +1198,10 @@ const AdminRegistrationPage: React.FC = () => {
                                                     {patronImages.backImage ? (
                                                         <Avatar
                                                             src={patronImages.backImage.startsWith('data:') ? patronImages.backImage : `data:image/jpeg;base64,${patronImages.backImage}`}
-                                                            sx={{ 
-                                                                width: 300, 
-                                                                height: 250, 
-                                                                mx: 'auto', 
+                                                            sx={{
+                                                                width: 300,
+                                                                height: 250,
+                                                                mx: 'auto',
                                                                 border: '2px solid #ddd',
                                                                 cursor: 'pointer',
                                                                 '&:hover': { opacity: 0.8 }
@@ -1149,10 +1222,10 @@ const AdminRegistrationPage: React.FC = () => {
                                                     {patronImages.selfieImage ? (
                                                         <Avatar
                                                             src={patronImages.selfieImage.startsWith('data:') ? patronImages.selfieImage : `data:image/jpeg;base64,${patronImages.selfieImage}`}
-                                                            sx={{ 
-                                                                width: 300, 
-                                                                height: 250, 
-                                                                mx: 'auto', 
+                                                            sx={{
+                                                                width: 300,
+                                                                height: 250,
+                                                                mx: 'auto',
                                                                 border: '2px solid #ddd',
                                                                 cursor: 'pointer',
                                                                 '&:hover': { opacity: 0.8 }
@@ -1174,28 +1247,28 @@ const AdminRegistrationPage: React.FC = () => {
                                         )}
                                     </CardContent>
                                 </Card>
-                                
+
                                 <Box display="flex" justifyContent="center" mt={2} mb={1}>
                                     {isEditing && (
-                                    <Typography variant="body1" color="error" sx={{ mr: 2, alignSelf: 'center' }}>
-                                        Please review and verify the information of the patron before updating.
-                                    </Typography>
-                                     )}
+                                        <Typography variant="body1" color="error" sx={{ mr: 2, alignSelf: 'center' }}>
+                                            Please review and verify the information of the patron before updating.
+                                        </Typography>
+                                    )}
                                 </Box>
-                                
+
                                 <Box display="flex" justifyContent="center" mb={2}>
-                                 
-                                       {isEditing && (
-                                            <Button
-                                                variant="contained"
-                                                onClick={handleUpdatePatron}
-                                                startIcon={<SaveIcon />}
-                                            >
-                                                Update Patron
-                                            </Button>
-                                         )}
-                                </Box>        
-                             
+
+                                    {isEditing && (
+                                        <Button
+                                            variant="contained"
+                                            onClick={handleUpdatePatron}
+                                            startIcon={<SaveIcon />}
+                                        >
+                                            Update Patron
+                                        </Button>
+                                    )}
+                                </Box>
+
 
                                 {/* Customer Information Confirmation Form Section */}
                                 <Card variant="outlined">
@@ -1204,7 +1277,7 @@ const AdminRegistrationPage: React.FC = () => {
                                             Customer Information Confirmation Form *
                                         </Typography>
                                         <Stack spacing={2}>
-                                            {selectedPatron.submitType === 2 ? (
+                                            {selectedPatron.submitType === 2 && !selectedPatron.isSigned ? (
                                                 <Alert severity="error" sx={{ display: 'flex', justifyContent: 'center' }}>
                                                     Patron need to confirm and sign signature before enroll player
                                                 </Alert>
@@ -1222,11 +1295,11 @@ const AdminRegistrationPage: React.FC = () => {
                                                     </Box>
 
                                                     {documentHtml && (
-                                                        <Box 
-                                                            sx={{ 
-                                                                mt: 2, 
-                                                                p: 2, 
-                                                                border: '1px solid #ddd', 
+                                                        <Box
+                                                            sx={{
+                                                                mt: 2,
+                                                                p: 2,
+                                                                border: '1px solid #ddd',
                                                                 borderRadius: 1,
                                                                 maxHeight: '400px',
                                                                 overflow: 'auto',
@@ -1291,14 +1364,14 @@ const AdminRegistrationPage: React.FC = () => {
                                                         </Typography>
                                                         <Stack spacing={1}>
                                                             {selectedPatron.incomeFiles.map((file, index) => (
-                                                                <Box 
-                                                                    key={index} 
-                                                                    sx={{ 
-                                                                        display: 'flex', 
-                                                                        alignItems: 'center', 
-                                                                        p: 1, 
-                                                                        bgcolor: 'grey.100', 
-                                                                        borderRadius: 1 
+                                                                <Box
+                                                                    key={index}
+                                                                    sx={{
+                                                                        display: 'flex',
+                                                                        alignItems: 'center',
+                                                                        p: 1,
+                                                                        bgcolor: 'grey.100',
+                                                                        borderRadius: 1
                                                                     }}
                                                                 >
                                                                     <Typography sx={{ flexGrow: 1 }}>{file.originalName}</Typography>
@@ -1322,7 +1395,7 @@ const AdminRegistrationPage: React.FC = () => {
                     </DialogContent>
 
                     <DialogActions>
-                        <Button onClick={() => setDialogOpen(false)} sx={{ border: '1px solid #ccc' }}> 
+                        <Button onClick={() => setDialogOpen(false)} sx={{ border: '1px solid #ccc' }}>
                             Close
                         </Button>
 
@@ -1335,7 +1408,7 @@ const AdminRegistrationPage: React.FC = () => {
                                 Update Patron
                             </Button>
                         )} */}
-                        
+
                         {!selectedPatron?.isHaveMembership && patronUpdated && canEnrollPlayer() && (
                             <Button
                                 variant="contained"
@@ -1406,14 +1479,14 @@ const AdminRegistrationPage: React.FC = () => {
                     </DialogTitle>
                     <DialogContent>
                         <Box display="flex" justifyContent="center" alignItems="center" sx={{ minHeight: 400 }}>
-                            <img 
-                                src={selectedImage} 
-                                alt="Patron" 
-                                style={{ 
-                                    maxWidth: '100%', 
-                                    maxHeight: '80vh', 
-                                    objectFit: 'contain' 
-                                }} 
+                            <img
+                                src={selectedImage}
+                                alt="Patron"
+                                style={{
+                                    maxWidth: '100%',
+                                    maxHeight: '80vh',
+                                    objectFit: 'contain'
+                                }}
                             />
                         </Box>
                     </DialogContent>
