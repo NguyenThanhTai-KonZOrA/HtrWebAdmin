@@ -44,6 +44,7 @@ export interface PatronResponse {
     incomeFiles: FileDataRequest[];
     submitType: number;
     isSigned: boolean;
+    isUpdated: boolean;
 }
 
 export interface PatronImagesResponse {
@@ -101,4 +102,9 @@ export interface CurrentStaffDeviceResponse {
     hostName: string;
     location: string;
     assignedStaffId: string;
+}
+
+export interface CheckPatronIdentificationRequest {
+    IdType?: number;
+    PassportNumber?: string;
 }

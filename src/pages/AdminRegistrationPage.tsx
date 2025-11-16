@@ -48,7 +48,8 @@ import {
 import {
     patronService,
     incomeDocumentService,
-    renderDocumentService
+    renderDocumentService,
+    checkInformationService
 } from '../services/registrationService';
 import type {
     PatronResponse,
@@ -168,6 +169,12 @@ const AdminRegistrationPage: React.FC = () => {
     // Validation errors
     const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
+    // Validation warnings for duplicate check
+    const [phoneNumberWarning, setPhoneNumberWarning] = useState<string>('');
+    const [idNumberWarning, setIdNumberWarning] = useState<string>('');
+    const [checkingPhone, setCheckingPhone] = useState(false);
+    const [checkingId, setCheckingId] = useState(false);
+
     // Error and success states (for page level - using Snackbar)
     const [snackbar, setSnackbar] = useState<{
         open: boolean;
@@ -193,10 +200,24 @@ const AdminRegistrationPage: React.FC = () => {
     // Highlighted patron state (for SignalR signature completed)
     const [highlightedPatronId, setHighlightedPatronId] = useState<number | null>(null);
 
+    // Debounce timer refs
+    const phoneCheckTimerRef = React.useRef<number | null>(null);
+    const idCheckTimerRef = React.useRef<number | null>(null);
+
     // Load initial data
     useEffect(() => {
         loadNewRegistrations();
         loadMemberships();
+
+        // Cleanup timers on unmount
+        return () => {
+            if (phoneCheckTimerRef.current) {
+                clearTimeout(phoneCheckTimerRef.current);
+            }
+            if (idCheckTimerRef.current) {
+                clearTimeout(idCheckTimerRef.current);
+            }
+        };
     }, []);
 
     // Setup SignalR event listeners
@@ -266,6 +287,21 @@ const AdminRegistrationPage: React.FC = () => {
                 // Highlight the patron row
                 setHighlightedPatronId(message.patronId);
 
+                // Update isSigned status if this is the current patron in dialog
+                if (selectedPatron && selectedPatron.pid === message.patronId) {
+                    const updatedPatron = {
+                        ...selectedPatron,
+                        isSigned: true
+                    };
+                    setSelectedPatron(updatedPatron);
+                    if (editedPatron && editedPatron.pid === message.patronId) {
+                        setEditedPatron({
+                            ...editedPatron,
+                            isSigned: true
+                        });
+                    }
+                }
+
                 // Reload data
                 loadNewRegistrations();
                 loadMemberships();
@@ -324,6 +360,72 @@ const AdminRegistrationPage: React.FC = () => {
         setImageViewerOpen(true);
     };
 
+    // Check phone number exists with debounce
+    const checkPhoneNumber = async (phoneNumber: string) => {
+        // Clear previous timer
+        if (phoneCheckTimerRef.current) {
+            clearTimeout(phoneCheckTimerRef.current);
+        }
+
+        // Reset warning
+        setPhoneNumberWarning('');
+
+        // Skip if empty or same as original
+        if (!phoneNumber || phoneNumber === selectedPatron?.mobilePhone) {
+            return;
+        }
+
+        // Debounce 800ms
+        phoneCheckTimerRef.current = setTimeout(async () => {
+            try {
+                setCheckingPhone(true);
+                const exists = await checkInformationService.checkPhoneNumberExists(phoneNumber);
+                if (exists) {
+                    setPhoneNumberWarning('⚠️ This phone number already exists in the system!');
+                }
+            } catch (error) {
+                console.error('Error checking phone number:', error);
+            } finally {
+                setCheckingPhone(false);
+            }
+        }, 800);
+    };
+
+    // Check ID number exists with debounce
+    const checkIdNumber = async (idType: number, idNumber: string) => {
+        // Clear previous timer
+        if (idCheckTimerRef.current) {
+            clearTimeout(idCheckTimerRef.current);
+        }
+
+        // Reset warning
+        setIdNumberWarning('');
+
+        // Skip if empty or same as original
+        if (!idNumber || (idType === selectedPatron?.identificationTypeId && idNumber === selectedPatron?.identificationNumber)) {
+            return;
+        }
+
+        // Debounce 800ms
+        idCheckTimerRef.current = setTimeout(async () => {
+            try {
+                setCheckingId(true);
+                const request = {
+                    IdType: idType,
+                    PassportNumber: idNumber
+                };
+                const exists = await checkInformationService.checkPatronIdentification(request);
+                if (exists) {
+                    setIdNumberWarning('⚠️ This ID number already exists in the system!');
+                }
+            } catch (error) {
+                console.error('Error checking ID number:', error);
+            } finally {
+                setCheckingId(false);
+            }
+        }, 800);
+    };
+
     // Filter and paginate data
     const filteredNewRegistrations = useMemo(() => {
         return newRegistrations.filter(patron =>
@@ -358,6 +460,20 @@ const AdminRegistrationPage: React.FC = () => {
         try {
             setDialogError(null);
             setDialogSuccess(null);
+
+            // Reset validation warnings
+            setPhoneNumberWarning('');
+            setIdNumberWarning('');
+            setCheckingPhone(false);
+            setCheckingId(false);
+
+            // Clear any pending timers
+            if (phoneCheckTimerRef.current) {
+                clearTimeout(phoneCheckTimerRef.current);
+            }
+            if (idCheckTimerRef.current) {
+                clearTimeout(idCheckTimerRef.current);
+            }
 
             // Get patron detail and images
             const [patronDetail, patronImagesData] = await Promise.all([
@@ -397,7 +513,9 @@ const AdminRegistrationPage: React.FC = () => {
 
             // Reset document HTML
             setDocumentHtml('');
-            setPatronUpdated(false);
+            
+            // Set patronUpdated based on patron's isUpdated status
+            setPatronUpdated(patronDetail.isUpdated);
         } catch (err) {
             setDialogError('Failed to load patron details.');
             console.error('Error loading patron details:', err);
@@ -469,6 +587,23 @@ const AdminRegistrationPage: React.FC = () => {
     const handleUpdatePatron = async () => {
         if (!editedPatron) return;
 
+        // Check for warnings from duplicate checks
+        if (phoneNumberWarning) {
+            setDialogError('Cannot update: Phone number already exists in the system.');
+            return;
+        }
+
+        if (idNumberWarning) {
+            setDialogError('Cannot update: ID number already exists in the system.');
+            return;
+        }
+
+        // Check if still checking
+        if (checkingPhone || checkingId) {
+            setDialogError('Please wait for validation to complete.');
+            return;
+        }
+
         if (!validateForm()) {
             setDialogError('Please fill in all required fields.');
             return;
@@ -490,9 +625,13 @@ const AdminRegistrationPage: React.FC = () => {
             setDialogSuccess('Patron updated successfully!');
             setPatronUpdated(true);
 
-            // Update the edited patron with the new values
-            setEditedPatron(updatedPatron);
-            setSelectedPatron(updatedPatron);
+            // Update the edited patron with the new values and mark as updated
+            const finalPatron = {
+                ...updatedPatron,
+                isUpdated: true
+            };
+            setEditedPatron(finalPatron);
+            setSelectedPatron(finalPatron);
 
             // Refresh data
             await loadNewRegistrations();
@@ -656,18 +795,46 @@ const AdminRegistrationPage: React.FC = () => {
 
     // Determine if Approve Income button should be enabled
     const canApproveIncome = (): boolean => {
-        return areRequiredFieldsFilled() && isVietnamese() && isIncomeFormValid() && !incomeApproved;
+        if (!selectedPatron) return false;
+        
+        // Bước 1: Phải update patron trước (isUpdated === true)
+        if (!selectedPatron.isUpdated && !patronUpdated) {
+            return false;
+        }
+        
+        // Bước 2: Phải là người Việt Nam
+        if (!isVietnamese()) {
+            return false;
+        }
+        
+        // Kiểm tra form hợp lệ và chưa approve
+        return areRequiredFieldsFilled() && isIncomeFormValid() && !incomeApproved && !selectedPatron.isValidIncomeDocument;
     };
 
     // Determine if Enroll Player button should be enabled
     const canEnrollPlayer = (): boolean => {
+        if (!selectedPatron || !editedPatron) return false;
+        
+        // Phải điền đầy đủ thông tin
         if (!areRequiredFieldsFilled()) return false;
-
-        if (isVietnamese()) {
-            return incomeApproved;
+        
+        // Kiểm tra isUpdated và isSigned
+        const isPatronUpdated = selectedPatron.isUpdated || patronUpdated;
+        const isPatronSigned = selectedPatron.isSigned || editedPatron.isSigned;
+        
+        // Nếu chưa update -> không hiện
+        if (!isPatronUpdated) {
+            return false;
         }
-
-        return true;
+        
+        // Nếu là người Việt Nam
+        if (isVietnamese()) {
+            // Phải approve income và đã ký
+            return (incomeApproved || selectedPatron.isValidIncomeDocument) && isPatronSigned;
+        }
+        
+        // Nếu không phải người Việt Nam: chỉ cần isUpdated = true và isSigned = true
+        return isPatronSigned;
     };
 
     // Get country name by ID
@@ -726,45 +893,45 @@ const AdminRegistrationPage: React.FC = () => {
                                     transition: 'all 0.3s ease'
                                 }}
                             >
-                            <TableCell
-                                sx={{
-                                    position: 'sticky',
-                                    left: 0,
-                                    backgroundColor: isHighlighted ? 'rgba(226, 132, 221, 0.15)' : 'background.paper',
-                                    zIndex: 1,
-                                    boxShadow: '2px 0 5px rgba(0,0,0,0.1)'
-                                }}
-                            >
-                                <Tooltip title={patron.isHaveMembership ? 'View Details' : 'Edit Details'}>
-                                    <IconButton
-                                        onClick={() => handlePatronAction(patron)}
-                                        color="primary"
+                                <TableCell
+                                    sx={{
+                                        position: 'sticky',
+                                        left: 0,
+                                        backgroundColor: isHighlighted ? 'rgba(226, 132, 221, 0.15)' : 'background.paper',
+                                        zIndex: 1,
+                                        boxShadow: '2px 0 5px rgba(0,0,0,0.1)'
+                                    }}
+                                >
+                                    <Tooltip title={patron.isHaveMembership ? 'View Details' : 'Edit Details'}>
+                                        <IconButton
+                                            onClick={() => handlePatronAction(patron)}
+                                            color="primary"
+                                            size="small"
+                                        >
+                                            {patron.isHaveMembership ? <VisibilityIcon /> : <EditIcon />}
+                                        </IconButton>
+                                    </Tooltip>
+                                </TableCell>
+                                <TableCell>{patron.playerId === 0 ? '-' : patron.playerId}</TableCell>
+                                <TableCell>{`${patron.firstName} ${patron.lastName}`}</TableCell>
+                                <TableCell>{patron.gender || '-'}</TableCell>
+                                <TableCell>{patron.mobilePhone}</TableCell>
+                                <TableCell>{patron.jobTitle || '-'}</TableCell>
+                                <TableCell>{patron.position || '-'}</TableCell>
+                                <TableCell>{patron.identificationNumber || '-'}</TableCell>
+                                <TableCell>{getCountryName(patron.identificationCountry)}</TableCell>
+                                <TableCell>{patron.address || '-'}</TableCell>
+                                <TableCell>{patron.addressInVietNam || '-'}</TableCell>
+                                <TableCell>{getCountryName(patron.country)}</TableCell>
+                                <TableCell>
+                                    <Chip
+                                        label={patron.isHaveMembership ? 'Membership' : 'New'}
+                                        color={patron.isHaveMembership ? 'success' : 'info'}
                                         size="small"
-                                    >
-                                        {patron.isHaveMembership ? <VisibilityIcon /> : <EditIcon />}
-                                    </IconButton>
-                                </Tooltip>
-                            </TableCell>
-                            <TableCell>{patron.playerId === 0 ? '-' : patron.playerId}</TableCell>
-                            <TableCell>{`${patron.firstName} ${patron.lastName}`}</TableCell>
-                            <TableCell>{patron.gender || '-'}</TableCell>
-                            <TableCell>{patron.mobilePhone}</TableCell>
-                            <TableCell>{patron.jobTitle || '-'}</TableCell>
-                            <TableCell>{patron.position || '-'}</TableCell>
-                            <TableCell>{patron.identificationNumber || '-'}</TableCell>
-                            <TableCell>{getCountryName(patron.identificationCountry)}</TableCell>
-                            <TableCell>{patron.address || '-'}</TableCell>
-                            <TableCell>{patron.addressInVietNam || '-'}</TableCell>
-                            <TableCell>{getCountryName(patron.country)}</TableCell>
-                            <TableCell>
-                                <Chip
-                                    label={patron.isHaveMembership ? 'Membership' : 'New'}
-                                    color={patron.isHaveMembership ? 'success' : 'info'}
-                                    size="small"
-                                />
-                            </TableCell>
-                            <TableCell>{formatDate(patron.createdTime)}</TableCell>
-                        </TableRow>
+                                    />
+                                </TableCell>
+                                <TableCell>{formatDate(patron.createdTime)}</TableCell>
+                            </TableRow>
                         );
                     })}
                 </TableBody>
@@ -960,14 +1127,35 @@ const AdminRegistrationPage: React.FC = () => {
                                             </Stack>
 
                                             <TextField
+                                                type='number'
                                                 label="Mobile Phone *"
                                                 value={editedPatron.mobilePhone || ''}
-                                                onChange={(e) => setEditedPatron({ ...editedPatron, mobilePhone: e.target.value })}
+                                                onChange={(e) => {
+                                                    const newPhone = e.target.value;
+                                                    setEditedPatron({ ...editedPatron, mobilePhone: newPhone });
+                                                    // Clear previous warning
+                                                    setPhoneNumberWarning('');
+                                                    // Check phone number
+                                                    if (isEditing) {
+                                                        checkPhoneNumber(newPhone);
+                                                    }
+                                                }}
                                                 disabled={!isEditing}
                                                 fullWidth
                                                 size="small"
-                                                error={!!validationErrors.mobilePhone}
-                                                helperText={validationErrors.mobilePhone}
+                                                error={!!validationErrors.mobilePhone || !!phoneNumberWarning}
+                                                helperText={
+                                                    validationErrors.mobilePhone ||
+                                                    phoneNumberWarning ||
+                                                    (checkingPhone ? 'Checking...' : '')
+                                                }
+                                                InputProps={{
+                                                    endAdornment: checkingPhone ? (
+                                                        <CircularProgress size={20} />
+                                                    ) : phoneNumberWarning ? (
+                                                        <span style={{ color: '#ff9800' }}>⚠️</span>
+                                                    ) : null
+                                                }}
                                             />
 
                                             <Stack direction="row" spacing={2}>
@@ -1051,7 +1239,16 @@ const AdminRegistrationPage: React.FC = () => {
                                                     <InputLabel>ID Type *</InputLabel>
                                                     <Select
                                                         value={editedPatron.identificationTypeId ?? ''}
-                                                        onChange={(e) => setEditedPatron({ ...editedPatron, identificationTypeId: Number(e.target.value) })}
+                                                        onChange={(e) => {
+                                                            const newIdType = Number(e.target.value);
+                                                            setEditedPatron({ ...editedPatron, identificationTypeId: newIdType });
+                                                            // Clear previous warning
+                                                            setIdNumberWarning('');
+                                                            // Re-check ID with new type
+                                                            if (isEditing && editedPatron.identificationNumber) {
+                                                                checkIdNumber(newIdType, editedPatron.identificationNumber);
+                                                            }
+                                                        }}
                                                         label="ID Type *"
                                                     >
                                                         {ID_TYPE_OPTIONS.map((option) => (
@@ -1066,12 +1263,32 @@ const AdminRegistrationPage: React.FC = () => {
                                                 <TextField
                                                     label="ID Number *"
                                                     value={editedPatron.identificationNumber || ''}
-                                                    onChange={(e) => setEditedPatron({ ...editedPatron, identificationNumber: e.target.value })}
+                                                    onChange={(e) => {
+                                                        const newIdNumber = e.target.value;
+                                                        setEditedPatron({ ...editedPatron, identificationNumber: newIdNumber });
+                                                        // Clear previous warning
+                                                        setIdNumberWarning('');
+                                                        // Check ID number
+                                                        if (isEditing && editedPatron.identificationTypeId !== undefined) {
+                                                            checkIdNumber(editedPatron.identificationTypeId, newIdNumber);
+                                                        }
+                                                    }}
                                                     disabled={!isEditing}
                                                     fullWidth
                                                     size="small"
-                                                    error={!!validationErrors.identificationNumber}
-                                                    helperText={validationErrors.identificationNumber}
+                                                    error={!!validationErrors.identificationNumber || !!idNumberWarning}
+                                                    helperText={
+                                                        validationErrors.identificationNumber ||
+                                                        idNumberWarning ||
+                                                        (checkingId ? 'Checking...' : '')
+                                                    }
+                                                    InputProps={{
+                                                        endAdornment: checkingId ? (
+                                                            <CircularProgress size={20} />
+                                                        ) : idNumberWarning ? (
+                                                            <span style={{ color: '#ff9800' }}>⚠️</span>
+                                                        ) : null
+                                                    }}
                                                 />
 
                                                 <FormControl fullWidth disabled={!isEditing} error={!!validationErrors.identificationCountry} size="small">
@@ -1274,23 +1491,152 @@ const AdminRegistrationPage: React.FC = () => {
                                     </CardContent>
                                 </Card>
 
+                                {/* Workflow Status - Show progress */}
+                                <Card variant="outlined" sx={{ backgroundColor: '#f5f5f5' }}>
+                                    <CardContent>
+                                        <Typography variant="h6" gutterBottom sx={{ mb: 2, color: 'primary.main' }}>
+                                            Registration Workflow Status
+                                        </Typography>
+                                        <Stack spacing={2}>
+                                            {/* Step 1: Update Patron */}
+                                            <Box display="flex" alignItems="center" gap={2}>
+                                                {(selectedPatron.isUpdated || patronUpdated) ? (
+                                                    <CheckCircleIcon sx={{ color: 'success.main', fontSize: 32 }} />
+                                                ) : (
+                                                    <Box sx={{ width: 32, height: 32, borderRadius: '50%', border: '2px solid #ccc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                        <Typography variant="body2" color="text.secondary">1</Typography>
+                                                    </Box>
+                                                )}
+                                                <Box flex={1}>
+                                                    <Typography variant="subtitle1" fontWeight="bold">
+                                                        Step 1: Update Patron Information
+                                                    </Typography>
+                                                    <Typography variant="body2" color="text.secondary">
+                                                        {(selectedPatron.isUpdated || patronUpdated) 
+                                                            ? '✓ Patron information has been updated' 
+                                                            : '⚠️ Please update patron information first'}
+                                                    </Typography>
+                                                </Box>
+                                            </Box>
+
+                                            {/* Step 2: Approve Income (only for Vietnamese) */}
+                                            {isVietnamese() && (
+                                                <Box display="flex" alignItems="center" gap={2}>
+                                                    {(selectedPatron.isValidIncomeDocument || incomeApproved) ? (
+                                                        <CheckCircleIcon sx={{ color: 'success.main', fontSize: 32 }} />
+                                                    ) : (
+                                                        <Box sx={{ width: 32, height: 32, borderRadius: '50%', border: '2px solid #ccc', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: !(selectedPatron.isUpdated || patronUpdated) ? '#f0f0f0' : 'white' }}>
+                                                            <Typography variant="body2" color={!(selectedPatron.isUpdated || patronUpdated) ? 'text.disabled' : 'text.secondary'}>2</Typography>
+                                                        </Box>
+                                                    )}
+                                                    <Box flex={1}>
+                                                        <Typography variant="subtitle1" fontWeight="bold" color={!(selectedPatron.isUpdated || patronUpdated) ? 'text.disabled' : 'inherit'}>
+                                                            Step 2: Approve Income Document
+                                                        </Typography>
+                                                        <Typography variant="body2" color="text.secondary">
+                                                            {(selectedPatron.isValidIncomeDocument || incomeApproved)
+                                                                ? '✓ Income document has been approved'
+                                                                : !(selectedPatron.isUpdated || patronUpdated)
+                                                                    ? '⏳ Complete Step 1 first'
+                                                                    : '⚠️ Please approve income document'}
+                                                        </Typography>
+                                                    </Box>
+                                                </Box>
+                                            )}
+
+                                            {/* Step 3: Signature Completed */}
+                                            <Box display="flex" alignItems="center" gap={2}>
+                                                {(selectedPatron.isSigned || editedPatron.isSigned) ? (
+                                                    <CheckCircleIcon sx={{ color: 'success.main', fontSize: 32 }} />
+                                                ) : (
+                                                    <Box sx={{ 
+                                                        width: 32, 
+                                                        height: 32, 
+                                                        borderRadius: '50%', 
+                                                        border: '2px solid #ccc', 
+                                                        display: 'flex', 
+                                                        alignItems: 'center', 
+                                                        justifyContent: 'center',
+                                                        backgroundColor: !(selectedPatron.isUpdated || patronUpdated) ? '#f0f0f0' : 'white'
+                                                    }}>
+                                                        <Typography variant="body2" color={!(selectedPatron.isUpdated || patronUpdated) ? 'text.disabled' : 'text.secondary'}>
+                                                            {isVietnamese() ? '3' : '2'}
+                                                        </Typography>
+                                                    </Box>
+                                                )}
+                                                <Box flex={1}>
+                                                    <Typography variant="subtitle1" fontWeight="bold" color={!(selectedPatron.isUpdated || patronUpdated) ? 'text.disabled' : 'inherit'}>
+                                                        Step {isVietnamese() ? '3' : '2'}: Customer Signature
+                                                    </Typography>
+                                                    <Typography variant="body2" color="text.secondary">
+                                                        {(selectedPatron.isSigned || editedPatron.isSigned)
+                                                            ? '✓ Customer has signed the document'
+                                                            : !(selectedPatron.isUpdated || patronUpdated)
+                                                                ? `⏳ Complete previous steps first`
+                                                                : '⏳ Waiting for customer to sign...'}
+                                                    </Typography>
+                                                </Box>
+                                            </Box>
+
+                                            {/* Step 4: Enroll Player */}
+                                            <Box display="flex" alignItems="center" gap={2}>
+                                                {selectedPatron.isHaveMembership ? (
+                                                    <CheckCircleIcon sx={{ color: 'success.main', fontSize: 32 }} />
+                                                ) : (
+                                                    <Box sx={{ 
+                                                        width: 32, 
+                                                        height: 32, 
+                                                        borderRadius: '50%', 
+                                                        border: '2px solid #ccc', 
+                                                        display: 'flex', 
+                                                        alignItems: 'center', 
+                                                        justifyContent: 'center',
+                                                        backgroundColor: !canEnrollPlayer() ? '#f0f0f0' : 'white'
+                                                    }}>
+                                                        <Typography variant="body2" color={!canEnrollPlayer() ? 'text.disabled' : 'text.secondary'}>
+                                                            {isVietnamese() ? '4' : '3'}
+                                                        </Typography>
+                                                    </Box>
+                                                )}
+                                                <Box flex={1}>
+                                                    <Typography variant="subtitle1" fontWeight="bold" color={!canEnrollPlayer() ? 'text.disabled' : 'inherit'}>
+                                                        Step {isVietnamese() ? '4' : '3'}: Enroll Player
+                                                    </Typography>
+                                                    <Typography variant="body2" color="text.secondary">
+                                                        {selectedPatron.isHaveMembership
+                                                            ? '✓ Player has been enrolled'
+                                                            : !canEnrollPlayer()
+                                                                ? '⏳ Complete all previous steps'
+                                                                : '✅ Ready to enroll player!'}
+                                                    </Typography>
+                                                </Box>
+                                            </Box>
+                                        </Stack>
+                                    </CardContent>
+                                </Card>
+
                                 <Box display="flex" justifyContent="center" mt={2} mb={1}>
-                                    {isEditing && (
+                                    {isEditing && !(selectedPatron.isUpdated || patronUpdated) && (
                                         <Typography variant="body1" color="error" sx={{ mr: 2, alignSelf: 'center' }}>
-                                            Please review and verify the information of the patron before updating.
+                                            ⚠️ Please update patron information to proceed with the workflow.
+                                        </Typography>
+                                    )}
+                                    {isEditing && (selectedPatron.isUpdated || patronUpdated) && (
+                                        <Typography variant="body1" color="success.main" sx={{ mr: 2, alignSelf: 'center' }}>
+                                            ✓ Patron information updated. You can now proceed to the next steps.
                                         </Typography>
                                     )}
                                 </Box>
 
                                 <Box display="flex" justifyContent="center" mb={2}>
-
                                     {isEditing && (
                                         <Button
                                             variant="contained"
                                             onClick={handleUpdatePatron}
                                             startIcon={<SaveIcon />}
+                                            disabled={selectedPatron.isUpdated && !patronUpdated}
                                         >
-                                            Update Patron
+                                            {selectedPatron.isUpdated ? 'Update Again' : 'Update Patron'}
                                         </Button>
                                     )}
                                 </Box>
@@ -1353,12 +1699,26 @@ const AdminRegistrationPage: React.FC = () => {
                                                     color="success"
                                                     onClick={handleApproveIncome}
                                                     disabled={!canApproveIncome() || approvingIncome}
-                                                    startIcon={approvingIncome ? <CircularProgress size={16} /> : incomeApproved ? <CheckCircleIcon /> : undefined}
+                                                    startIcon={approvingIncome ? <CircularProgress size={16} /> : (incomeApproved || selectedPatron.isValidIncomeDocument) ? <CheckCircleIcon /> : undefined}
                                                     size="small"
                                                 >
-                                                    {incomeApproved ? 'Approved' : 'Approve Income'}
+                                                    {(incomeApproved || selectedPatron.isValidIncomeDocument) ? 'Approved' : 'Approve Income'}
                                                 </Button>
                                             </Box>
+
+                                            {/* Warning if not updated yet */}
+                                            {!(selectedPatron.isUpdated || patronUpdated) && (
+                                                <Alert severity="warning" sx={{ mb: 2 }}>
+                                                    ⚠️ Please update patron information first before approving income document.
+                                                </Alert>
+                                            )}
+
+                                            {/* Success message if approved */}
+                                            {(incomeApproved || selectedPatron.isValidIncomeDocument) && (
+                                                <Alert severity="success" sx={{ mb: 2 }}>
+                                                    ✓ Income document has been approved. Waiting for customer signature...
+                                                </Alert>
+                                            )}
 
                                             <Stack spacing={2}>
                                                 <TextField
@@ -1435,7 +1795,7 @@ const AdminRegistrationPage: React.FC = () => {
                             </Button>
                         )} */}
 
-                        {!selectedPatron?.isHaveMembership && patronUpdated && canEnrollPlayer() && (
+                        {!selectedPatron?.isHaveMembership && canEnrollPlayer() && (
                             <Button
                                 variant="contained"
                                 color="primary"

@@ -1,5 +1,5 @@
 import axios from "axios";
-import type { CheckValidIncomeRequest, CheckValidIncomeResponse, CountryResponse, CurrentStaffDeviceResponse, PatronImagesResponse, PatronRegisterMembershipRequest, PatronRegisterMembershipResponse, PatronResponse } from "../registrationType";
+import type { CheckPatronIdentificationRequest, CheckValidIncomeRequest, CheckValidIncomeResponse, CountryResponse, CurrentStaffDeviceResponse, PatronImagesResponse, PatronRegisterMembershipRequest, PatronRegisterMembershipResponse, PatronResponse } from "../registrationType";
 
 const API_BASE = (window as any)._env_?.API_BASE;
 const api = axios.create({
@@ -142,5 +142,19 @@ export const renderDocumentService = {
         });
         const result = unwrapApiEnvelope(response);
         return result.html;
+    }
+};
+
+export const checkInformationService = {
+    checkPatronIdentification: async (request: CheckPatronIdentificationRequest): Promise<boolean> => {
+        const response = await api.post<ApiEnvelope<boolean>>("/api/RegistrationAdmin/patron/check-idcard", request);
+        return unwrapApiEnvelope(response);
+    },
+
+    checkPhoneNumberExists: async (phoneNumber: string): Promise<boolean> => {
+        const response = await api.get<ApiEnvelope<boolean>>("/api/RegistrationAdmin/patron/check-phone", {
+            params: { phoneNumber }
+        });
+        return unwrapApiEnvelope(response);
     }
 };
