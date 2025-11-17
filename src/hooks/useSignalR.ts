@@ -1,13 +1,27 @@
 // src/hooks/useSignalR.ts
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import { signalRService } from '../services/signalRService';
 import type { SignatureCompletedMessage, NewRegistrationMessage } from '../services/signalRService';
 
 export const useSignalR = (staffDeviceId?: number) => {
-    // Initialize SignalR connection
+    const staffDeviceIdRef = useRef<number | undefined>(staffDeviceId);
+    const isInitializedRef = useRef(false);
+
+    // Update ref when staffDeviceId changes
     useEffect(() => {
+        staffDeviceIdRef.current = staffDeviceId;
+    }, [staffDeviceId]);
+
+    // Initialize SignalR connection only once
+    useEffect(() => {
+        if (isInitializedRef.current) return;
+        
+        console.log('🎯 useSignalR initializing with staffDeviceId:', staffDeviceId);
+        isInitializedRef.current = true;
+        
         const initializeSignalR = async () => {
             try {
+                console.log('🔧 Initial startConnection with staffDeviceId:', staffDeviceId);
                 await signalRService.startConnection(staffDeviceId);
                 // Expose debug commands in development
                 if (import.meta.env.DEV) {
@@ -22,8 +36,19 @@ export const useSignalR = (staffDeviceId?: number) => {
 
         // Cleanup on unmount
         return () => {
+            console.log('🧹 useSignalR cleanup');
             signalRService.stopConnection();
         };
+    }, []); // Only run once
+
+    // Update staffDeviceId when it changes
+    useEffect(() => {
+        if (!isInitializedRef.current || !staffDeviceId) return;
+        
+        console.log('🔄 StaffDeviceId changed to:', staffDeviceId);
+        if (signalRService.isConnected()) {
+            signalRService.updateStaffDeviceId(staffDeviceId);
+        }
     }, [staffDeviceId]);
 
     // Hook for signature completed event

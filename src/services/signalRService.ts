@@ -25,13 +25,27 @@ class SignalRService {
 
     // Initialize connection
     public async startConnection(staffDeviceId?: number): Promise<void> {
+        console.log('🚀 Starting SignalR connection with staffDeviceId:', staffDeviceId);
+        
         if (this.connection?.state === signalR.HubConnectionState.Connected) {
             console.log('⚠️ SignalR already connected');
+            
+            // If we have a new staffDeviceId and it's different, update it
+            if (staffDeviceId && staffDeviceId !== this.staffDeviceId) {
+                console.log('🔄 Updating existing connection staffDeviceId from', this.staffDeviceId, 'to', staffDeviceId);
+                this.staffDeviceId = staffDeviceId;
+                await this.joinStaffGroup();
+            }
             return;
         }
 
         if (staffDeviceId) {
             this.staffDeviceId = staffDeviceId;
+            console.log('✅ StaffDeviceId set to:', this.staffDeviceId);
+        } else if (this.staffDeviceId) {
+            console.log('🔒 Keeping existing staffDeviceId:', this.staffDeviceId);
+        } else {
+            console.log('⚠️ No staffDeviceId provided');
         }
 
         try {
@@ -57,10 +71,14 @@ class SignalRService {
             await this.connection.start();
             console.log('✅ SignalR connection established');
             console.log('🔌 Connection ID:', this.connection.connectionId);
+            console.log('📱 Current staffDeviceId:', this.staffDeviceId);
 
             // Join staff group if available
             if (this.staffDeviceId) {
+                console.log('🏘️ Attempting to join staff group...');
                 await this.joinStaffGroup();
+            } else {
+                console.log('⚠️ No staffDeviceId available for joining group');
             }
 
         } catch (error) {
@@ -113,21 +131,34 @@ class SignalRService {
 
     // Join staff group to receive notifications
     public async joinStaffGroup(): Promise<void> {
+        console.log('🔍 joinStaffGroup called');
+        console.log('🔗 Connection:', this.connection ? 'Available' : 'NULL');
+        console.log('🆔 StaffDeviceId:', this.staffDeviceId);
+        
         if (!this.connection || !this.staffDeviceId) {
             console.warn('⚠️ Cannot join staff group - connection or staffDeviceId not available');
+            console.warn('   Connection:', !!this.connection);
+            console.warn('   StaffDeviceId:', this.staffDeviceId);
             return;
         }
 
         if (this.connection.state !== signalR.HubConnectionState.Connected) {
             console.warn('⚠️ Cannot join staff group - not connected');
+            console.warn('   Current state:', this.connection.state);
             return;
         }
 
         try {
+            console.log(`🎯 Calling server method 'JoinStaffGroup' with ID: ${this.staffDeviceId}`);
             await this.connection.invoke('JoinStaffGroup', this.staffDeviceId);
             console.log(`✅ Joined staff group: Staff_${this.staffDeviceId}`);
         } catch (error) {
             console.error('❌ Error joining staff group:', error);
+            console.error('   Error details:', {
+                name: (error as any)?.name,
+                message: (error as any)?.message,
+                stack: (error as any)?.stack
+            });
         }
     }
 
@@ -234,6 +265,19 @@ class SignalRService {
         return this.connection?.state === signalR.HubConnectionState.Connected;
     }
 
+    // Update staffDeviceId and join group
+    public async updateStaffDeviceId(staffDeviceId: number): Promise<void> {
+        console.log('🔄 Updating staffDeviceId from', this.staffDeviceId, 'to', staffDeviceId);
+        this.staffDeviceId = staffDeviceId;
+        
+        if (this.isConnected()) {
+            console.log('🏘️ Connection active, joining staff group...');
+            await this.joinStaffGroup();
+        } else {
+            console.log('⚠️ No active connection, will join when connected');
+        }
+    }
+
     // Get connection info
     public getConnectionInfo(): any {
         if (!this.connection) {
@@ -275,6 +319,7 @@ class SignalRService {
             getInfo: () => this.getConnectionInfo(),
             reconnect: () => this.startConnection(),
             joinGroup: () => this.joinStaffGroup(),
+            updateStaffId: (id: number) => this.updateStaffDeviceId(id),
             playSound: () => this.playNotificationSound(),
             help: () => {
                 console.log(`
@@ -283,6 +328,7 @@ class SignalRService {
 - signalRDebug.getInfo() - Get connection info
 - signalRDebug.reconnect() - Force reconnection
 - signalRDebug.joinGroup() - Join staff group
+- signalRDebug.updateStaffId(5) - Update staff device ID and join group
 - signalRDebug.playSound() - Test notification sound
                 `);
             }
