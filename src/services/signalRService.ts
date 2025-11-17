@@ -45,7 +45,7 @@ class SignalRService {
         } else if (this.staffDeviceId) {
             console.log('🔒 Keeping existing staffDeviceId:', this.staffDeviceId);
         } else {
-            console.log('⚠️ No staffDeviceId provided');
+            console.log('⚠️ No staffDeviceId provided - connection will work but no staff group join');
         }
 
         try {
@@ -320,6 +320,13 @@ class SignalRService {
             reconnect: () => this.startConnection(),
             joinGroup: () => this.joinStaffGroup(),
             updateStaffId: (id: number) => this.updateStaffDeviceId(id),
+            forceSetStaffId: (id: number) => {
+                console.log('🔧 Force setting staffDeviceId to:', id);
+                this.staffDeviceId = id;
+                if (this.isConnected()) {
+                    this.joinStaffGroup();
+                }
+            },
             playSound: () => this.playNotificationSound(),
             help: () => {
                 console.log(`
@@ -329,6 +336,7 @@ class SignalRService {
 - signalRDebug.reconnect() - Force reconnection
 - signalRDebug.joinGroup() - Join staff group
 - signalRDebug.updateStaffId(5) - Update staff device ID and join group
+- signalRDebug.forceSetStaffId(5) - Force set staff ID without validation
 - signalRDebug.playSound() - Test notification sound
                 `);
             }

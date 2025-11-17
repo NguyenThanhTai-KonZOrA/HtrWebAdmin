@@ -32,10 +32,12 @@ export const AppDataProvider: React.FC<{ children: ReactNode }> = ({ children })
 
     const fetchStaffDevice = async () => {
         try {
+            console.log('🔄 Fetching staff device...');
             const data = await staffDeviceService.getCurrentStaffDevice();
+            console.log('✅ Staff device loaded:', data);
             setStaffDevice(data);
         } catch (err) {
-            console.error('Error fetching staff device:', err);
+            console.error('❌ Error fetching staff device:', err);
             setError('Failed to load staff device');
         }
     };

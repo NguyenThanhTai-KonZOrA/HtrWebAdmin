@@ -10,11 +10,21 @@ export const useSignalR = (staffDeviceId?: number) => {
     // Update ref when staffDeviceId changes
     useEffect(() => {
         staffDeviceIdRef.current = staffDeviceId;
+        console.log('📱 useSignalR staffDeviceId updated:', staffDeviceId);
     }, [staffDeviceId]);
 
-    // Initialize SignalR connection only once
+    // Initialize SignalR connection only once, but wait for valid staffDeviceId
     useEffect(() => {
-        if (isInitializedRef.current) return;
+        if (isInitializedRef.current) {
+            console.log('⏭️ SignalR already initialized, skipping');
+            return;
+        }
+        
+        // Don't initialize if staffDeviceId is still undefined/null
+        if (!staffDeviceId) {
+            console.log('⏳ Waiting for staffDeviceId to be available...');
+            return;
+        }
         
         console.log('🎯 useSignalR initializing with staffDeviceId:', staffDeviceId);
         isInitializedRef.current = true;
@@ -29,6 +39,8 @@ export const useSignalR = (staffDeviceId?: number) => {
                 }
             } catch (error) {
                 console.error('Failed to initialize SignalR:', error);
+                // Reset flag to allow retry
+                isInitializedRef.current = false;
             }
         };
 
@@ -38,14 +50,15 @@ export const useSignalR = (staffDeviceId?: number) => {
         return () => {
             console.log('🧹 useSignalR cleanup');
             signalRService.stopConnection();
+            isInitializedRef.current = false;
         };
-    }, []); // Only run once
+    }, [staffDeviceId]); // Trigger when staffDeviceId becomes available
 
-    // Update staffDeviceId when it changes
+    // Update staffDeviceId when it changes after initialization
     useEffect(() => {
         if (!isInitializedRef.current || !staffDeviceId) return;
         
-        console.log('🔄 StaffDeviceId changed to:', staffDeviceId);
+        console.log('🔄 StaffDeviceId changed after init:', staffDeviceId);
         if (signalRService.isConnected()) {
             signalRService.updateStaffDeviceId(staffDeviceId);
         }

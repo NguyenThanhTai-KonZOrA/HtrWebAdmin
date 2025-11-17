@@ -43,13 +43,17 @@ import {
     Close as CloseIcon,
     CloudDownload as DownloadIcon,
     CheckCircle as CheckCircleIcon,
-    Refresh as RefreshIcon
+    Refresh as RefreshIcon,
+    CloudUpload as UploadIcon,
+    Delete as DeleteIcon,
+    Send as SendIcon
 } from '@mui/icons-material';
 import {
     patronService,
     incomeDocumentService,
     renderDocumentService,
-    checkInformationService
+    checkInformationService,
+    signatureService
 } from '../services/registrationService';
 import type {
     PatronResponse,
@@ -57,7 +61,10 @@ import type {
     PatronImagesResponse,
     CheckValidIncomeRequest,
     FileDataRequest,
-    PatronRegisterMembershipRequest
+    PatronRegisterMembershipRequest,
+    StaffSignatureRequest,
+    IncomeFileResponse,
+    BatchesDataResponse
 } from '../registrationType';
 import AdminLayout from '../layout/AdminLayout';
 import { useSetPageTitle } from '../hooks/useSetPageTitle';
@@ -123,9 +130,10 @@ const AdminRegistrationPage: React.FC = () => {
     useSetPageTitle(PAGE_TITLES.REGISTRATION);
 
     // Get global data from context
-    const { countries, staffDevice } = useAppData();
+    const { countries, staffDevice, loading: contextLoading } = useAppData();
 
-    // Initialize SignalR
+    // Initialize SignalR with better logging
+    console.log('📊 AdminRegistrationPage render - contextLoading:', contextLoading, 'staffDevice:', staffDevice);
     const signalR = useSignalR(staffDevice?.staffDeviceId);
 
     // States
@@ -199,6 +207,15 @@ const AdminRegistrationPage: React.FC = () => {
 
     // Highlighted patron state (for SignalR signature completed)
     const [highlightedPatronId, setHighlightedPatronId] = useState<number | null>(null);
+
+    // File upload states
+    const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+    const [existingFiles, setExistingFiles] = useState<IncomeFileResponse | null>(null);
+    const [uploading, setUploading] = useState(false);
+    const [loadingFiles, setLoadingFiles] = useState(false);
+
+    // Signature request states
+    const [requestingSignature, setRequestingSignature] = useState(false);
 
     // Debounce timer refs
     const phoneCheckTimerRef = React.useRef<number | null>(null);
@@ -514,6 +531,30 @@ const AdminRegistrationPage: React.FC = () => {
             // Reset document HTML
             setDocumentHtml('');
             
+            // Reset file upload states
+            setUploadedFiles([]);
+            setExistingFiles(null);
+
+            // Load existing income files if needed
+            if (patronDetail.submitType === 1 || patronDetail.submitType === 2) {
+                if (patronDetail.identificationCountry === String(VIETNAM_COUNTRY_ID)) {
+                    // Load existing income files for Vietnamese patrons
+                    try {
+                        setLoadingFiles(true);
+                        const files = await incomeDocumentService.getIncomeFile(
+                            patronDetail.pid,
+                            patronDetail.playerId
+                        );
+                        setExistingFiles(files);
+                    } catch (err) {
+                        console.error('Error loading income files:', err);
+                        setExistingFiles(null);
+                    } finally {
+                        setLoadingFiles(false);
+                    }
+                }
+            }
+            
             // Set patronUpdated based on patron's isUpdated status
             setPatronUpdated(patronDetail.isUpdated);
         } catch (err) {
@@ -750,6 +791,101 @@ const AdminRegistrationPage: React.FC = () => {
         }
     };
 
+    // Handle file upload for income documents
+    const handleFileUpload = async (files: File[]) => {
+        if (!selectedPatron || files.length === 0) return;
+
+        try {
+            setUploading(true);
+            setDialogError(null);
+
+            const success = await incomeDocumentService.uploadIncomeFile(
+                selectedPatron.pid,
+                selectedPatron.playerId,
+                files
+            );
+
+            if (success) {
+                setDialogSuccess('Files uploaded successfully!');
+                setUploadedFiles([]);
+                
+                // Reload existing files
+                await loadExistingFiles();
+            } else {
+                setDialogError('Failed to upload files.');
+            }
+        } catch (err) {
+            setDialogError('Failed to upload files.');
+            console.error('Error uploading files:', err);
+        } finally {
+            setUploading(false);
+        }
+    };
+
+    // Load existing income files
+    const loadExistingFiles = async () => {
+        if (!selectedPatron) return;
+
+        try {
+            setLoadingFiles(true);
+            const files = await incomeDocumentService.getIncomeFile(
+                selectedPatron.pid,
+                selectedPatron.playerId
+            );
+            setExistingFiles(files);
+        } catch (err) {
+            console.error('Error loading income files:', err);
+            // Don't show error for this as it might be normal to have no files
+            setExistingFiles(null);
+        } finally {
+            setLoadingFiles(false);
+        }
+    };
+
+    // Handle delete income file
+    const handleDeleteFile = async (batchId: string, saveAs: string) => {
+        try {
+            setDialogError(null);
+            
+            await incomeDocumentService.deleteIncomeFile(batchId, saveAs);
+            setDialogSuccess('File deleted successfully!');
+            
+            // Reload files after deletion
+            await loadExistingFiles();
+        } catch (err) {
+            setDialogError('Failed to delete file.');
+            console.error('Error deleting file:', err);
+        }
+    };
+
+    // Handle request signature
+    const handleRequestSignature = async () => {
+        if (!selectedPatron) return;
+
+        try {
+            setRequestingSignature(true);
+            setDialogError(null);
+
+            const request: StaffSignatureRequest = {
+                PatronId: selectedPatron.pid
+            };
+
+            const success = await signatureService.staffRequestSignature(request);
+            
+            if (success) {
+                setDialogSuccess('Signature request sent successfully! Customer will receive notification to sign.');
+                showSnackbar('Signature request sent to customer', 'info');
+            } else {
+                setDialogError('Failed to send signature request.');
+            }
+        } catch (err) {
+            setDialogError('Failed to send signature request.');
+            console.error('Error requesting signature:', err);
+        } finally {
+            setRequestingSignature(false);
+        }
+    };
+
     // Check if all required fields are filled
     const areRequiredFieldsFilled = (): boolean => {
         if (!editedPatron) return false;
@@ -786,6 +922,27 @@ const AdminRegistrationPage: React.FC = () => {
     const isVietnamese = (): boolean => {
         if (!editedPatron) return false;
         return editedPatron.identificationCountry === String(VIETNAM_COUNTRY_ID);
+    };
+
+    // Check submit type logic for income requirement
+    const needsIncomeDocument = (): boolean => {
+        if (!selectedPatron) return false;
+        
+        // Both submitType 1 and 2 need income document if Vietnamese
+        return isVietnamese() && (selectedPatron.submitType === 1 || selectedPatron.submitType === 2);
+    };
+
+    // Check if signature request should be shown
+    const canShowSignatureRequest = (): boolean => {
+        if (!selectedPatron) return false;
+        
+        // Only submitType 2 shows signature request for both Vietnamese and foreigners
+        return selectedPatron.submitType === 2;
+    };
+
+    // Check if income upload section should be shown
+    const shouldShowIncomeUpload = (): boolean => {
+        return needsIncomeDocument();
     };
 
     // Check if income document is valid
@@ -1649,45 +1806,57 @@ const AdminRegistrationPage: React.FC = () => {
                                             Customer Information Confirmation Form *
                                         </Typography>
                                         <Stack spacing={2}>
-                                            {selectedPatron.submitType === 2 && !selectedPatron.isSigned ? (
-                                                <Alert severity="error" sx={{ display: 'flex', justifyContent: 'center' }}>
+                                            {/* Alert for unsigned submitType 2 patrons */}
+                                            {selectedPatron.submitType === 2 && !selectedPatron.isSigned && (
+                                                <Alert severity="warning" sx={{ display: 'flex', justifyContent: 'center' }}>
                                                     Patron need to confirm and sign signature before enroll player
                                                 </Alert>
-                                            ) : (
-                                                <>
-                                                    <Box display="flex" justifyContent="center">
-                                                        <Button
-                                                            variant="outlined"
-                                                            onClick={handleLoadDocument}
-                                                            disabled={loadingDocument}
-                                                            startIcon={loadingDocument ? <CircularProgress size={16} /> : <VisibilityIcon />}
-                                                        >
-                                                            Review document
-                                                        </Button>
-                                                    </Box>
+                                            )}
 
-                                                    {documentHtml && (
-                                                        <Box
-                                                            sx={{
-                                                                mt: 2,
-                                                                p: 2,
-                                                                border: '1px solid #ddd',
-                                                                borderRadius: 1,
-                                                                maxHeight: '400px',
-                                                                overflow: 'auto',
-                                                                bgcolor: 'background.paper'
-                                                            }}
-                                                            dangerouslySetInnerHTML={{ __html: documentHtml }}
-                                                        />
-                                                    )}
-                                                </>
+                                            <Box display="flex" justifyContent="center" gap={2}>
+                                                <Button
+                                                    variant="outlined"
+                                                    onClick={handleLoadDocument}
+                                                    disabled={loadingDocument}
+                                                    startIcon={loadingDocument ? <CircularProgress size={16} /> : <VisibilityIcon />}
+                                                >
+                                                    Review document
+                                                </Button>
+
+                                                {/* Request Signature button - only for submitType 2 */}
+                                                {canShowSignatureRequest() && (
+                                                    <Button
+                                                        variant="contained"
+                                                        color="primary"
+                                                        onClick={handleRequestSignature}
+                                                        disabled={requestingSignature}
+                                                        startIcon={requestingSignature ? <CircularProgress size={16} /> : <SendIcon />}
+                                                    >
+                                                        Request Signature
+                                                    </Button>
+                                                )}
+                                            </Box>
+
+                                            {documentHtml && (
+                                                <Box
+                                                    sx={{
+                                                        mt: 2,
+                                                        p: 2,
+                                                        border: '1px solid #ddd',
+                                                        borderRadius: 1,
+                                                        maxHeight: '400px',
+                                                        overflow: 'auto',
+                                                        bgcolor: 'background.paper'
+                                                    }}
+                                                    dangerouslySetInnerHTML={{ __html: documentHtml }}
+                                                />
                                             )}
                                         </Stack>
                                     </CardContent>
                                 </Card>
 
-                                {/* Income Section (only for Vietnamese) */}
-                                {isVietnamese() && (
+                                {/* Income Section - for Vietnamese with submitType 1 or 2 */}
+                                {shouldShowIncomeUpload() && (
                                     <Card variant="outlined">
                                         <CardContent>
                                             <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
@@ -1721,6 +1890,108 @@ const AdminRegistrationPage: React.FC = () => {
                                             )}
 
                                             <Stack spacing={2}>
+                                                {/* File Upload Section */}
+                                                <Box>
+                                                    <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 'bold' }}>
+                                                        Upload Income Files
+                                                    </Typography>
+                                                    <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 2 }}>
+                                                        <Button
+                                                            variant="outlined"
+                                                            component="label"
+                                                            startIcon={<UploadIcon />}
+                                                            disabled={uploading}
+                                                        >
+                                                            Choose Files
+                                                            <input
+                                                                type="file"
+                                                                hidden
+                                                                multiple
+                                                                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                                                                onChange={(e) => {
+                                                                    const files = Array.from(e.target.files || []);
+                                                                    setUploadedFiles(files);
+                                                                }}
+                                                            />
+                                                        </Button>
+                                                        {uploadedFiles.length > 0 && (
+                                                            <Button
+                                                                variant="contained"
+                                                                onClick={() => handleFileUpload(uploadedFiles)}
+                                                                disabled={uploading}
+                                                                startIcon={uploading ? <CircularProgress size={16} /> : <UploadIcon />}
+                                                            >
+                                                                Upload {uploadedFiles.length} file(s)
+                                                            </Button>
+                                                        )}
+                                                    </Box>
+                                                    
+                                                    {/* Show selected files */}
+                                                    {uploadedFiles.length > 0 && (
+                                                        <Box sx={{ mb: 2 }}>
+                                                            <Typography variant="body2" color="text.secondary" gutterBottom>
+                                                                Selected files:
+                                                            </Typography>
+                                                            <Stack spacing={1}>
+                                                                {uploadedFiles.map((file, index) => (
+                                                                    <Box key={index} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                                        <Typography variant="body2">{file.name}</Typography>
+                                                                        <Chip size="small" label={`${(file.size / 1024).toFixed(1)} KB`} />
+                                                                    </Box>
+                                                                ))}
+                                                            </Stack>
+                                                        </Box>
+                                                    )}
+                                                </Box>
+
+                                                {/* Existing Files Section */}
+                                                {loadingFiles ? (
+                                                    <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
+                                                        <CircularProgress size={24} />
+                                                    </Box>
+                                                ) : existingFiles && existingFiles.batches && existingFiles.batches.length > 0 ? (
+                                                    <Box>
+                                                        <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 'bold' }}>
+                                                            Uploaded Income Files ({existingFiles.totalFiles})
+                                                        </Typography>
+                                                        <Stack spacing={1}>
+                                                            {existingFiles.batches.map((file) => (
+                                                                <Box
+                                                                    key={file.id}
+                                                                    sx={{
+                                                                        display: 'flex',
+                                                                        alignItems: 'center',
+                                                                        p: 1,
+                                                                        bgcolor: 'grey.100',
+                                                                        borderRadius: 1
+                                                                    }}
+                                                                >
+                                                                    <Typography sx={{ flexGrow: 1 }}>{file.originalName}</Typography>
+                                                                    <Chip size="small" label={`${(file.size / 1024).toFixed(1)} KB`} sx={{ mr: 1 }} />
+                                                                    <IconButton
+                                                                        size="small"
+                                                                        onClick={() => handleImageClick(file.url)}
+                                                                        sx={{ mr: 1 }}
+                                                                    >
+                                                                        <VisibilityIcon />
+                                                                    </IconButton>
+                                                                    <IconButton
+                                                                        size="small"
+                                                                        color="error"
+                                                                        onClick={() => handleDeleteFile(file.batchId, file.savedAs)}
+                                                                    >
+                                                                        <DeleteIcon />
+                                                                    </IconButton>
+                                                                </Box>
+                                                            ))}
+                                                        </Stack>
+                                                    </Box>
+                                                ) : (
+                                                    <Alert severity="info">
+                                                        No income files uploaded yet. Please upload income documents.
+                                                    </Alert>
+                                                )}
+
                                                 <TextField
                                                     label="Income Document"
                                                     value={incomeDocument}
@@ -1742,11 +2013,11 @@ const AdminRegistrationPage: React.FC = () => {
                                                     size="small"
                                                 />
 
-                                                {/* Income Files */}
+                                                {/* Legacy Income Files (from patron data) */}
                                                 {selectedPatron.incomeFiles && selectedPatron.incomeFiles.length > 0 && (
                                                     <Box>
                                                         <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 'bold' }}>
-                                                            Income Files
+                                                            Legacy Income Files
                                                         </Typography>
                                                         <Stack spacing={1}>
                                                             {selectedPatron.incomeFiles.map((file, index) => (

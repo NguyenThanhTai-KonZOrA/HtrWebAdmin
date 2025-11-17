@@ -108,3 +108,27 @@ export interface CheckPatronIdentificationRequest {
     IdType?: number;
     PassportNumber?: string;
 }
+
+export interface StaffSignatureRequest {
+    PatronId: number;
+}
+
+export interface IncomeFileResponse {
+    totalBatches: number;
+    batches: BatchesDataResponse[];
+    totalFiles: number;
+}
+
+export interface BatchesDataResponse {
+    id: number;
+    batchId: string;
+    originalName: string;
+    savedAs: string;
+    url: string;
+    size: number;
+    contentType: string;
+    createdAt: string;
+    updatedAt: string;
+    updatedBy: string;
+    expireAt: string;
+}

@@ -1,5 +1,5 @@
 import axios from "axios";
-import type { CheckPatronIdentificationRequest, CheckValidIncomeRequest, CheckValidIncomeResponse, CountryResponse, CurrentStaffDeviceResponse, PatronImagesResponse, PatronRegisterMembershipRequest, PatronRegisterMembershipResponse, PatronResponse } from "../registrationType";
+import type { CheckPatronIdentificationRequest, CheckValidIncomeRequest, CheckValidIncomeResponse, CountryResponse, CurrentStaffDeviceResponse, IncomeFileResponse, PatronImagesResponse, PatronRegisterMembershipRequest, PatronRegisterMembershipResponse, PatronResponse, StaffSignatureRequest } from "../registrationType";
 
 const API_BASE = (window as any)._env_?.API_BASE;
 const api = axios.create({
@@ -105,12 +105,27 @@ export const incomeDocumentService = {
         return unwrapApiEnvelope(response);
     },
 
-    getIncomeFile: async (pid: number, playerId: number): Promise<File> => {
-        const response = await api.get<File>(`/api/RegistrationAdmin/income/files`, {
-            params: { pid, playerId },
-            responseType: 'blob'
+    getIncomeFile: async (pid: number, playerId: number): Promise<IncomeFileResponse> => {
+        const response = await api.get<ApiEnvelope<IncomeFileResponse>>(`/api/RegistrationAdmin/income/files`, {
+            params: { pid, playerId }
         });
-        return response.data;
+        return unwrapApiEnvelope(response);
+    },
+
+    uploadIncomeFile: async (patronId: number, playerId: number, files: File[]): Promise<boolean> => {
+        const formData = new FormData();
+        files.forEach(file => {
+            formData.append('files', file);
+        });
+        formData.append('patronId', patronId.toString());
+        formData.append('playerId', playerId.toString());
+
+        const response = await api.post<ApiEnvelope<boolean>>(`/api/RegistrationAdmin/income/upload`, formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        });
+        return unwrapApiEnvelope(response);
     },
 
     deleteIncomeFile: async (batchId: string, saveAs: string): Promise<void> => {
@@ -155,6 +170,13 @@ export const checkInformationService = {
         const response = await api.get<ApiEnvelope<boolean>>("/api/RegistrationAdmin/patron/check-phone", {
             params: { phoneNumber }
         });
+        return unwrapApiEnvelope(response);
+    }
+};
+
+export const signatureService = {
+    staffRequestSignature: async (request: StaffSignatureRequest): Promise<boolean> => {
+        const response = await api.post<ApiEnvelope<boolean>>("/api/CustomerSign/request", request);
         return unwrapApiEnvelope(response);
     }
 };
