@@ -32,18 +32,20 @@ export const AppDataProvider: React.FC<{ children: ReactNode }> = ({ children })
 
     const fetchStaffDevice = async () => {
         try {
-            console.log('🔄 Fetching staff device...');
+            console.log('🔄 [AppDataContext] Fetching staff device...');
             const data = await staffDeviceService.getCurrentStaffDevice();
-            console.log('✅ Staff device loaded:', data);
+            console.log('✅ [AppDataContext] Staff device loaded:', data);
+            console.log('📱 [AppDataContext] staffDeviceId:', data?.staffDeviceId);
             setStaffDevice(data);
         } catch (err) {
-            console.error('❌ Error fetching staff device:', err);
+            console.error('❌ [AppDataContext] Error fetching staff device:', err);
             setError('Failed to load staff device');
         }
     };
 
     useEffect(() => {
         const loadInitialData = async () => {
+            console.log('🚀 [AppDataContext] Loading initial data...');
             setLoading(true);
             setError(null);
             
@@ -53,6 +55,7 @@ export const AppDataProvider: React.FC<{ children: ReactNode }> = ({ children })
             ]);
             
             setLoading(false);
+            console.log('✅ [AppDataContext] Initial data loaded successfully');
         };
 
         loadInitialData();

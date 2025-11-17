@@ -27,26 +27,29 @@ class SignalRService {
     public async startConnection(staffDeviceId?: number): Promise<void> {
         console.log('🚀 Starting SignalR connection with staffDeviceId:', staffDeviceId);
         
+        // CRITICAL: Reject if no staffDeviceId provided
+        if (!staffDeviceId) {
+            console.error('❌ Cannot start SignalR without staffDeviceId');
+            throw new Error('staffDeviceId is required to start SignalR connection');
+        }
+        
         if (this.connection?.state === signalR.HubConnectionState.Connected) {
             console.log('⚠️ SignalR already connected');
             
             // If we have a new staffDeviceId and it's different, update it
-            if (staffDeviceId && staffDeviceId !== this.staffDeviceId) {
+            if (staffDeviceId !== this.staffDeviceId) {
                 console.log('🔄 Updating existing connection staffDeviceId from', this.staffDeviceId, 'to', staffDeviceId);
                 this.staffDeviceId = staffDeviceId;
                 await this.joinStaffGroup();
+            } else {
+                console.log('✅ Already connected with same staffDeviceId:', this.staffDeviceId);
             }
             return;
         }
 
-        if (staffDeviceId) {
-            this.staffDeviceId = staffDeviceId;
-            console.log('✅ StaffDeviceId set to:', this.staffDeviceId);
-        } else if (this.staffDeviceId) {
-            console.log('🔒 Keeping existing staffDeviceId:', this.staffDeviceId);
-        } else {
-            console.log('⚠️ No staffDeviceId provided - connection will work but no staff group join');
-        }
+        // Set staffDeviceId BEFORE creating connection
+        this.staffDeviceId = staffDeviceId;
+        console.log('✅ StaffDeviceId set to:', this.staffDeviceId);
 
         try {
             // Create connection
@@ -73,13 +76,9 @@ class SignalRService {
             console.log('🔌 Connection ID:', this.connection.connectionId);
             console.log('📱 Current staffDeviceId:', this.staffDeviceId);
 
-            // Join staff group if available
-            if (this.staffDeviceId) {
-                console.log('🏘️ Attempting to join staff group...');
-                await this.joinStaffGroup();
-            } else {
-                console.log('⚠️ No staffDeviceId available for joining group');
-            }
+            // Join staff group (staffDeviceId is guaranteed to exist at this point)
+            console.log('🏘️ Joining staff group with ID:', this.staffDeviceId);
+            await this.joinStaffGroup();
 
         } catch (error) {
             console.error('❌ Error initializing SignalR:', error);

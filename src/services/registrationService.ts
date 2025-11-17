@@ -1,5 +1,5 @@
 import axios from "axios";
-import type { CheckPatronIdentificationRequest, CheckValidIncomeRequest, CheckValidIncomeResponse, CountryResponse, CurrentStaffDeviceResponse, IncomeFileResponse, PatronImagesResponse, PatronRegisterMembershipRequest, PatronRegisterMembershipResponse, PatronResponse, StaffSignatureRequest } from "../registrationType";
+import type { CheckPatronIdentificationRequest, CheckValidIncomeRequest, CheckValidIncomeResponse, CountryResponse, CurrentStaffDeviceResponse, IncomeFileResponse, PatronImagesResponse, PatronRegisterMembershipRequest, PatronRegisterMembershipResponse, PatronResponse, RenderDocumentResponse, StaffSignatureRequest } from "../registrationType";
 
 const API_BASE = (window as any)._env_?.API_BASE;
 const api = axios.create({
@@ -151,12 +151,11 @@ export const staffDeviceService = {
 };
 
 export const renderDocumentService = {
-    renderDocumentFile: async (pid: string, playerId: string): Promise<string> => {
-        const response = await api.get<ApiEnvelope<{ html: string }>>(`/api/Documents/policy/render`, {
+    renderDocumentFile: async (pid: string, playerId: string): Promise<RenderDocumentResponse> => {
+        const response = await api.get<ApiEnvelope<RenderDocumentResponse>>(`/api/Documents/policy/render`, {
             params: { pid, playerId }
         });
-        const result = unwrapApiEnvelope(response);
-        return result.html;
+        return unwrapApiEnvelope(response);
     }
 };
 

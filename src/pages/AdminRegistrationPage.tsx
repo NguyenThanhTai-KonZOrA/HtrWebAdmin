@@ -123,7 +123,7 @@ const GENDER_OPTIONS = [
     { value: 'Female', label: 'Female' },
     { value: 'Other', label: 'Other' }
 ];
-
+const Api_URL = (window as any)._env_?.API_BASE || '';
 const VIETNAM_COUNTRY_ID = 704;
 
 const AdminRegistrationPage: React.FC = () => {
@@ -132,9 +132,9 @@ const AdminRegistrationPage: React.FC = () => {
     // Get global data from context
     const { countries, staffDevice, loading: contextLoading } = useAppData();
 
-    // Initialize SignalR with better logging
-    console.log('📊 AdminRegistrationPage render - contextLoading:', contextLoading, 'staffDevice:', staffDevice);
-    const signalR = useSignalR(staffDevice?.staffDeviceId);
+    // Only initialize SignalR after context has loaded and we have staffDeviceId
+    // This prevents the "staffDeviceId is null" issue
+    const signalR = useSignalR(contextLoading ? undefined : staffDevice?.staffDeviceId);
 
     // States
     const [loadingNewReg, setLoadingNewReg] = useState(true);
@@ -530,7 +530,7 @@ const AdminRegistrationPage: React.FC = () => {
 
             // Reset document HTML
             setDocumentHtml('');
-            
+
             // Reset file upload states
             setUploadedFiles([]);
             setExistingFiles(null);
@@ -554,7 +554,7 @@ const AdminRegistrationPage: React.FC = () => {
                     }
                 }
             }
-            
+
             // Set patronUpdated based on patron's isUpdated status
             setPatronUpdated(patronDetail.isUpdated);
         } catch (err) {
@@ -759,16 +759,19 @@ const AdminRegistrationPage: React.FC = () => {
     const handleLoadDocument = async () => {
         if (!selectedPatron) return;
 
+        if (!selectedPatron.isSigned) {
+            setDialogError('Cannot load document: Patron has not signed.');
+            return;
+        }
         try {
             setLoadingDocument(true);
             setDialogError(null);
-
             // Call API with patron ID and playerId
-            const htmlContent = await renderDocumentService.renderDocumentFile(
+            const response = await renderDocumentService.renderDocumentFile(
                 String(selectedPatron.pid),
                 String(selectedPatron.playerId)
             );
-            setDocumentHtml(htmlContent);
+            setDocumentHtml(response.htmlContent);
             setDialogSuccess('Document loaded successfully!');
         } catch (err: any) {
             setDialogError(err?.message || 'Failed to load document.');
@@ -808,7 +811,7 @@ const AdminRegistrationPage: React.FC = () => {
             if (success) {
                 setDialogSuccess('Files uploaded successfully!');
                 setUploadedFiles([]);
-                
+
                 // Reload existing files
                 await loadExistingFiles();
             } else {
@@ -846,10 +849,10 @@ const AdminRegistrationPage: React.FC = () => {
     const handleDeleteFile = async (batchId: string, saveAs: string) => {
         try {
             setDialogError(null);
-            
+
             await incomeDocumentService.deleteIncomeFile(batchId, saveAs);
             setDialogSuccess('File deleted successfully!');
-            
+
             // Reload files after deletion
             await loadExistingFiles();
         } catch (err) {
@@ -871,10 +874,10 @@ const AdminRegistrationPage: React.FC = () => {
             };
 
             const success = await signatureService.staffRequestSignature(request);
-            
+
             if (success) {
                 setDialogSuccess('Signature request sent successfully! Customer will receive notification to sign.');
-                showSnackbar('Signature request sent to customer', 'info');
+                //showSnackbar('Signature request sent to customer', 'info');
             } else {
                 setDialogError('Failed to send signature request.');
             }
@@ -927,7 +930,7 @@ const AdminRegistrationPage: React.FC = () => {
     // Check submit type logic for income requirement
     const needsIncomeDocument = (): boolean => {
         if (!selectedPatron) return false;
-        
+
         // Both submitType 1 and 2 need income document if Vietnamese
         return isVietnamese() && (selectedPatron.submitType === 1 || selectedPatron.submitType === 2);
     };
@@ -935,7 +938,7 @@ const AdminRegistrationPage: React.FC = () => {
     // Check if signature request should be shown
     const canShowSignatureRequest = (): boolean => {
         if (!selectedPatron) return false;
-        
+
         // Only submitType 2 shows signature request for both Vietnamese and foreigners
         return selectedPatron.submitType === 2;
     };
@@ -953,17 +956,17 @@ const AdminRegistrationPage: React.FC = () => {
     // Determine if Approve Income button should be enabled
     const canApproveIncome = (): boolean => {
         if (!selectedPatron) return false;
-        
+
         // Bước 1: Phải update patron trước (isUpdated === true)
         if (!selectedPatron.isUpdated && !patronUpdated) {
             return false;
         }
-        
+
         // Bước 2: Phải là người Việt Nam
         if (!isVietnamese()) {
             return false;
         }
-        
+
         // Kiểm tra form hợp lệ và chưa approve
         return areRequiredFieldsFilled() && isIncomeFormValid() && !incomeApproved && !selectedPatron.isValidIncomeDocument;
     };
@@ -971,25 +974,25 @@ const AdminRegistrationPage: React.FC = () => {
     // Determine if Enroll Player button should be enabled
     const canEnrollPlayer = (): boolean => {
         if (!selectedPatron || !editedPatron) return false;
-        
+
         // Phải điền đầy đủ thông tin
         if (!areRequiredFieldsFilled()) return false;
-        
+
         // Kiểm tra isUpdated và isSigned
         const isPatronUpdated = selectedPatron.isUpdated || patronUpdated;
         const isPatronSigned = selectedPatron.isSigned || editedPatron.isSigned;
-        
+
         // Nếu chưa update -> không hiện
         if (!isPatronUpdated) {
             return false;
         }
-        
+
         // Nếu là người Việt Nam
         if (isVietnamese()) {
             // Phải approve income và đã ký
             return (incomeApproved || selectedPatron.isValidIncomeDocument) && isPatronSigned;
         }
-        
+
         // Nếu không phải người Việt Nam: chỉ cần isUpdated = true và isSigned = true
         return isPatronSigned;
     };
@@ -1669,8 +1672,8 @@ const AdminRegistrationPage: React.FC = () => {
                                                         Step 1: Update Patron Information
                                                     </Typography>
                                                     <Typography variant="body2" color="text.secondary">
-                                                        {(selectedPatron.isUpdated || patronUpdated) 
-                                                            ? '✓ Patron information has been updated' 
+                                                        {(selectedPatron.isUpdated || patronUpdated)
+                                                            ? '✓ Patron information has been updated'
                                                             : '⚠️ Please update patron information first'}
                                                     </Typography>
                                                 </Box>
@@ -1706,13 +1709,13 @@ const AdminRegistrationPage: React.FC = () => {
                                                 {(selectedPatron.isSigned || editedPatron.isSigned) ? (
                                                     <CheckCircleIcon sx={{ color: 'success.main', fontSize: 32 }} />
                                                 ) : (
-                                                    <Box sx={{ 
-                                                        width: 32, 
-                                                        height: 32, 
-                                                        borderRadius: '50%', 
-                                                        border: '2px solid #ccc', 
-                                                        display: 'flex', 
-                                                        alignItems: 'center', 
+                                                    <Box sx={{
+                                                        width: 32,
+                                                        height: 32,
+                                                        borderRadius: '50%',
+                                                        border: '2px solid #ccc',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
                                                         justifyContent: 'center',
                                                         backgroundColor: !(selectedPatron.isUpdated || patronUpdated) ? '#f0f0f0' : 'white'
                                                     }}>
@@ -1740,13 +1743,13 @@ const AdminRegistrationPage: React.FC = () => {
                                                 {selectedPatron.isHaveMembership ? (
                                                     <CheckCircleIcon sx={{ color: 'success.main', fontSize: 32 }} />
                                                 ) : (
-                                                    <Box sx={{ 
-                                                        width: 32, 
-                                                        height: 32, 
-                                                        borderRadius: '50%', 
-                                                        border: '2px solid #ccc', 
-                                                        display: 'flex', 
-                                                        alignItems: 'center', 
+                                                    <Box sx={{
+                                                        width: 32,
+                                                        height: 32,
+                                                        borderRadius: '50%',
+                                                        border: '2px solid #ccc',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
                                                         justifyContent: 'center',
                                                         backgroundColor: !canEnrollPlayer() ? '#f0f0f0' : 'white'
                                                     }}>
@@ -1797,64 +1800,6 @@ const AdminRegistrationPage: React.FC = () => {
                                         </Button>
                                     )}
                                 </Box>
-
-
-                                {/* Customer Information Confirmation Form Section */}
-                                <Card variant="outlined">
-                                    <CardContent>
-                                        <Typography variant="h6" gutterBottom sx={{ mb: 2, color: 'primary.main' }}>
-                                            Customer Information Confirmation Form *
-                                        </Typography>
-                                        <Stack spacing={2}>
-                                            {/* Alert for unsigned submitType 2 patrons */}
-                                            {selectedPatron.submitType === 2 && !selectedPatron.isSigned && (
-                                                <Alert severity="warning" sx={{ display: 'flex', justifyContent: 'center' }}>
-                                                    Patron need to confirm and sign signature before enroll player
-                                                </Alert>
-                                            )}
-
-                                            <Box display="flex" justifyContent="center" gap={2}>
-                                                <Button
-                                                    variant="outlined"
-                                                    onClick={handleLoadDocument}
-                                                    disabled={loadingDocument}
-                                                    startIcon={loadingDocument ? <CircularProgress size={16} /> : <VisibilityIcon />}
-                                                >
-                                                    Review document
-                                                </Button>
-
-                                                {/* Request Signature button - only for submitType 2 */}
-                                                {canShowSignatureRequest() && (
-                                                    <Button
-                                                        variant="contained"
-                                                        color="primary"
-                                                        onClick={handleRequestSignature}
-                                                        disabled={requestingSignature}
-                                                        startIcon={requestingSignature ? <CircularProgress size={16} /> : <SendIcon />}
-                                                    >
-                                                        Request Signature
-                                                    </Button>
-                                                )}
-                                            </Box>
-
-                                            {documentHtml && (
-                                                <Box
-                                                    sx={{
-                                                        mt: 2,
-                                                        p: 2,
-                                                        border: '1px solid #ddd',
-                                                        borderRadius: 1,
-                                                        maxHeight: '400px',
-                                                        overflow: 'auto',
-                                                        bgcolor: 'background.paper'
-                                                    }}
-                                                    dangerouslySetInnerHTML={{ __html: documentHtml }}
-                                                />
-                                            )}
-                                        </Stack>
-                                    </CardContent>
-                                </Card>
-
                                 {/* Income Section - for Vietnamese with submitType 1 or 2 */}
                                 {shouldShowIncomeUpload() && (
                                     <Card variant="outlined">
@@ -1925,7 +1870,7 @@ const AdminRegistrationPage: React.FC = () => {
                                                             </Button>
                                                         )}
                                                     </Box>
-                                                    
+
                                                     {/* Show selected files */}
                                                     {uploadedFiles.length > 0 && (
                                                         <Box sx={{ mb: 2 }}>
@@ -1970,7 +1915,7 @@ const AdminRegistrationPage: React.FC = () => {
                                                                     <Chip size="small" label={`${(file.size / 1024).toFixed(1)} KB`} sx={{ mr: 1 }} />
                                                                     <IconButton
                                                                         size="small"
-                                                                        onClick={() => handleImageClick(file.url)}
+                                                                        onClick={() => handleImageClick(Api_URL + file.url)}
                                                                         sx={{ mr: 1 }}
                                                                     >
                                                                         <VisibilityIcon />
@@ -2014,7 +1959,7 @@ const AdminRegistrationPage: React.FC = () => {
                                                 />
 
                                                 {/* Legacy Income Files (from patron data) */}
-                                                {selectedPatron.incomeFiles && selectedPatron.incomeFiles.length > 0 && (
+                                                {/* {selectedPatron.incomeFiles && selectedPatron.incomeFiles.length > 0 && (
                                                     <Box>
                                                         <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 'bold' }}>
                                                             Legacy Income Files
@@ -2042,11 +1987,69 @@ const AdminRegistrationPage: React.FC = () => {
                                                             ))}
                                                         </Stack>
                                                     </Box>
-                                                )}
+                                                )} */}
                                             </Stack>
                                         </CardContent>
                                     </Card>
                                 )}
+
+                                {/* Customer Information Confirmation Form Section */}
+                                <Card variant="outlined">
+                                    <CardContent>
+                                        <Typography variant="h6" gutterBottom sx={{ mb: 2, color: 'primary.main' }}>
+                                            Customer Information Confirmation Form *
+                                        </Typography>
+                                        <Stack spacing={2}>
+                                            {/* Alert for unsigned submitType 2 patrons */}
+                                            {selectedPatron.submitType === 2 && !selectedPatron.isSigned && (
+                                                <Alert severity="warning" sx={{ display: 'flex', justifyContent: 'center' }}>
+                                                    Patron need to confirm and sign signature before enroll player
+                                                </Alert>
+                                            )}
+
+                                            <Box display="flex" justifyContent="center" gap={2}>
+                                                <Button
+                                                    variant="outlined"
+                                                    onClick={handleLoadDocument}
+                                                    disabled={loadingDocument}
+                                                    startIcon={loadingDocument ? <CircularProgress size={16} /> : <VisibilityIcon />}
+                                                >
+                                                    Review document
+                                                </Button>
+
+                                                {/* Request Signature button - only for submitType 2 */}
+                                                {canShowSignatureRequest() && (
+                                                    <Button
+                                                        variant="contained"
+                                                        color="primary"
+                                                        onClick={handleRequestSignature}
+                                                        disabled={requestingSignature}
+                                                        startIcon={requestingSignature ? <CircularProgress size={16} /> : <SendIcon />}
+                                                    >
+                                                        Request Signature
+                                                    </Button>
+                                                )}
+                                            </Box>
+
+                                            {documentHtml && (
+                                                <Box
+                                                    sx={{
+                                                        mt: 2,
+                                                        p: 2,
+                                                        border: '1px solid #ddd',
+                                                        borderRadius: 1,
+                                                        maxHeight: '400px',
+                                                        overflow: 'auto',
+                                                        bgcolor: 'background.paper'
+                                                    }}
+                                                    dangerouslySetInnerHTML={{ __html: documentHtml }}
+                                                />
+                                            )}
+                                        </Stack>
+                                    </CardContent>
+                                </Card>
+
+
                             </Stack>
                         )}
                     </DialogContent>

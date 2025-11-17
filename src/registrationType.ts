@@ -132,3 +132,7 @@ export interface BatchesDataResponse {
     updatedBy: string;
     expireAt: string;
 }
+
+export interface RenderDocumentResponse {
+    htmlContent: string;
+}

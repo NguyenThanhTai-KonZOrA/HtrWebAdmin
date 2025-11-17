@@ -4,43 +4,51 @@ import { signalRService } from '../services/signalRService';
 import type { SignatureCompletedMessage, NewRegistrationMessage } from '../services/signalRService';
 
 export const useSignalR = (staffDeviceId?: number) => {
-    const staffDeviceIdRef = useRef<number | undefined>(staffDeviceId);
     const isInitializedRef = useRef(false);
+    const lastStaffDeviceIdRef = useRef<number | undefined>(undefined);
 
-    // Update ref when staffDeviceId changes
+    // Initialize SignalR connection when staffDeviceId becomes available
     useEffect(() => {
-        staffDeviceIdRef.current = staffDeviceId;
-        console.log('📱 useSignalR staffDeviceId updated:', staffDeviceId);
-    }, [staffDeviceId]);
+        console.log('📱 useSignalR effect - staffDeviceId:', staffDeviceId, 'initialized:', isInitializedRef.current);
 
-    // Initialize SignalR connection only once, but wait for valid staffDeviceId
-    useEffect(() => {
-        if (isInitializedRef.current) {
-            console.log('⏭️ SignalR already initialized, skipping');
-            return;
-        }
-        
         // Don't initialize if staffDeviceId is still undefined/null
         if (!staffDeviceId) {
             console.log('⏳ Waiting for staffDeviceId to be available...');
             return;
         }
+
+        // If already initialized with the same staffDeviceId, skip
+        if (isInitializedRef.current && lastStaffDeviceIdRef.current === staffDeviceId) {
+            console.log('✅ SignalR already initialized with same staffDeviceId');
+            return;
+        }
+
+        // If staffDeviceId changed, update the connection
+        if (isInitializedRef.current && lastStaffDeviceIdRef.current !== staffDeviceId) {
+            console.log('🔄 StaffDeviceId changed from', lastStaffDeviceIdRef.current, 'to', staffDeviceId);
+            lastStaffDeviceIdRef.current = staffDeviceId;
+            if (signalRService.isConnected()) {
+                signalRService.updateStaffDeviceId(staffDeviceId);
+            }
+            return;
+        }
         
-        console.log('🎯 useSignalR initializing with staffDeviceId:', staffDeviceId);
+        console.log('🎯 Initializing SignalR with staffDeviceId:', staffDeviceId);
         isInitializedRef.current = true;
+        lastStaffDeviceIdRef.current = staffDeviceId;
         
         const initializeSignalR = async () => {
             try {
-                console.log('🔧 Initial startConnection with staffDeviceId:', staffDeviceId);
                 await signalRService.startConnection(staffDeviceId);
                 // Expose debug commands in development
                 if (import.meta.env.DEV) {
                     signalRService.exposeToConsole();
                 }
             } catch (error) {
-                console.error('Failed to initialize SignalR:', error);
+                console.error('❌ Failed to initialize SignalR:', error);
                 // Reset flag to allow retry
                 isInitializedRef.current = false;
+                lastStaffDeviceIdRef.current = undefined;
             }
         };
 
@@ -51,17 +59,8 @@ export const useSignalR = (staffDeviceId?: number) => {
             console.log('🧹 useSignalR cleanup');
             signalRService.stopConnection();
             isInitializedRef.current = false;
+            lastStaffDeviceIdRef.current = undefined;
         };
-    }, [staffDeviceId]); // Trigger when staffDeviceId becomes available
-
-    // Update staffDeviceId when it changes after initialization
-    useEffect(() => {
-        if (!isInitializedRef.current || !staffDeviceId) return;
-        
-        console.log('🔄 StaffDeviceId changed after init:', staffDeviceId);
-        if (signalRService.isConnected()) {
-            signalRService.updateStaffDeviceId(staffDeviceId);
-        }
     }, [staffDeviceId]);
 
     // Hook for signature completed event
