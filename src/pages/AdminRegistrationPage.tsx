@@ -1020,6 +1020,7 @@ const AdminRegistrationPage: React.FC = () => {
                         >
                             Actions
                         </TableCell>
+                        <TableCell sx={{ minWidth: 150 }}>Registration Type</TableCell>
                         <TableCell sx={{ minWidth: 100 }}>Player ID</TableCell>
                         <TableCell sx={{ minWidth: 200 }}>Full Name</TableCell>
                         <TableCell>Gender</TableCell>
@@ -1071,6 +1072,11 @@ const AdminRegistrationPage: React.FC = () => {
                                             {patron.isHaveMembership ? <VisibilityIcon /> : <EditIcon />}
                                         </IconButton>
                                     </Tooltip>
+                                </TableCell>
+                                <TableCell>
+                                    <Chip label={patron.submitType == 1 ? 'Online' : 'Manual'}
+                                        color={patron.submitType == 1 ? 'success' : 'secondary'}
+                                        size='small' />
                                 </TableCell>
                                 <TableCell>{patron.playerId === 0 ? '-' : patron.playerId}</TableCell>
                                 <TableCell>{`${patron.firstName} ${patron.lastName}`}</TableCell>
@@ -1222,7 +1228,7 @@ const AdminRegistrationPage: React.FC = () => {
                     <DialogTitle>
                         <Box display="flex" justifyContent="space-between" alignItems="center">
                             <Typography variant="h6">
-                                Edit & Update Information
+                                Edit & Update Information {isVietnamese() ? '(Vietnamese)' : '(Foreigner)'}
                             </Typography>
                             <IconButton onClick={() => setDialogOpen(false)}>
                                 <CloseIcon />
