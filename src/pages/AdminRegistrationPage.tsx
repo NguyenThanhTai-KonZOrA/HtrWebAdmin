@@ -1572,7 +1572,7 @@ const AdminRegistrationPage: React.FC = () => {
                                 <Card variant="outlined">
                                     <CardContent>
                                         <Typography variant="h6" gutterBottom sx={{ mb: 2, color: 'primary.main' }}>
-                                            Patron Images
+                                            Personal Identification Images
                                         </Typography>
                                         {patronImages ? (
                                             <Stack direction="row" spacing={3} justifyContent="center">
@@ -1942,27 +1942,31 @@ const AdminRegistrationPage: React.FC = () => {
                                                         No income files uploaded yet. Please upload income documents.
                                                     </Alert>
                                                 )}
+                                                <Stack spacing={2}>
+                                                    <Stack direction="row" spacing={2}>
+                                                        <TextField
+                                                            label="Document Reference No"
+                                                            value={incomeDocument}
+                                                            onChange={(e) => setIncomeDocument(e.target.value)}
+                                                            disabled={incomeApproved}
+                                                            fullWidth
+                                                            size="small"
+                                                        />
 
-                                                <TextField
-                                                    label="Income Document"
-                                                    value={incomeDocument}
-                                                    onChange={(e) => setIncomeDocument(e.target.value)}
-                                                    disabled={incomeApproved}
-                                                    fullWidth
-                                                    size="small"
-                                                />
+                                                        <TextField
+                                                            label="Expire Date"
+                                                            type="date"
+                                                            value={expireDate?.split('T')[0] || ''}
+                                                            onChange={(e) => setExpireDate(e.target.value)}
+                                                            InputLabelProps={{ shrink: true }}
+                                                            inputProps={{ min: getTomorrowDate() }}
+                                                            disabled={incomeApproved}
+                                                            fullWidth
+                                                            size="small"
+                                                        />
+                                                    </Stack>
+                                                </Stack>
 
-                                                <TextField
-                                                    label="Expire Date"
-                                                    type="date"
-                                                    value={expireDate?.split('T')[0] || ''}
-                                                    onChange={(e) => setExpireDate(e.target.value)}
-                                                    InputLabelProps={{ shrink: true }}
-                                                    inputProps={{ min: getTomorrowDate() }}
-                                                    disabled={incomeApproved}
-                                                    fullWidth
-                                                    size="small"
-                                                />
 
                                                 {/* Legacy Income Files (from patron data) */}
                                                 {/* {selectedPatron.incomeFiles && selectedPatron.incomeFiles.length > 0 && (
