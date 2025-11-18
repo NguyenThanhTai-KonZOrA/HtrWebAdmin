@@ -136,3 +136,88 @@ export interface BatchesDataResponse {
 export interface RenderDocumentResponse {
     htmlContent: string;
 }
+
+export interface CreateMappingRequest {
+    StaffDeviceName: string;
+    PatronDeviceName: string;
+    Location: string;
+}
+
+export interface CreateMappingResponse {
+    id: number;
+    staffDeviceId: number;
+    staffDeviceName: string;
+    patronDeviceId: number;
+    patronDeviceName: string;
+    location: string;
+    isActive: boolean;
+    lastVerified: string;
+}
+
+export interface GetAllMappingsResponse {
+    count: number;
+    data: MappingDataResponse[];
+}
+
+export interface MappingDataResponse {
+    id: number;
+    staffDeviceId: number;
+    staffDeviceName: string;
+    staffIp: string;
+    patronDeviceId: number;
+    patronDeviceName: string;
+    patronIp: string;
+    patronIsOnline: boolean;
+    location: string;
+    notes: string;
+    isActive: boolean;
+    lastVerified: string;
+    createdAt: string;
+}
+
+export interface GetMappingByStaffDeviceResponse {
+    id: number;
+    staffDeviceId: number;
+    staffDeviceName: string;
+    patronDeviceId: number;
+    patronDeviceName: string;
+    location: string;
+    isActive: boolean;
+    lastVerified: string;
+}
+
+export interface UpdateMappingRequest {
+    Id: number;
+    NewStaffDeviceName: string;
+    NewPatronDeviceName: string;
+    Location: string;
+    Notes: string;
+}
+
+export interface UpdateMappingResponse {
+    id: number;
+    staffDeviceId: number;
+    staffDeviceName: string;
+    patronDeviceId: number;
+    patronDeviceName: string;
+    location: string;
+    notes: string;
+    isActive: boolean;
+    lastVerified: string;
+    updatedAt: string;
+}
+
+export interface StaffAndPatronDevicesResponse {
+    staffDevices: StaffDeviceResponse[];
+    patronDevices: PatronDeviceResponse[];
+}
+
+export interface StaffDeviceResponse {
+    staffDeviceId: number;
+    staffDeviceName: string;
+}
+
+export interface PatronDeviceResponse {
+    patronDeviceId: number;
+    patronDeviceName: string;
+}

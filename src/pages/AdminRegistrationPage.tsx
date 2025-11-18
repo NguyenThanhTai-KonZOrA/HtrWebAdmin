@@ -1404,7 +1404,12 @@ const AdminRegistrationPage: React.FC = () => {
                                                 <FormControl fullWidth disabled={!isEditing} error={!!validationErrors.identificationTypeId} size="small">
                                                     <InputLabel>ID Type *</InputLabel>
                                                     <Select
-                                                        value={editedPatron.identificationTypeId ?? ''}
+                                                        value={
+                                                            editedPatron.identificationTypeId !== undefined && 
+                                                            ID_TYPE_OPTIONS.some(opt => opt.value === editedPatron.identificationTypeId)
+                                                                ? editedPatron.identificationTypeId
+                                                                : ''
+                                                        }
                                                         onChange={(e) => {
                                                             const newIdType = Number(e.target.value);
                                                             setEditedPatron({ ...editedPatron, identificationTypeId: newIdType });
@@ -1460,7 +1465,12 @@ const AdminRegistrationPage: React.FC = () => {
                                                 <FormControl fullWidth disabled={!isEditing} error={!!validationErrors.identificationCountry} size="small">
                                                     <InputLabel>Nationality *</InputLabel>
                                                     <Select
-                                                        value={editedPatron.identificationCountry || ''}
+                                                        value={
+                                                            editedPatron.identificationCountry &&
+                                                            countries.some(c => String(c.countryID) === editedPatron.identificationCountry)
+                                                                ? editedPatron.identificationCountry
+                                                                : ''
+                                                        }
                                                         onChange={(e) => setEditedPatron({ ...editedPatron, identificationCountry: String(e.target.value) })}
                                                         label="Nationality *"
                                                     >
@@ -1551,7 +1561,12 @@ const AdminRegistrationPage: React.FC = () => {
                                                 <FormControl fullWidth disabled={!isEditing} error={!!validationErrors.country} size="small">
                                                     <InputLabel>Country</InputLabel>
                                                     <Select
-                                                        value={editedPatron.country || ''}
+                                                        value={
+                                                            editedPatron.country &&
+                                                            countries.some(c => String(c.countryID) === editedPatron.country)
+                                                                ? editedPatron.country
+                                                                : ''
+                                                        }
                                                         onChange={(e) => setEditedPatron({ ...editedPatron, country: String(e.target.value) })}
                                                         label="Country"
                                                     >

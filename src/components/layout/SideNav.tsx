@@ -47,6 +47,12 @@ const navItems = [
         href: '/admin-registration',
         icon: PersonAddIcon
     },
+    {
+        key: 'admin-device-mapping',
+        title: 'Device Mapping Settings',
+        href: '/admin-device-mapping',
+        icon: SettingsIcon
+    },
     // {
     //     key: 'admin-issued-processed-by-hour',
     //     title: 'Hourly Report',
@@ -103,15 +109,15 @@ export function SideNav(): React.JSX.Element {
         >
             <Stack spacing={2} sx={{ p: 1 }}>
                 <Box sx={{ display: 'inline-center', justifyContent: 'center', alignItems: 'center' }}>
-                    <Box sx={{ display: 'inline-center' , justifyContent: 'center', alignItems: 'center' }}>
+                    <Box sx={{ display: 'inline-center', justifyContent: 'center', alignItems: 'center' }}>
                         <img src="/images/TheGrandHoTram.png" alt="Logo" style={{ height: 90, width: 'auto' }} />
                     </Box>
                 </Box>
             </Stack>
 
-              <Stack spacing={1} sx={{ p: 1 }}>
+            <Stack spacing={1} sx={{ p: 1 }}>
                 <Box sx={{ display: 'inline-center', justifyContent: 'center', alignItems: 'center' }}>
-                    <Box sx={{ display: 'inline-center' , justifyContent: 'center', alignItems: 'center', color: 'white', fontSize: 20, fontWeight: 'bold' }}>
+                    <Box sx={{ display: 'inline-center', justifyContent: 'center', alignItems: 'center', color: 'white', fontSize: 20, fontWeight: 'bold' }}>
                         HTR Admin Portal
                     </Box>
                 </Box>

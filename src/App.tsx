@@ -10,6 +10,7 @@ import Login from './components/Login'
 import './App.css'
 import AdminCounterPage from './pages/AdminCounterPage'
 import AdminRegistrationPage from './pages/AdminRegistrationPage'
+import DeviceMappingSettingsPage from './pages/DeviceMappingSettingsPage'
 
 function AppContent() {
   const networkStatus = useNetworkStatus();
@@ -38,9 +39,9 @@ function AppContent() {
           </ProtectedRoute>
         } />
 
-       <Route path="/admin-counter" element={
+        <Route path="/admin-device-mapping" element={
           <ProtectedRoute>
-            <AdminCounterPage />
+            <DeviceMappingSettingsPage />
           </ProtectedRoute>
         } />
 

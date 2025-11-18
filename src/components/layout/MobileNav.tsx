@@ -48,6 +48,12 @@ const navItems = [
         href: '/admin-registration',
         icon: PersonAddIcon
     },
+    {
+        key: 'admin-device-mapping',
+        title: 'Device Mapping Settings',
+        href: '/admin-device-mapping',
+        icon: SettingsIcon
+    }
     // {
     //     key: 'admin-issued-processed-by-hour',
     //     title: 'Hourly Report',

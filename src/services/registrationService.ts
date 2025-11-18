@@ -1,5 +1,5 @@
 import axios from "axios";
-import type { CheckPatronIdentificationRequest, CheckValidIncomeRequest, CheckValidIncomeResponse, CountryResponse, CurrentStaffDeviceResponse, IncomeFileResponse, PatronImagesResponse, PatronRegisterMembershipRequest, PatronRegisterMembershipResponse, PatronResponse, RenderDocumentResponse, StaffSignatureRequest } from "../registrationType";
+import type { CheckPatronIdentificationRequest, CheckValidIncomeRequest, CheckValidIncomeResponse, CountryResponse, CreateMappingRequest, CreateMappingResponse, CurrentStaffDeviceResponse, GetAllMappingsResponse, GetMappingByStaffDeviceResponse, IncomeFileResponse, MappingDataResponse, PatronImagesResponse, PatronRegisterMembershipRequest, PatronRegisterMembershipResponse, PatronResponse, RenderDocumentResponse, StaffAndPatronDevicesResponse, StaffSignatureRequest, UpdateMappingRequest, UpdateMappingResponse } from "../registrationType";
 
 const API_BASE = (window as any)._env_?.API_BASE;
 const api = axios.create({
@@ -176,6 +176,38 @@ export const checkInformationService = {
 export const signatureService = {
     staffRequestSignature: async (request: StaffSignatureRequest): Promise<boolean> => {
         const response = await api.post<ApiEnvelope<boolean>>("/api/CustomerSign/request", request);
+        return unwrapApiEnvelope(response);
+    }
+};
+
+export const mappingDeviceService = {
+    createMapping: async (request: CreateMappingRequest): Promise<CreateMappingResponse> => {
+        const response = await api.post<ApiEnvelope<CreateMappingResponse>>("/api/DeviceMapping/create", request);
+        return unwrapApiEnvelope(response);
+    },
+
+    getAllMappings: async (): Promise<MappingDataResponse[]> => {
+        const response = await api.get<ApiEnvelope<MappingDataResponse[]>>("/api/DeviceMapping/list");
+        return unwrapApiEnvelope(response);
+    },
+
+    getMappingByStaffDevice: async (staffDeviceName: string): Promise<GetMappingByStaffDeviceResponse | null> => {
+        const response = await api.get<ApiEnvelope<GetMappingByStaffDeviceResponse | null>>(`/api/DeviceMapping/by-staff/${staffDeviceName}`);
+        return unwrapApiEnvelope(response);
+    },
+
+    updateMapping: async (request: UpdateMappingRequest): Promise<UpdateMappingResponse> => {
+        const response = await api.post<ApiEnvelope<UpdateMappingResponse>>("/api/DeviceMapping/update", request);
+        return unwrapApiEnvelope(response);
+    },
+
+    getStaffAndPatronDevices: async (): Promise<StaffAndPatronDevicesResponse> => {
+        const response = await api.get<ApiEnvelope<StaffAndPatronDevicesResponse>>("/api/DeviceMapping/staff-and-patron-devices");
+        return unwrapApiEnvelope(response);
+    },
+
+    deleteMapping: async (mappingId: number): Promise<void> => {
+        const response = await api.delete<ApiEnvelope<void>>(`/api/DeviceMapping/delete/${mappingId}`);
         return unwrapApiEnvelope(response);
     }
 };
