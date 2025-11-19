@@ -27,29 +27,22 @@ class SignalRService {
     public async startConnection(staffDeviceId?: number): Promise<void> {
         console.log('🚀 Starting SignalR connection with staffDeviceId:', staffDeviceId);
         
-        // CRITICAL: Reject if no staffDeviceId provided
-        if (!staffDeviceId) {
-            console.error('❌ Cannot start SignalR without staffDeviceId');
-            throw new Error('staffDeviceId is required to start SignalR connection');
-        }
+        // Store staffDeviceId for later use, even if undefined
+        this.staffDeviceId = staffDeviceId || null;
         
         if (this.connection?.state === signalR.HubConnectionState.Connected) {
             console.log('⚠️ SignalR already connected');
             
             // If we have a new staffDeviceId and it's different, update it
-            if (staffDeviceId !== this.staffDeviceId) {
+            if (staffDeviceId && staffDeviceId !== this.staffDeviceId) {
                 console.log('🔄 Updating existing connection staffDeviceId from', this.staffDeviceId, 'to', staffDeviceId);
                 this.staffDeviceId = staffDeviceId;
                 await this.joinStaffGroup();
             } else {
-                console.log('✅ Already connected with same staffDeviceId:', this.staffDeviceId);
+                console.log('✅ Already connected with staffDeviceId:', this.staffDeviceId);
             }
             return;
         }
-
-        // Set staffDeviceId BEFORE creating connection
-        this.staffDeviceId = staffDeviceId;
-        console.log('✅ StaffDeviceId set to:', this.staffDeviceId);
 
         try {
             // Create connection
@@ -64,7 +57,7 @@ class SignalRService {
                     }
                 })
                 .withAutomaticReconnect()
-                .configureLogging(signalR.LogLevel.Information)
+                .configureLogging(signalR.LogLevel.Warning) // Reduced logging to Warning level
                 .build();
 
             // Setup event handlers
@@ -76,13 +69,18 @@ class SignalRService {
             console.log('🔌 Connection ID:', this.connection.connectionId);
             console.log('📱 Current staffDeviceId:', this.staffDeviceId);
 
-            // Join staff group (staffDeviceId is guaranteed to exist at this point)
-            console.log('🏘️ Joining staff group with ID:', this.staffDeviceId);
-            await this.joinStaffGroup();
+            // Join staff group if staffDeviceId is available
+            if (this.staffDeviceId) {
+                console.log('🏘️ Joining staff group with ID:', this.staffDeviceId);
+                await this.joinStaffGroup();
+            } else {
+                console.log('🤔 No staffDeviceId available, skipping staff group join');
+            }
 
         } catch (error) {
-            console.error('❌ Error initializing SignalR:', error);
-            this.attemptReconnect();
+            console.warn('⚠️ SignalR connection failed, continuing without it:', error);
+            // Don't throw error - let app continue without SignalR
+            this.connection = null;
         }
     }
 
@@ -114,17 +112,22 @@ class SignalRService {
     // Auto reconnect
     private async attemptReconnect(): Promise<void> {
         if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-            console.error('❌ Max reconnect attempts reached');
+            console.warn('⚠️ Max SignalR reconnect attempts reached, giving up');
+            this.connection = null;
             return;
         }
 
         this.reconnectAttempts++;
         const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
 
-        console.log(`🔄 Reconnecting in ${delay}ms... (Attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+        console.log(`🔄 Reconnecting SignalR in ${delay}ms... (Attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
 
-        setTimeout(() => {
-            this.startConnection(this.staffDeviceId || undefined);
+        setTimeout(async () => {
+            try {
+                await this.startConnection(this.staffDeviceId || undefined);
+            } catch (error) {
+                console.warn('⚠️ Reconnect attempt failed:', error);
+            }
         }, delay);
     }
 
@@ -135,15 +138,12 @@ class SignalRService {
         console.log('🆔 StaffDeviceId:', this.staffDeviceId);
         
         if (!this.connection || !this.staffDeviceId) {
-            console.warn('⚠️ Cannot join staff group - connection or staffDeviceId not available');
-            console.warn('   Connection:', !!this.connection);
-            console.warn('   StaffDeviceId:', this.staffDeviceId);
+            console.log('ℹ️ Cannot join staff group - connection or staffDeviceId not available');
             return;
         }
 
         if (this.connection.state !== signalR.HubConnectionState.Connected) {
-            console.warn('⚠️ Cannot join staff group - not connected');
-            console.warn('   Current state:', this.connection.state);
+            console.log('ℹ️ Cannot join staff group - not connected. Current state:', this.connection.state);
             return;
         }
 

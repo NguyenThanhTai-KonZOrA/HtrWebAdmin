@@ -72,9 +72,11 @@ import { PAGE_TITLES } from '../constants/pageTitles';
 import { useAppData } from '../contexts/AppDataContext';
 import { useSignalR } from '../hooks/useSignalR';
 import Swal from 'sweetalert2';
+import { FormatUtcTime } from '../utils/formatUtcTime';
 
 
 function formatDate(dateString: string): string {
+    dateString = FormatUtcTime.formatDateTime(dateString);
     try {
         return new Date(dateString).toLocaleDateString('vi-VN', {
             day: '2-digit',
@@ -674,7 +676,13 @@ const AdminRegistrationPage: React.FC = () => {
         if (!editedPatron.address?.trim()) {
             errors.address = 'Main Address is required';
         }
-        
+
+        if (editedPatron.identificationCountry === String(VIETNAM_COUNTRY_ID)) {
+            if (!editedPatron.addressInVietNam?.trim()) {
+                errors.addressInVietNam = 'Address in Vietnam is required for Vietnamese nationals';
+            }
+        }
+
         if (!editedPatron.country?.trim()) {
             errors.country = 'Country is required';
         }
@@ -1143,7 +1151,7 @@ const AdminRegistrationPage: React.FC = () => {
                         <TableCell sx={{ minWidth: 200 }}>Address in Vietnam</TableCell>
                         <TableCell sx={{ minWidth: 120 }}>Country</TableCell>
                         <TableCell>Status</TableCell>
-                        <TableCell sx={{ minWidth: 140 }}>Submit Date</TableCell>
+                        <TableCell sx={{ minWidth: 160 }}>Submit Date</TableCell>
                     </TableRow>
                 </TableHead>
                 <TableBody>
@@ -1206,7 +1214,7 @@ const AdminRegistrationPage: React.FC = () => {
                                         size="small"
                                     />
                                 </TableCell>
-                                <TableCell>{formatDate(patron.createdTime)}</TableCell>
+                                <TableCell>{FormatUtcTime.formatDateTime(patron.createdTime)}</TableCell>
                             </TableRow>
                         );
                     })}
@@ -1755,6 +1763,8 @@ const AdminRegistrationPage: React.FC = () => {
                                                     multiline
                                                     rows={2}
                                                     size="small"
+                                                    error={!!validationErrors.addressInVietNam}
+                                                    helperText={validationErrors.addressInVietNam}
                                                 />
 
                                                 <FormControl fullWidth disabled={!isEditing} error={!!validationErrors.country} size="small">
@@ -1907,7 +1917,7 @@ const AdminRegistrationPage: React.FC = () => {
                                 {hasUnsavedChanges && (selectedPatron.isSigned || editedPatron.isSigned) && (
                                     <Alert severity="error" sx={{ mb: 2 }}>
                                         <Typography variant="h6" gutterBottom>
-                                            ⚠️ Critical Warning: Unsaved Changes After Signature
+                                            Critical Warning: Unsaved Changes After Signature
                                         </Typography>
                                         <Typography variant="body2" sx={{ mb: 1 }}>
                                             The customer has already completed their signature, but you have made changes to their information that have not been saved.
@@ -1924,7 +1934,9 @@ const AdminRegistrationPage: React.FC = () => {
                                 <Box display="flex" justifyContent="center" mt={2} mb={1}>
                                     {isEditing && !(selectedPatron.isUpdated || patronUpdated) && (
                                         <Typography variant="body1" color="error" sx={{ mr: 2, alignSelf: 'center' }}>
-                                            ⚠️ Please update patron information to proceed with the workflow.
+                                            <Alert severity="warning" sx={{ mb: 2 }}>
+                                                Please update patron information to proceed with the workflow.
+                                            </Alert>
                                         </Typography>
                                     )}
                                     {isEditing && (selectedPatron.isUpdated || patronUpdated) && (
@@ -1982,7 +1994,7 @@ const AdminRegistrationPage: React.FC = () => {
                                             {/* Warning if not updated yet */}
                                             {!(selectedPatron.isUpdated || patronUpdated) && (
                                                 <Alert severity="warning" sx={{ mb: 2 }}>
-                                                    ⚠️ Please update patron information first before approving income document.
+                                                    Please update patron information first before approving income document.
                                                 </Alert>
                                             )}
 
@@ -2270,7 +2282,7 @@ const AdminRegistrationPage: React.FC = () => {
                         )}
                     </DialogContent>
                     <DialogActions>
-                        <Button onClick={() => setEnrollDialogOpen(false)}>
+                        <Button sx={{ border: '1px solid #ccc' }} onClick={() => setEnrollDialogOpen(false)}>
                             Cancel
                         </Button>
                         <Button

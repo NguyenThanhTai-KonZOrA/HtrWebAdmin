@@ -7,33 +7,24 @@ export const useSignalR = (staffDeviceId?: number) => {
     const isInitializedRef = useRef(false);
     const lastStaffDeviceIdRef = useRef<number | undefined>(undefined);
 
-    // Initialize SignalR connection when staffDeviceId becomes available
+    // Initialize SignalR connection when component mounts or staffDeviceId changes
     useEffect(() => {
         console.log('📱 useSignalR effect - staffDeviceId:', staffDeviceId, 'initialized:', isInitializedRef.current);
 
-        // Don't initialize if staffDeviceId is still undefined/null
-        if (!staffDeviceId) {
-            console.log('⏳ Waiting for staffDeviceId to be available...');
-            return;
-        }
-
-        // If already initialized with the same staffDeviceId, skip
-        if (isInitializedRef.current && lastStaffDeviceIdRef.current === staffDeviceId) {
-            console.log('✅ SignalR already initialized with same staffDeviceId');
-            return;
-        }
-
-        // If staffDeviceId changed, update the connection
-        if (isInitializedRef.current && lastStaffDeviceIdRef.current !== staffDeviceId) {
-            console.log('🔄 StaffDeviceId changed from', lastStaffDeviceIdRef.current, 'to', staffDeviceId);
-            lastStaffDeviceIdRef.current = staffDeviceId;
-            if (signalRService.isConnected()) {
-                signalRService.updateStaffDeviceId(staffDeviceId);
+        // Always try to initialize, even without staffDeviceId (for basic connection)
+        if (isInitializedRef.current) {
+            // If staffDeviceId changed and we're already initialized, update the connection
+            if (lastStaffDeviceIdRef.current !== staffDeviceId) {
+                console.log('🔄 StaffDeviceId changed from', lastStaffDeviceIdRef.current, 'to', staffDeviceId);
+                lastStaffDeviceIdRef.current = staffDeviceId;
+                if (signalRService.isConnected() && staffDeviceId) {
+                    signalRService.updateStaffDeviceId(staffDeviceId);
+                }
             }
             return;
         }
         
-        console.log('🎯 Initializing SignalR with staffDeviceId:', staffDeviceId);
+        console.log('🎯 Initializing SignalR with staffDeviceId:', staffDeviceId || 'undefined');
         isInitializedRef.current = true;
         lastStaffDeviceIdRef.current = staffDeviceId;
         
@@ -45,10 +36,8 @@ export const useSignalR = (staffDeviceId?: number) => {
                     signalRService.exposeToConsole();
                 }
             } catch (error) {
-                console.error('❌ Failed to initialize SignalR:', error);
-                // Reset flag to allow retry
-                isInitializedRef.current = false;
-                lastStaffDeviceIdRef.current = undefined;
+                console.warn('⚠️ Failed to initialize SignalR, continuing without it:', error);
+                // Don't reset flag - let app continue without SignalR
             }
         };
 

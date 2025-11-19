@@ -4,6 +4,7 @@ import ProtectedRoute from './components/ProtectedRoute'
 import { SessionManager } from './components/SessionManager'
 import { PageTitleProvider } from './contexts/PageTitleContext'
 import { AppDataProvider } from './contexts/AppDataContext'
+import { AppLoadingProvider } from './contexts/AppLoadingContext'
 import NetworkAlert from './components/NetworkAlert'
 import { useNetworkStatus } from './hooks/useNetworkStatus'
 import Login from './components/Login'
@@ -55,9 +56,11 @@ function App() {
     <Router>
       <AppDataProvider>
         <PageTitleProvider>
-          <SessionManager>
-            <AppContent />
-          </SessionManager>
+          <AppLoadingProvider>
+            <SessionManager>
+              <AppContent />
+            </SessionManager>
+          </AppLoadingProvider>
         </PageTitleProvider>
       </AppDataProvider>
     </Router>
