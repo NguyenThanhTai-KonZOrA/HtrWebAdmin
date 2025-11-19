@@ -408,6 +408,22 @@ const AdminRegistrationPage: React.FC = () => {
         setImageViewerOpen(true);
     };
 
+    // Validate Vietnamese phone number format
+    const validateVietnamesePhoneNumber = (phoneNumber: string): boolean => {
+        if (!phoneNumber) return false;
+
+        // Remove all spaces and special characters
+        const cleanPhone = phoneNumber.replace(/\s+/g, '').replace(/[^\d+]/g, '');
+
+        // Vietnamese phone number patterns
+        const vnPhonePatterns = [
+            /^(\+84|84|0)(3[2-9]|5[6-9]|7[0|6-9]|8[1-9]|9[0-9])[0-9]{7}$/,  // Mobile numbers
+            /^(\+84|84|0)(2[0-9])[0-9]{8}$/  // Landline numbers
+        ];
+
+        return vnPhonePatterns.some(pattern => pattern.test(cleanPhone));
+    };
+
     // Check phone number exists with debounce
     const checkPhoneNumber = async (phoneNumber: string) => {
         // Clear previous timer
@@ -420,6 +436,12 @@ const AdminRegistrationPage: React.FC = () => {
 
         // Skip if empty or same as original
         if (!phoneNumber || phoneNumber === selectedPatron?.mobilePhone) {
+            return;
+        }
+
+        // Validate Vietnamese phone number format first
+        if (!validateVietnamesePhoneNumber(phoneNumber)) {
+            setPhoneNumberWarning('⚠️ Please enter a valid Vietnamese phone number!');
             return;
         }
 
@@ -514,7 +536,7 @@ const AdminRegistrationPage: React.FC = () => {
             setIdNumberWarning('');
             setCheckingPhone(false);
             setCheckingId(false);
-            
+
             // Reset unsaved changes flag
             setHasUnsavedChanges(false);
 
@@ -612,6 +634,8 @@ const AdminRegistrationPage: React.FC = () => {
         }
         if (!editedPatron.mobilePhone?.trim()) {
             errors.mobilePhone = 'Mobile Phone is required';
+        } else if (!validateVietnamesePhoneNumber(editedPatron.mobilePhone)) {
+            errors.mobilePhone = 'Please enter a valid Vietnamese phone number';
         }
         if (!editedPatron.jobTitle?.trim()) {
             errors.jobTitle = 'Occupation is required';
@@ -650,6 +674,7 @@ const AdminRegistrationPage: React.FC = () => {
         if (!editedPatron.address?.trim()) {
             errors.address = 'Main Address is required';
         }
+        
         if (!editedPatron.country?.trim()) {
             errors.country = 'Country is required';
         }
@@ -662,9 +687,15 @@ const AdminRegistrationPage: React.FC = () => {
     const handleUpdatePatron = async () => {
         if (!editedPatron) return;
 
+        // Validate Vietnamese phone number format first
+        if (editedPatron.mobilePhone && !validateVietnamesePhoneNumber(editedPatron.mobilePhone)) {
+            setDialogError('Please enter a valid Vietnamese phone number.');
+            return;
+        }
+
         // Check for warnings from duplicate checks
         if (phoneNumberWarning) {
-            setDialogError('Cannot update: Phone number already exists in the system.');
+            setDialogError('Cannot update: Phone number issue detected.');
             return;
         }
 
@@ -699,7 +730,7 @@ const AdminRegistrationPage: React.FC = () => {
             await patronService.updatePatron(updatedPatron);
             setDialogSuccess('Patron updated successfully!');
             setPatronUpdated(true);
-            
+
             // Reset unsaved changes flag
             setHasUnsavedChanges(false);
 
@@ -1013,14 +1044,14 @@ const AdminRegistrationPage: React.FC = () => {
     // Determine if Enroll Player button should be enabled
     const canEnrollPlayer = (): boolean => {
         if (!selectedPatron || !editedPatron) return false;
-        
+
         // Phải điền đầy đủ thông tin
         if (!areRequiredFieldsFilled()) return false;
-        
+
         // Kiểm tra isUpdated và isSigned
         const isPatronUpdated = selectedPatron.isUpdated || patronUpdated;
         const isPatronSigned = selectedPatron.isSigned || editedPatron.isSigned;
-        
+
         // Nếu chưa update -> không hiện
         if (!isPatronUpdated) {
             return false;
@@ -1030,13 +1061,13 @@ const AdminRegistrationPage: React.FC = () => {
         if (isPatronSigned && hasUnsavedChanges) {
             return false;
         }
-        
+
         // Nếu là người Việt Nam
         if (isVietnamese()) {
             // Phải approve income và đã ký
             return (incomeApproved || selectedPatron.isValidIncomeDocument) && isPatronSigned;
         }
-        
+
         // Nếu không phải người Việt Nam: chỉ cần isUpdated = true và isSigned = true
         return isPatronSigned;
     };
@@ -1044,18 +1075,18 @@ const AdminRegistrationPage: React.FC = () => {
     // Get warning message for Enroll Player section
     const getEnrollPlayerWarning = (): string => {
         if (!selectedPatron || !editedPatron) return '';
-        
+
         const isPatronUpdated = selectedPatron.isUpdated || patronUpdated;
         const isPatronSigned = selectedPatron.isSigned || editedPatron.isSigned;
-        
+
         if (!isPatronUpdated) {
             return '⏳ Complete all previous steps';
         }
-        
+
         if (isPatronSigned && hasUnsavedChanges) {
             return '⚠️ Customer has signed but you have unsaved changes. Please update patron information first before enrolling.';
         }
-        
+
         if (isVietnamese()) {
             if (!(incomeApproved || selectedPatron.isValidIncomeDocument)) {
                 return '⏳ Please approve income document first';
@@ -1068,11 +1099,11 @@ const AdminRegistrationPage: React.FC = () => {
                 return '⏳ Waiting for customer signature';
             }
         }
-        
+
         if (selectedPatron.isHaveMembership) {
             return '✓ Player has been enrolled';
         }
-        
+
         return '✅ Ready to enroll player!';
     };
 
@@ -1341,6 +1372,95 @@ const AdminRegistrationPage: React.FC = () => {
 
                         {selectedPatron && editedPatron && (
                             <Stack spacing={3}>
+                                {/* Patron Images Section */}
+                                <Card variant="outlined">
+                                    <CardContent>
+                                        <Typography variant="h6" gutterBottom sx={{ mb: 2, color: 'primary.main' }}>
+                                            Personal Identification Images
+                                        </Typography>
+                                        {patronImages ? (
+                                            <Stack direction="row" spacing={3} justifyContent="center">
+                                                <Box textAlign="center">
+                                                    <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 'bold' }}>
+                                                        Front Image
+                                                    </Typography>
+                                                    {patronImages.frontImage ? (
+                                                        <Avatar
+                                                            src={patronImages.frontImage.startsWith('data:') ? patronImages.frontImage : `data:image/jpeg;base64,${patronImages.frontImage}`}
+                                                            sx={{
+                                                                width: 300,
+                                                                height: 250,
+                                                                mx: 'auto',
+                                                                border: '2px solid #ddd',
+                                                                cursor: 'pointer',
+                                                                '&:hover': { opacity: 0.8 }
+                                                            }}
+                                                            variant="rounded"
+                                                            onClick={() => handleImageClick(patronImages.frontImage.startsWith('data:') ? patronImages.frontImage : `data:image/jpeg;base64,${patronImages.frontImage}`)}
+                                                        />
+                                                    ) : (
+                                                        <Box sx={{ width: 300, height: 250, mx: 'auto', border: '2px dashed #ddd', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 1 }}>
+                                                            <Typography variant="body2" color="text.secondary">No Image</Typography>
+                                                        </Box>
+                                                    )}
+                                                </Box>
+                                                <Box textAlign="center">
+                                                    <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 'bold' }}>
+                                                        Back Image
+                                                    </Typography>
+                                                    {patronImages.backImage ? (
+                                                        <Avatar
+                                                            src={patronImages.backImage.startsWith('data:') ? patronImages.backImage : `data:image/jpeg;base64,${patronImages.backImage}`}
+                                                            sx={{
+                                                                width: 300,
+                                                                height: 250,
+                                                                mx: 'auto',
+                                                                border: '2px solid #ddd',
+                                                                cursor: 'pointer',
+                                                                '&:hover': { opacity: 0.8 }
+                                                            }}
+                                                            variant="rounded"
+                                                            onClick={() => handleImageClick(patronImages.backImage.startsWith('data:') ? patronImages.backImage : `data:image/jpeg;base64,${patronImages.backImage}`)}
+                                                        />
+                                                    ) : (
+                                                        <Box sx={{ width: 300, height: 250, mx: 'auto', border: '2px dashed #ddd', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 1 }}>
+                                                            <Typography variant="body2" color="text.secondary">No Image</Typography>
+                                                        </Box>
+                                                    )}
+                                                </Box>
+                                                <Box textAlign="center">
+                                                    <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 'bold' }}>
+                                                        Selfie
+                                                    </Typography>
+                                                    {patronImages.selfieImage ? (
+                                                        <Avatar
+                                                            src={patronImages.selfieImage.startsWith('data:') ? patronImages.selfieImage : `data:image/jpeg;base64,${patronImages.selfieImage}`}
+                                                            sx={{
+                                                                width: 300,
+                                                                height: 250,
+                                                                mx: 'auto',
+                                                                border: '2px solid #ddd',
+                                                                cursor: 'pointer',
+                                                                '&:hover': { opacity: 0.8 }
+                                                            }}
+                                                            variant="rounded"
+                                                            onClick={() => handleImageClick(patronImages.selfieImage.startsWith('data:') ? patronImages.selfieImage : `data:image/jpeg;base64,${patronImages.selfieImage}`)}
+                                                        />
+                                                    ) : (
+                                                        <Box sx={{ width: 300, height: 250, mx: 'auto', border: '2px dashed #ddd', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 1 }}>
+                                                            <Typography variant="body2" color="text.secondary">No Image</Typography>
+                                                        </Box>
+                                                    )}
+                                                </Box>
+                                            </Stack>
+                                        ) : (
+                                            <Box display="flex" justifyContent="center" py={2}>
+                                                <CircularProgress size={30} />
+                                            </Box>
+                                        )}
+                                    </CardContent>
+                                </Card>
+
                                 {/* Personal Information Section */}
                                 <Card variant="outlined">
                                     <CardContent>
@@ -1662,94 +1782,6 @@ const AdminRegistrationPage: React.FC = () => {
                                     </Card>
                                 </Stack>
 
-                                {/* Patron Images Section */}
-                                <Card variant="outlined">
-                                    <CardContent>
-                                        <Typography variant="h6" gutterBottom sx={{ mb: 2, color: 'primary.main' }}>
-                                            Personal Identification Images
-                                        </Typography>
-                                        {patronImages ? (
-                                            <Stack direction="row" spacing={3} justifyContent="center">
-                                                <Box textAlign="center">
-                                                    <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 'bold' }}>
-                                                        Front Image
-                                                    </Typography>
-                                                    {patronImages.frontImage ? (
-                                                        <Avatar
-                                                            src={patronImages.frontImage.startsWith('data:') ? patronImages.frontImage : `data:image/jpeg;base64,${patronImages.frontImage}`}
-                                                            sx={{
-                                                                width: 300,
-                                                                height: 250,
-                                                                mx: 'auto',
-                                                                border: '2px solid #ddd',
-                                                                cursor: 'pointer',
-                                                                '&:hover': { opacity: 0.8 }
-                                                            }}
-                                                            variant="rounded"
-                                                            onClick={() => handleImageClick(patronImages.frontImage.startsWith('data:') ? patronImages.frontImage : `data:image/jpeg;base64,${patronImages.frontImage}`)}
-                                                        />
-                                                    ) : (
-                                                        <Box sx={{ width: 300, height: 250, mx: 'auto', border: '2px dashed #ddd', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 1 }}>
-                                                            <Typography variant="body2" color="text.secondary">No Image</Typography>
-                                                        </Box>
-                                                    )}
-                                                </Box>
-                                                <Box textAlign="center">
-                                                    <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 'bold' }}>
-                                                        Back Image
-                                                    </Typography>
-                                                    {patronImages.backImage ? (
-                                                        <Avatar
-                                                            src={patronImages.backImage.startsWith('data:') ? patronImages.backImage : `data:image/jpeg;base64,${patronImages.backImage}`}
-                                                            sx={{
-                                                                width: 300,
-                                                                height: 250,
-                                                                mx: 'auto',
-                                                                border: '2px solid #ddd',
-                                                                cursor: 'pointer',
-                                                                '&:hover': { opacity: 0.8 }
-                                                            }}
-                                                            variant="rounded"
-                                                            onClick={() => handleImageClick(patronImages.backImage.startsWith('data:') ? patronImages.backImage : `data:image/jpeg;base64,${patronImages.backImage}`)}
-                                                        />
-                                                    ) : (
-                                                        <Box sx={{ width: 300, height: 250, mx: 'auto', border: '2px dashed #ddd', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 1 }}>
-                                                            <Typography variant="body2" color="text.secondary">No Image</Typography>
-                                                        </Box>
-                                                    )}
-                                                </Box>
-                                                <Box textAlign="center">
-                                                    <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 'bold' }}>
-                                                        Selfie
-                                                    </Typography>
-                                                    {patronImages.selfieImage ? (
-                                                        <Avatar
-                                                            src={patronImages.selfieImage.startsWith('data:') ? patronImages.selfieImage : `data:image/jpeg;base64,${patronImages.selfieImage}`}
-                                                            sx={{
-                                                                width: 300,
-                                                                height: 250,
-                                                                mx: 'auto',
-                                                                border: '2px solid #ddd',
-                                                                cursor: 'pointer',
-                                                                '&:hover': { opacity: 0.8 }
-                                                            }}
-                                                            variant="rounded"
-                                                            onClick={() => handleImageClick(patronImages.selfieImage.startsWith('data:') ? patronImages.selfieImage : `data:image/jpeg;base64,${patronImages.selfieImage}`)}
-                                                        />
-                                                    ) : (
-                                                        <Box sx={{ width: 300, height: 250, mx: 'auto', border: '2px dashed #ddd', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 1 }}>
-                                                            <Typography variant="body2" color="text.secondary">No Image</Typography>
-                                                        </Box>
-                                                    )}
-                                                </Box>
-                                            </Stack>
-                                        ) : (
-                                            <Box display="flex" justifyContent="center" py={2}>
-                                                <CircularProgress size={30} />
-                                            </Box>
-                                        )}
-                                    </CardContent>
-                                </Card>
 
                                 {/* Workflow Status - Show progress */}
                                 <Card variant="outlined" sx={{ backgroundColor: '#f5f5f5' }}>
@@ -1921,7 +1953,7 @@ const AdminRegistrationPage: React.FC = () => {
                                                 })
                                             }}
                                         >
-                                            {hasUnsavedChanges && (selectedPatron.isSigned || editedPatron.isSigned) 
+                                            {hasUnsavedChanges && (selectedPatron.isSigned || editedPatron.isSigned)
                                                 ? '⚠️ URGENT: Update Required'
                                                 : selectedPatron.isUpdated ? 'Update Again' : 'Update Patron'}
                                         </Button>
