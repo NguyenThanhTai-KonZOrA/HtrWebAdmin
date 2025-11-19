@@ -129,9 +129,7 @@ export const incomeDocumentService = {
     },
 
     deleteIncomeFile: async (batchId: string, saveAs: string): Promise<void> => {
-        const response = await api.post<ApiEnvelope<void>>(`/api/RegistrationAdmin/income/delete/file`, {
-            params: { batchId, saveAs }
-        });
+        const response = await api.post<ApiEnvelope<void>>(`/api/RegistrationAdmin/income/delete/file?batchId=${batchId}&saveAs=${saveAs}`);
         return unwrapApiEnvelope(response);
     },
 };

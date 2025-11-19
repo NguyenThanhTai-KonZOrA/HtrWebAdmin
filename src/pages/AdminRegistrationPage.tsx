@@ -201,6 +201,9 @@ const AdminRegistrationPage: React.FC = () => {
     // Track if patron has been updated
     const [patronUpdated, setPatronUpdated] = useState(false);
 
+    // Track if there are unsaved changes
+    const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
     // Image viewer state
     const [imageViewerOpen, setImageViewerOpen] = useState(false);
     const [selectedImage, setSelectedImage] = useState<string>('');
@@ -332,6 +335,34 @@ const AdminRegistrationPage: React.FC = () => {
             signalR.offSignatureCompleted();
         };
     }, [signalR]);
+
+    // Track changes in editedPatron to detect unsaved changes
+    useEffect(() => {
+        if (!selectedPatron || !editedPatron) {
+            setHasUnsavedChanges(false);
+            return;
+        }
+
+        // Compare original patron with edited version to detect changes
+        const hasChanges = (
+            selectedPatron.firstName !== editedPatron.firstName ||
+            selectedPatron.lastName !== editedPatron.lastName ||
+            selectedPatron.mobilePhone !== editedPatron.mobilePhone ||
+            selectedPatron.jobTitle !== (editedPatron.jobTitle === 'Other' ? specifyJobTitle : editedPatron.jobTitle) ||
+            selectedPatron.position !== (editedPatron.position === 'Other' ? specifyPosition : editedPatron.position) ||
+            selectedPatron.identificationTypeId !== editedPatron.identificationTypeId ||
+            selectedPatron.identificationNumber !== editedPatron.identificationNumber ||
+            selectedPatron.identificationCountry !== editedPatron.identificationCountry ||
+            selectedPatron.identificationExpiration !== editedPatron.identificationExpiration ||
+            selectedPatron.gender !== editedPatron.gender ||
+            selectedPatron.birthday !== editedPatron.birthday ||
+            selectedPatron.address !== editedPatron.address ||
+            selectedPatron.addressInVietNam !== editedPatron.addressInVietNam ||
+            selectedPatron.country !== editedPatron.country
+        );
+
+        setHasUnsavedChanges(hasChanges);
+    }, [selectedPatron, editedPatron, specifyJobTitle, specifyPosition]);
 
     const loadNewRegistrations = async () => {
         try {
@@ -483,6 +514,9 @@ const AdminRegistrationPage: React.FC = () => {
             setIdNumberWarning('');
             setCheckingPhone(false);
             setCheckingId(false);
+            
+            // Reset unsaved changes flag
+            setHasUnsavedChanges(false);
 
             // Clear any pending timers
             if (phoneCheckTimerRef.current) {
@@ -665,6 +699,9 @@ const AdminRegistrationPage: React.FC = () => {
             await patronService.updatePatron(updatedPatron);
             setDialogSuccess('Patron updated successfully!');
             setPatronUpdated(true);
+            
+            // Reset unsaved changes flag
+            setHasUnsavedChanges(false);
 
             // Update the edited patron with the new values and mark as updated
             const finalPatron = {
@@ -938,6 +975,8 @@ const AdminRegistrationPage: React.FC = () => {
     // Check if signature request should be shown
     const canShowSignatureRequest = (): boolean => {
         if (!selectedPatron) return false;
+        if (!editedPatron) return false;
+        if (!selectedPatron.isValidIncomeDocument) return false;
 
         // Only submitType 2 shows signature request for both Vietnamese and foreigners
         return selectedPatron.submitType === 2;
@@ -974,27 +1013,67 @@ const AdminRegistrationPage: React.FC = () => {
     // Determine if Enroll Player button should be enabled
     const canEnrollPlayer = (): boolean => {
         if (!selectedPatron || !editedPatron) return false;
-
+        
         // Phải điền đầy đủ thông tin
         if (!areRequiredFieldsFilled()) return false;
-
+        
         // Kiểm tra isUpdated và isSigned
         const isPatronUpdated = selectedPatron.isUpdated || patronUpdated;
         const isPatronSigned = selectedPatron.isSigned || editedPatron.isSigned;
-
+        
         // Nếu chưa update -> không hiện
         if (!isPatronUpdated) {
             return false;
         }
 
+        // CRITICAL: If there are unsaved changes after signature, must update first
+        if (isPatronSigned && hasUnsavedChanges) {
+            return false;
+        }
+        
         // Nếu là người Việt Nam
         if (isVietnamese()) {
             // Phải approve income và đã ký
             return (incomeApproved || selectedPatron.isValidIncomeDocument) && isPatronSigned;
         }
-
+        
         // Nếu không phải người Việt Nam: chỉ cần isUpdated = true và isSigned = true
         return isPatronSigned;
+    };
+
+    // Get warning message for Enroll Player section
+    const getEnrollPlayerWarning = (): string => {
+        if (!selectedPatron || !editedPatron) return '';
+        
+        const isPatronUpdated = selectedPatron.isUpdated || patronUpdated;
+        const isPatronSigned = selectedPatron.isSigned || editedPatron.isSigned;
+        
+        if (!isPatronUpdated) {
+            return '⏳ Complete all previous steps';
+        }
+        
+        if (isPatronSigned && hasUnsavedChanges) {
+            return '⚠️ Customer has signed but you have unsaved changes. Please update patron information first before enrolling.';
+        }
+        
+        if (isVietnamese()) {
+            if (!(incomeApproved || selectedPatron.isValidIncomeDocument)) {
+                return '⏳ Please approve income document first';
+            }
+            if (!isPatronSigned) {
+                return '⏳ Waiting for customer signature';
+            }
+        } else {
+            if (!isPatronSigned) {
+                return '⏳ Waiting for customer signature';
+            }
+        }
+        
+        if (selectedPatron.isHaveMembership) {
+            return '✓ Player has been enrolled';
+        }
+        
+        return '✅ Ready to enroll player!';
     };
 
     // Get country name by ID
@@ -1405,8 +1484,8 @@ const AdminRegistrationPage: React.FC = () => {
                                                     <InputLabel>ID Type *</InputLabel>
                                                     <Select
                                                         value={
-                                                            editedPatron.identificationTypeId !== undefined && 
-                                                            ID_TYPE_OPTIONS.some(opt => opt.value === editedPatron.identificationTypeId)
+                                                            editedPatron.identificationTypeId !== undefined &&
+                                                                ID_TYPE_OPTIONS.some(opt => opt.value === editedPatron.identificationTypeId)
                                                                 ? editedPatron.identificationTypeId
                                                                 : ''
                                                         }
@@ -1467,7 +1546,7 @@ const AdminRegistrationPage: React.FC = () => {
                                                     <Select
                                                         value={
                                                             editedPatron.identificationCountry &&
-                                                            countries.some(c => String(c.countryID) === editedPatron.identificationCountry)
+                                                                countries.some(c => String(c.countryID) === editedPatron.identificationCountry)
                                                                 ? editedPatron.identificationCountry
                                                                 : ''
                                                         }
@@ -1563,7 +1642,7 @@ const AdminRegistrationPage: React.FC = () => {
                                                     <Select
                                                         value={
                                                             editedPatron.country &&
-                                                            countries.some(c => String(c.countryID) === editedPatron.country)
+                                                                countries.some(c => String(c.countryID) === editedPatron.country)
                                                                 ? editedPatron.country
                                                                 : ''
                                                         }
@@ -1784,17 +1863,31 @@ const AdminRegistrationPage: React.FC = () => {
                                                         Step {isVietnamese() ? '4' : '3'}: Enroll Player
                                                     </Typography>
                                                     <Typography variant="body2" color="text.secondary">
-                                                        {selectedPatron.isHaveMembership
-                                                            ? '✓ Player has been enrolled'
-                                                            : !canEnrollPlayer()
-                                                                ? '⏳ Complete all previous steps'
-                                                                : '✅ Ready to enroll player!'}
+                                                        {getEnrollPlayerWarning()}
                                                     </Typography>
                                                 </Box>
                                             </Box>
                                         </Stack>
                                     </CardContent>
                                 </Card>
+
+                                {/* Warning for unsaved changes after signature */}
+                                {hasUnsavedChanges && (selectedPatron.isSigned || editedPatron.isSigned) && (
+                                    <Alert severity="error" sx={{ mb: 2 }}>
+                                        <Typography variant="h6" gutterBottom>
+                                            ⚠️ Critical Warning: Unsaved Changes After Signature
+                                        </Typography>
+                                        <Typography variant="body2" sx={{ mb: 1 }}>
+                                            The customer has already completed their signature, but you have made changes to their information that have not been saved.
+                                        </Typography>
+                                        <Typography variant="body2" sx={{ mb: 1 }}>
+                                            <strong>You must update the patron information before proceeding with enrollment</strong> to ensure data consistency.
+                                        </Typography>
+                                        <Typography variant="body2" color="error">
+                                            The "Enroll Player" button has been disabled until you save these changes.
+                                        </Typography>
+                                    </Alert>
+                                )}
 
                                 <Box display="flex" justifyContent="center" mt={2} mb={1}>
                                     {isEditing && !(selectedPatron.isUpdated || patronUpdated) && (
@@ -1813,11 +1906,24 @@ const AdminRegistrationPage: React.FC = () => {
                                     {isEditing && (
                                         <Button
                                             variant="contained"
+                                            color={hasUnsavedChanges && (selectedPatron.isSigned || editedPatron.isSigned) ? 'error' : 'primary'}
                                             onClick={handleUpdatePatron}
                                             startIcon={<SaveIcon />}
-                                            disabled={selectedPatron.isUpdated && !patronUpdated}
+                                            disabled={selectedPatron.isUpdated && !patronUpdated && !hasUnsavedChanges}
+                                            sx={{
+                                                ...(hasUnsavedChanges && (selectedPatron.isSigned || editedPatron.isSigned) && {
+                                                    animation: 'pulse 1.5s ease-in-out infinite',
+                                                    '@keyframes pulse': {
+                                                        '0%': { boxShadow: '0 0 0 0 rgba(244, 67, 54, 0.7)' },
+                                                        '70%': { boxShadow: '0 0 0 10px rgba(244, 67, 54, 0)' },
+                                                        '100%': { boxShadow: '0 0 0 0 rgba(244, 67, 54, 0)' },
+                                                    },
+                                                })
+                                            }}
                                         >
-                                            {selectedPatron.isUpdated ? 'Update Again' : 'Update Patron'}
+                                            {hasUnsavedChanges && (selectedPatron.isSigned || editedPatron.isSigned) 
+                                                ? '⚠️ URGENT: Update Required'
+                                                : selectedPatron.isUpdated ? 'Update Again' : 'Update Patron'}
                                         </Button>
                                     )}
                                 </Box>
