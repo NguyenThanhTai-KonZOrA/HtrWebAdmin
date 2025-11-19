@@ -63,10 +63,10 @@ const Login: React.FC = () => {
                 setLoading(false);
             }
         } catch (err: any) {
-            console.error("Login error:", err);
+            console.error("Sign in error:", err);
 
             // Extract meaningful error message
-            let errorMessage = "Login failed";
+            let errorMessage = "Sign in failed";
             if (err.response?.data?.message) {
                 errorMessage = err.response.data.message;
             } else if (err.response?.data) {
@@ -158,7 +158,7 @@ const Login: React.FC = () => {
                         }
                         subheader={
                             <Typography variant="body1" color="text.secondary">
-                                Welcome back! Please Login to continue.
+                                Welcome back! Please Sign in to continue.
                             </Typography>
                         }
                         sx={{ textAlign: "center", pb: 0 }}

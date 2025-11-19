@@ -677,7 +677,7 @@ const AdminRegistrationPage: React.FC = () => {
             errors.address = 'Main Address is required';
         }
 
-        if (editedPatron.identificationCountry === String(VIETNAM_COUNTRY_ID)) {
+        if (editedPatron.identificationCountry !== String(VIETNAM_COUNTRY_ID)) {
             if (!editedPatron.addressInVietNam?.trim()) {
                 errors.addressInVietNam = 'Address in Vietnam is required for Vietnamese nationals';
             }
@@ -1014,11 +1014,36 @@ const AdminRegistrationPage: React.FC = () => {
     // Check if signature request should be shown
     const canShowSignatureRequest = (): boolean => {
         if (!selectedPatron) return false;
-        if (!editedPatron) return false;
-        if (!selectedPatron.isValidIncomeDocument) return false;
+        //if (!editedPatron) return false;
+        //if (!selectedPatron.isValidIncomeDocument) return false;
 
         // Only submitType 2 shows signature request for both Vietnamese and foreigners
         return selectedPatron.submitType === 2;
+    };
+
+    // Check if Request Signature button should be enabled
+    const canRequestSignature = (): boolean => {
+        if (!selectedPatron) return false;
+
+        // Phải update patron trước (isUpdated === true)
+        const isPatronUpdated = selectedPatron.isUpdated || patronUpdated;
+        if (!isPatronUpdated) {
+            return false;
+        }
+
+        // Nếu là người Việt Nam, phải approve income trước
+        if (isVietnamese()) {
+            if (!incomeApproved && !selectedPatron.isValidIncomeDocument) {
+                return false;
+            }
+        }
+
+        // Đã ký rồi thì không cần request nữa
+        // if (selectedPatron.isSigned || editedPatron?.isSigned) {
+        //     return false;
+        // }
+
+        return true;
     };
 
     // Check if income upload section should be shown
@@ -2198,7 +2223,7 @@ const AdminRegistrationPage: React.FC = () => {
                                                         variant="contained"
                                                         color="primary"
                                                         onClick={handleRequestSignature}
-                                                        disabled={requestingSignature}
+                                                        disabled={!canRequestSignature() || requestingSignature}
                                                         startIcon={requestingSignature ? <CircularProgress size={16} /> : <SendIcon />}
                                                     >
                                                         Request Signature
