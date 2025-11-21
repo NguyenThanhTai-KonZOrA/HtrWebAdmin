@@ -18,8 +18,6 @@ export interface NewRegistrationMessage {
 
 class SignalRService {
     private connection: signalR.HubConnection | null = null;
-    private reconnectAttempts = 0;
-    private maxReconnectAttempts = Infinity; // ♾️ NEVER GIVE UP - Always try to reconnect
     private staffDeviceId: number | null = null;
     private staffDeviceName: string | null = null;
     private isInStaffGroup = false;
@@ -67,7 +65,7 @@ class SignalRService {
             
             console.log('🔗 Connecting to:', connectionUrl);
 
-            // Create connection
+            // Create connection with automatic reconnect built-in
             this.connection = new signalR.HubConnectionBuilder()
                 .withUrl(connectionUrl, {
                     skipNegotiation: false,
@@ -78,8 +76,17 @@ class SignalRService {
                         return token || '';
                     }
                 })
-                .withAutomaticReconnect([0, 2000, 5000, 10000, 30000]) // Retry with backoff (same as JS code)
-                .configureLogging(signalR.LogLevel.Information) // Information level for better debugging
+                // ✅ SDK handles reconnection automatically - no need for manual retry!
+                .withAutomaticReconnect({
+                    nextRetryDelayInMilliseconds: (retryContext) => {
+                        // Exponential backoff: 0s, 2s, 5s, 10s, 30s, then keep 30s
+                        const delays = [0, 2000, 5000, 10000, 30000];
+                        const delay = delays[Math.min(retryContext.previousRetryCount, delays.length - 1)];
+                        console.log(`🔄 Auto-reconnect attempt ${retryContext.previousRetryCount + 1} in ${delay}ms...`);
+                        return delay;
+                    }
+                })
+                .configureLogging(signalR.LogLevel.Information)
                 .build();
 
             // Setup event handlers
@@ -116,15 +123,9 @@ class SignalRService {
             this.startListenerVerification(); // Start periodic listener verification
 
         } catch (error) {
-            console.warn('⚠️ SignalR connection failed, continuing without it:', error);
-            // Don't throw error - let app continue without SignalR
-            this.connection = null;
-            
-            // Retry after 5 seconds (same as JS code)
-            setTimeout(() => {
-                console.log('🔄 Retrying SignalR connection after 5 seconds...');
-                this.startConnection(this.staffDeviceId || undefined, this.staffDeviceName || undefined);
-            }, 5000);
+            console.warn('⚠️ SignalR initial connection failed:', error);
+            console.log('ℹ️  SDK will automatically attempt to reconnect...');
+            // SDK's withAutomaticReconnect will handle retry - no need for manual retry!
         }
     }
 
@@ -157,14 +158,15 @@ class SignalRService {
             console.log('💚 Heartbeat acknowledged by server at:', timestamp);
         });
 
-        // Handle reconnect
+        // Handle reconnecting event (triggered by SDK automatic reconnect)
         this.connection.onreconnecting((error) => {
-            console.warn('⚠️ SignalR reconnecting...', error);
+            console.warn('⚠️ SignalR reconnecting (handled by SDK)...', error);
+            this.isInStaffGroup = false; // Reset group status during reconnection
         });
 
+        // Handle successful reconnection (triggered by SDK automatic reconnect)
         this.connection.onreconnected(async (connectionId) => {
-            console.log('✅ SignalR reconnected:', connectionId);
-            this.reconnectAttempts = 0;
+            console.log('✅ SignalR reconnected successfully:', connectionId);
             this.isInStaffGroup = false; // Reset group status
             
             // ✅ STEP 1: Re-register event listeners FIRST
@@ -182,27 +184,17 @@ class SignalRService {
             }
         });
 
+        // Handle connection close - SDK will auto-retry, we just log it
         this.connection.onclose((error) => {
             console.error('❌ SignalR connection closed:', error);
-            this.attemptReconnect();
-        });
-    }
-
-    // Auto reconnect - NEVER GIVE UP
-    private async attemptReconnect(): Promise<void> {
-        this.reconnectAttempts++;
-        const delay = Math.min(1000 * Math.pow(2, Math.min(this.reconnectAttempts, 6)), 30000); // Cap at 30s max
-
-        console.log(`🔄 Reconnecting SignalR in ${delay}ms... (Attempt ${this.reconnectAttempts}) - WILL NEVER GIVE UP`);
-
-        setTimeout(async () => {
-            try {
-                await this.startConnection(this.staffDeviceId || undefined, this.staffDeviceName || undefined);
-            } catch (error) {
-                console.warn('⚠️ Reconnect attempt failed:', error);
-                // Will automatically retry again through onclose handler
+            console.log('ℹ️  SDK will automatically attempt to reconnect...');
+            this.isInStaffGroup = false; // Reset group status
+            
+            // Notify UI about connection loss if callback is set
+            if (this.onConnectionLostCallback) {
+                this.onConnectionLostCallback();
             }
-        }, delay);
+        });
     }
 
     // Register staff device on the server with aggressive retry
@@ -256,11 +248,8 @@ class SignalRService {
                     retryDelay *= 2; // Exponential backoff: 1s, 2s, 4s, 8s, 16s
                 } else {
                     console.error(`❌ Failed to register staff device after ${maxRetries} attempts`);
-                    // Schedule another retry in 10 seconds
-                    setTimeout(() => {
-                        console.log('🔄 Scheduled retry for registerStaffDevice...');
-                        this.registerStaffDevice();
-                    }, 10000);
+                    console.log('ℹ️  Health check (30s) will retry automatically if still not in group');
+                    // Health check will handle retry - no need for additional scheduled retry
                 }
             }
         }
@@ -429,12 +418,14 @@ class SignalRService {
                     await this.registerStaffDevice();
                 }
             } catch (error) {
-                console.error('❤️ Connection health check: Ping failed, attempting reconnect');
+                console.error('❤️ Connection health check: Ping failed');
                 this.isInStaffGroup = false;
                 
-                // Trigger UI callback for automatic retry when health check fails
+                // Just log - SDK will handle reconnection automatically
+                console.log('ℹ️  Connection appears to be down - SDK will auto-reconnect');
+                
+                // Trigger UI callback to update status
                 this.triggerConnectionLost();
-                this.attemptReconnect();
             }
         }, 30000); // Check every 30 seconds (increased frequency)
 
