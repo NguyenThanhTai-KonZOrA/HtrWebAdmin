@@ -6,6 +6,8 @@ import type { PatronResponse } from '../registrationType';
 export interface SignatureCompletedMessage {
     patronId: number;
     sessionId: string;
+    fullName: string;
+    mobilePhone?: string;
 }
 
 export interface NewRegistrationMessage {

@@ -290,8 +290,8 @@ const AdminRegistrationPage: React.FC = () => {
                     icon: 'success',
                     title: 'Signature Completed!',
                     html: `
-                        <p><strong>Patron ID:</strong> ${message.patronId}</p>
-                        <p><strong>Session ID:</strong> ${message.sessionId}</p>
+                        <p><strong>Full name:</strong> ${message.fullName}</p>
+                        <p><strong>Mobile Phone:</strong> ${message.mobilePhone}</p>
                         <p>The customer has successfully completed the signature.</p>
                     `,
                     confirmButtonText: 'OK',
