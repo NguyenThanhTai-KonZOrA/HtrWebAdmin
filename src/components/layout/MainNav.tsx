@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
     IconButton,
     Stack,
@@ -13,29 +13,188 @@ import {
     ListItemIcon,
     ListItemText,
     Divider,
+    Chip,
+    Button,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    CircularProgress,
+    Box,
 } from '@mui/material';
 import {
     Menu as MenuIcon,
     MenuOpen as MenuOpenIcon,
     Logout as LogoutIcon,
     ClearAll as ClearAllIcon,
+    Wifi as WifiIcon,
+    WifiOff as WifiOffIcon,
+    Refresh as RefreshIcon,
+    HourglassEmpty as LoadingIcon,
 } from '@mui/icons-material';
 import { MobileNav } from './MobileNav';
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { usePageTitle } from "../../contexts/PageTitleContext";
 import { useSidebar } from "../../contexts/SidebarContext";
+import { useAppData } from "../../contexts/AppDataContext";
+import { signalRService } from "../../services/signalRService";
 import CacheManager from '../CacheManager';
 
 export function MainNav(): React.JSX.Element {
     const [openNav, setOpenNav] = useState<boolean>(false);
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const [showCacheManager, setShowCacheManager] = useState<boolean>(false);
+    const [signalRConnected, setSignalRConnected] = useState<boolean | null>(null); // null = checking
+    const [showRetryDialog, setShowRetryDialog] = useState<boolean>(false);
+    const [retrying, setRetrying] = useState<boolean>(false);
     const open = Boolean(anchorEl);
     const navigate = useNavigate();
     const { logout } = useAuth();
     const { title } = usePageTitle();
     const { isCollapsed, toggleSidebar } = useSidebar();
+    const { staffDevice } = useAppData();
+
+    // Monitor SignalR connection status
+    useEffect(() => {
+        let checkCount = 0;
+        const maxChecks = 10; // Maximum 10 checks over 30 seconds
+        
+        const checkConnectionStatus = () => {
+            const connectionInfo = signalRService.getConnectionInfo();
+            const isConnected = signalRService.isConnected();
+            
+            console.log(`🔍 MainNav checking SignalR status (attempt ${checkCount + 1}/${maxChecks}):`, {
+                isConnected,
+                connectionState: connectionInfo.state,
+                connectionId: connectionInfo.connectionId,
+                staffDeviceId: connectionInfo.staffDeviceId,
+                baseUrl: connectionInfo.baseUrl
+            });
+            
+            checkCount++;
+            
+            // If connected, update status and stop checking so frequently
+            if (isConnected) {
+                console.log('✅ SignalR is connected, updating status');
+                setSignalRConnected(true);
+                return true; // Signal to stop initial rapid checking
+            }
+            
+            // If we've checked many times and still not connected
+            if (checkCount >= maxChecks) {
+                // Check if we have staffDevice but SignalR was never initialized
+                if (staffDevice?.staffDeviceId && 
+                    connectionInfo.staffDeviceId === null && 
+                    connectionInfo.state === 'Disconnected' && 
+                    connectionInfo.connectionId === null) {
+                    console.log('🔧 SignalR was never initialized despite having staffDevice, trying to init...');
+                    
+                    // Try to initialize SignalR with staffDevice
+                    signalRService.startConnection(staffDevice.staffDeviceId)
+                        .then(() => {
+                            console.log('✅ Late SignalR initialization successful');
+                            setTimeout(() => setSignalRConnected(signalRService.isConnected()), 2000);
+                        })
+                        .catch(error => {
+                            console.error('❌ Late SignalR initialization failed:', error);
+                            setSignalRConnected(false);
+                        });
+                    
+                    return false; // Continue checking
+                } else {
+                    console.log('❌ SignalR failed to connect after multiple attempts');
+                    setSignalRConnected(false);
+                    return true; // Stop checking
+                }
+            }
+            
+            // If SignalR service has been initialized (has connection object) but not connected
+            if (connectionInfo.state !== 'Disconnected' || connectionInfo.connectionId !== null) {
+                console.log('⏳ SignalR is initializing...');
+                // Continue checking
+                return false;
+            }
+            
+            // Still waiting for initialization
+            console.log('⌛ Waiting for SignalR initialization...');
+            return false;
+        };
+
+        // Initial rapid checks every 3 seconds for first 30 seconds
+        const rapidCheckInterval = setInterval(() => {
+            const shouldStop = checkConnectionStatus();
+            if (shouldStop) {
+                clearInterval(rapidCheckInterval);
+                // Switch to slower monitoring
+                setInterval(checkConnectionStatus, 10000);
+            }
+        }, 3000);
+
+        // First immediate check after 5 seconds
+        const initialTimer = setTimeout(() => {
+            const shouldStop = checkConnectionStatus();
+            if (shouldStop) {
+                clearInterval(rapidCheckInterval);
+                // Switch to slower monitoring
+                setInterval(checkConnectionStatus, 10000);
+            }
+        }, 5000);
+
+        return () => {
+            clearTimeout(initialTimer);
+            clearInterval(rapidCheckInterval);
+        };
+    }, []);
+
+    // Watch for staffDevice changes (indicates SignalR might be ready)
+    useEffect(() => {
+        if (staffDevice?.staffDeviceId && signalRConnected === null) {
+            console.log('🎯 StaffDevice loaded, force initializing SignalR...');
+            
+            const forceInitializeSignalR = async () => {
+                try {
+                    const connectionInfo = signalRService.getConnectionInfo();
+                    
+                    // If SignalR is not initialized at all, force initialize it
+                    if (connectionInfo.state === 'Disconnected' && 
+                        connectionInfo.connectionId === null && 
+                        connectionInfo.staffDeviceId === null) {
+                        
+                        console.log('🚀 Force initializing SignalR with staffDeviceId:', staffDevice.staffDeviceId);
+                        await signalRService.startConnection(staffDevice.staffDeviceId);
+                        
+                        // Check status after initialization
+                        setTimeout(() => {
+                            const newConnectionInfo = signalRService.getConnectionInfo();
+                            const isConnected = signalRService.isConnected();
+                            
+                            console.log('✅ Force initialization result:', {
+                                isConnected,
+                                connectionState: newConnectionInfo.state,
+                                connectionId: newConnectionInfo.connectionId,
+                                staffDeviceId: newConnectionInfo.staffDeviceId
+                            });
+                            
+                            setSignalRConnected(isConnected);
+                        }, 3000);
+                        
+                    } else {
+                        // SignalR is already initialized, just check status
+                        console.log('🔄 SignalR already initialized, checking status...');
+                        const isConnected = signalRService.isConnected();
+                        setSignalRConnected(isConnected);
+                    }
+                    
+                } catch (error) {
+                    console.error('❌ Force SignalR initialization failed:', error);
+                    setSignalRConnected(false);
+                }
+            };
+            
+            forceInitializeSignalR();
+        }
+    }, [staffDevice?.staffDeviceId, signalRConnected]);
 
     const handleClick = (event: React.MouseEvent<HTMLElement>) => {
         setAnchorEl(event.currentTarget);
@@ -54,6 +213,51 @@ export function MainNav(): React.JSX.Element {
     const handleClearCache = () => {
         setShowCacheManager(true);
         handleClose();
+    };
+
+    const handleSignalRClick = () => {
+        if (signalRConnected === false) {
+            setShowRetryDialog(true);
+        }
+    };
+
+    const handleRetryConnection = async () => {
+        setRetrying(true);
+        try {
+            // Get staffDeviceId from context first, then fallback to localStorage
+            const staffDeviceId = staffDevice?.staffDeviceId || 
+                                 parseInt(localStorage.getItem('staffDeviceId') || '0') || 
+                                 undefined;
+            
+            console.log('🔄 Retrying SignalR connection with staffDeviceId:', staffDeviceId);
+            
+            // Stop current connection if any
+            await signalRService.stopConnection();
+            
+            // Wait a moment
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // Restart connection
+            await signalRService.startConnection(staffDeviceId);
+            
+            // Force check status after a short delay
+            setTimeout(() => {
+                const isConnected = signalRService.isConnected();
+                setSignalRConnected(isConnected);
+                console.log('✅ SignalR connection retry result:', isConnected ? 'Connected' : 'Failed');
+            }, 2000);
+            
+            console.log('✅ SignalR connection retry completed');
+            setShowRetryDialog(false);
+        } catch (error) {
+            console.error('❌ SignalR connection retry failed:', error);
+        } finally {
+            setRetrying(false);
+        }
+    };
+
+    const handleRefreshPage = () => {
+        window.location.reload();
     };
 
     return (
@@ -122,6 +326,84 @@ export function MainNav(): React.JSX.Element {
                         </Stack>
 
                         <Stack sx={{ alignItems: 'center' }} direction="row" spacing={2}>
+                            {/* SignalR Status Chip */}
+                            <Tooltip 
+                                title={
+                                    signalRConnected === null 
+                                        ? "Checking SignalR connection..." 
+                                        : signalRConnected 
+                                            ? "SignalR Connected - Real-time notifications active" 
+                                            : "SignalR Disconnected - Click to retry connection"
+                                }
+                            >
+                                <Chip
+                                    icon={
+                                        signalRConnected === null 
+                                            ? <LoadingIcon /> 
+                                            : signalRConnected 
+                                                ? <WifiIcon /> 
+                                                : <WifiOffIcon />
+                                    }
+                                    label={
+                                        signalRConnected === null 
+                                            ? "Checking..." 
+                                            : signalRConnected 
+                                                ? "Real-time connected" 
+                                                : "Offline"
+                                    }
+                                    onClick={handleSignalRClick}
+                                    size="small"
+                                    sx={{
+                                        cursor: signalRConnected === false ? 'pointer' : 'default',
+                                        bgcolor: signalRConnected === null 
+                                            ? '#fff3e0' 
+                                            : signalRConnected 
+                                                ? '#e8f5e8' 
+                                                : '#ffebee',
+                                        color: signalRConnected === null 
+                                            ? '#f57c00' 
+                                            : signalRConnected 
+                                                ? '#2e7d32' 
+                                                : '#d32f2f',
+                                        border: `1px solid ${
+                                            signalRConnected === null 
+                                                ? '#ff9800' 
+                                                : signalRConnected 
+                                                    ? '#4caf50' 
+                                                    : '#f44336'
+                                        }`,
+                                        '& .MuiChip-icon': {
+                                            color: signalRConnected === null 
+                                                ? '#f57c00' 
+                                                : signalRConnected 
+                                                    ? '#2e7d32' 
+                                                    : '#d32f2f',
+                                        },
+                                        '&:hover': {
+                                            bgcolor: signalRConnected === null 
+                                                ? '#fff3e0' 
+                                                : signalRConnected 
+                                                    ? '#e8f5e8' 
+                                                    : '#ffcdd2',
+                                        },
+                                        animation: signalRConnected === null 
+                                            ? 'checking 1.5s infinite' 
+                                            : signalRConnected 
+                                                ? 'none' 
+                                                : 'pulse 2s infinite',
+                                        '@keyframes pulse': {
+                                            '0%': { opacity: 1 },
+                                            '50%': { opacity: 0.6 },
+                                            '100%': { opacity: 1 },
+                                        },
+                                        '@keyframes checking': {
+                                            '0%': { transform: 'rotate(0deg)' },
+                                            '100%': { transform: 'rotate(360deg)' },
+                                        },
+                                    }}
+                                />
+                            </Tooltip>
+
                             <Tooltip title="Profile & Settings">
                                 <Avatar
                                     onClick={handleClick}
@@ -180,6 +462,64 @@ export function MainNav(): React.JSX.Element {
                 isOpen={showCacheManager}
                 onClose={() => setShowCacheManager(false)}
             />
+
+            {/* SignalR Retry Dialog */}
+            <Dialog
+                open={showRetryDialog}
+                onClose={() => setShowRetryDialog(false)}
+                maxWidth="sm"
+                fullWidth
+            >
+                <DialogTitle>
+                    <Box display="flex" alignItems="center" gap={1}>
+                        <WifiOffIcon color="error" />
+                        SignalR Connection Issue
+                    </Box>
+                </DialogTitle>
+                <DialogContent>
+                    <Typography variant="body1" paragraph>
+                        The real-time notification connection has been lost. This means you may not receive 
+                        live updates for patron registrations and signatures.
+                    </Typography>
+                    
+                    <Typography variant="body2" color="text.secondary" paragraph>
+                        Debug Information:
+                    </Typography>
+                    
+                    <Box sx={{ bgcolor: '#f5f5f5', p: 2, borderRadius: 1, mb: 2 }}>
+                        <Typography variant="caption" component="pre" sx={{ fontSize: '0.75rem' }}>
+                            {JSON.stringify(signalRService.getConnectionInfo(), null, 2)}
+                        </Typography>
+                    </Box>
+                    
+                    <Typography variant="body2" color="text.secondary">
+                        You can try to reconnect or refresh the page to restore the connection.
+                    </Typography>
+                </DialogContent>
+                <DialogActions>
+                    <Button
+                        onClick={() => setShowRetryDialog(false)}
+                        color="inherit"
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        onClick={handleRefreshPage}
+                        variant="outlined"
+                        startIcon={<RefreshIcon />}
+                    >
+                        Refresh Page
+                    </Button>
+                    <Button
+                        onClick={handleRetryConnection}
+                        variant="contained"
+                        disabled={retrying}
+                        startIcon={retrying ? <CircularProgress size={16} /> : <WifiIcon />}
+                    >
+                        {retrying ? 'Reconnecting...' : 'Retry Connection'}
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </>
     );
 }
