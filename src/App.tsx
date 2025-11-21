@@ -9,7 +9,6 @@ import NetworkAlert from './components/NetworkAlert'
 import { useNetworkStatus } from './hooks/useNetworkStatus'
 import Login from './components/Login'
 import './App.css'
-import AdminCounterPage from './pages/AdminCounterPage'
 import AdminRegistrationPage from './pages/AdminRegistrationPage'
 import DeviceMappingSettingsPage from './pages/DeviceMappingSettingsPage'
 

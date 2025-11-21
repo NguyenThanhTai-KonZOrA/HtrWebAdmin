@@ -393,7 +393,7 @@ export function MainNav(): React.JSX.Element {
                                             ? "Checking..."
                                             : signalRConnected
                                                 ? "Real-time connected"
-                                                : "Offline"
+                                                : "SignalR is Offline"
                                     }
                                     onClick={handleSignalRClick}
                                     size="small"
