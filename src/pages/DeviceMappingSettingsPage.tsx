@@ -330,26 +330,26 @@ const DeviceMappingSettingsPage: React.FC = () => {
                                     <TableHead>
                                         <TableRow>
                                             <TableCell>ID</TableCell>
-                                            <TableCell>Staff Device</TableCell>
+                                            <TableCell sx={{ minWidth: 120 }}>Staff Device</TableCell>
                                             {/* <TableCell>Staff IP</TableCell> */}
-                                            <TableCell>Staff Online</TableCell>
-                                            <TableCell>Patron Device</TableCell>
+                                            <TableCell sx={{ minWidth: 120 }}>Staff Online</TableCell>
+                                            <TableCell sx={{ minWidth: 120 }}>Patron Device</TableCell>
                                             {/* <TableCell>Patron IP</TableCell> */}
-                                            <TableCell>Patron Online</TableCell>
-                                            <TableCell>Location</TableCell>
-                                            <TableCell>Notes</TableCell>
-                                            <TableCell>Last Verified</TableCell>
+                                            <TableCell sx={{ minWidth: 120 }}>Patron Online</TableCell>
+                                            <TableCell sx={{ minWidth: 120 }}>Location</TableCell>
+                                            <TableCell sx={{ minWidth: 120 }}>Notes</TableCell>
+                                            <TableCell sx={{ minWidth: 120 }}>Last Verified</TableCell>
                                             <TableCell>Status</TableCell>
-                                            <TableCell>Created At</TableCell>
+                                            <TableCell sx={{ minWidth: 120 }}>Created At</TableCell>
                                             <TableCell align="center">Actions</TableCell>
                                         </TableRow>
                                     </TableHead>
                                     <TableBody>
                                         {mappings.map((mapping) => (
                                             <TableRow key={mapping.id} hover>
-                                                {/* <TableCell>{mapping.id}</TableCell> */}
+                                                <TableCell>{mapping.id}</TableCell>
                                                 <TableCell>{mapping.staffDeviceName}</TableCell>
-                                                <TableCell>{mapping.staffIp || '-'}</TableCell>
+                                                {/* <TableCell>{mapping.staffIp || '-'}</TableCell> */}
                                                 <TableCell>
                                                     <Chip
                                                         label={mapping.staffDeviceIsOnline ? 'Online' : 'Offline'}

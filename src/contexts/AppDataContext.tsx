@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { countryService, staffDeviceService } from '../services/registrationService';
 import type { CountryResponse, CurrentStaffDeviceResponse } from '../registrationType';
+import { signalRService } from '../services/signalRService';
 
 interface AppDataContextType {
     countries: CountryResponse[];
@@ -36,7 +37,25 @@ export const AppDataProvider: React.FC<{ children: ReactNode }> = ({ children })
             const data = await staffDeviceService.getCurrentStaffDevice();
             console.log('✅ [AppDataContext] Staff device loaded:', data);
             console.log('📱 [AppDataContext] staffDeviceId:', data?.staffDeviceId);
+            console.log('💻 [AppDataContext] deviceName:', data?.deviceName);
             setStaffDevice(data);
+            
+            // ✅ Initialize SignalR IMMEDIATELY after getting staffDevice from API
+            if (data?.staffDeviceId && data?.deviceName) {
+                console.log('🚀 [AppDataContext] Initializing SignalR with API data...');
+                console.log('   staffDeviceId:', data.staffDeviceId);
+                console.log('   deviceName:', data.deviceName);
+                
+                try {
+                    await signalRService.startConnection(data.staffDeviceId, data.deviceName);
+                    console.log('✅ [AppDataContext] SignalR initialized successfully');
+                } catch (signalRError) {
+                    console.error('❌ [AppDataContext] SignalR initialization failed:', signalRError);
+                    // Don't throw - SignalR failure shouldn't block app loading
+                }
+            } else {
+                console.warn('⚠️ [AppDataContext] No staffDeviceId or deviceName - skipping SignalR initialization');
+            }
         } catch (err) {
             console.error('❌ [AppDataContext] Error fetching staff device:', err);
             setError('Failed to load staff device');
@@ -51,7 +70,7 @@ export const AppDataProvider: React.FC<{ children: ReactNode }> = ({ children })
             
             await Promise.all([
                 fetchCountries(),
-                fetchStaffDevice()
+                fetchStaffDevice() // This now also initializes SignalR
             ]);
             
             setLoading(false);

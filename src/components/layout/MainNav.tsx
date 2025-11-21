@@ -46,7 +46,9 @@ export function MainNav(): React.JSX.Element {
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const [showCacheManager, setShowCacheManager] = useState<boolean>(false);
     const [signalRConnected, setSignalRConnected] = useState<boolean | null>(null); // null = checking
+    const [isInStaffGroup, setIsInStaffGroup] = useState<boolean | null>(null); // null = checking
     const [showRetryDialog, setShowRetryDialog] = useState<boolean>(false);
+    const [showGroupRetryDialog, setShowGroupRetryDialog] = useState<boolean>(false);
     const [retrying, setRetrying] = useState<boolean>(false);
     const open = Boolean(anchorEl);
     const navigate = useNavigate();
@@ -78,6 +80,7 @@ export function MainNav(): React.JSX.Element {
         const updateConnectionStatus = () => {
             const isConnected = signalRService.isConnected();
             const connectionInfo = signalRService.getConnectionInfo();
+            const inGroup = connectionInfo.isInStaffGroup;
             
             console.log('🔄 Updating SignalR status:', {
                 isConnected,
@@ -85,13 +88,19 @@ export function MainNav(): React.JSX.Element {
                 connectionState: connectionInfo.state,
                 connectionId: connectionInfo.connectionId,
                 staffDeviceId: connectionInfo.staffDeviceId,
-                isInStaffGroup: connectionInfo.isInStaffGroup
+                isInStaffGroup: inGroup
             });
 
-            // Update state if different
+            // Update connection state if different
             if (isConnected !== signalRConnected) {
                 console.log(`🔔 SignalR status changed: ${signalRConnected} → ${isConnected}`);
                 setSignalRConnected(isConnected);
+            }
+
+            // Update group status if different
+            if (inGroup !== isInStaffGroup) {
+                console.log(`🔔 Staff group status changed: ${isInStaffGroup} → ${inGroup}`);
+                setIsInStaffGroup(inGroup);
             }
         };
 
@@ -137,6 +146,41 @@ export function MainNav(): React.JSX.Element {
     const handleSignalRClick = () => {
         if (signalRConnected === false) {
             setShowRetryDialog(true);
+        }
+    };
+
+    const handleGroupStatusClick = () => {
+        if (isInStaffGroup === false) {
+            setShowGroupRetryDialog(true);
+        }
+    };
+
+    const handleReregisterDevice = async () => {
+        if (retrying) {
+            console.log('🔄 Already retrying, skipping...');
+            return;
+        }
+
+        setRetrying(true);
+        try {
+            console.log('🔄 Manually re-registering staff device...');
+            
+            // Force re-register the device
+            await signalRService.registerStaffDevice();
+
+            // Check status after a short delay
+            setTimeout(() => {
+                const connectionInfo = signalRService.getConnectionInfo();
+                setIsInStaffGroup(connectionInfo.isInStaffGroup);
+                console.log('✅ Device re-registration result - isInStaffGroup:', connectionInfo.isInStaffGroup);
+            }, 2000);
+
+            console.log('✅ Device re-registration completed');
+            setShowGroupRetryDialog(false);
+        } catch (error) {
+            console.error('❌ Device re-registration failed:', error);
+        } finally {
+            setRetrying(false);
         }
     };
 
@@ -268,8 +312,8 @@ export function MainNav(): React.JSX.Element {
                             </Typography>
                         </Stack>
 
-                        <Stack sx={{ alignItems: 'center' }} direction="row" spacing={2}>
-                            {/* SignalR Status Chip */}
+                        <Stack sx={{ alignItems: 'center' }} direction="row" spacing={1}>
+                            {/* SignalR Connection Status Chip */}
                             <Tooltip
                                 title={
                                     signalRConnected === null
@@ -291,8 +335,8 @@ export function MainNav(): React.JSX.Element {
                                         signalRConnected === null
                                             ? "Checking..."
                                             : signalRConnected
-                                                ? "Real-time connected"
-                                                : "SignalR is Offline"
+                                                ? "Connected"
+                                                : "Offline"
                                     }
                                     onClick={handleSignalRClick}
                                     size="small"
@@ -331,6 +375,83 @@ export function MainNav(): React.JSX.Element {
                                         animation: signalRConnected === null
                                             ? 'checking 1.5s infinite'
                                             : signalRConnected
+                                                ? 'none'
+                                                : 'pulse 2s infinite',
+                                        '@keyframes pulse': {
+                                            '0%': { opacity: 1 },
+                                            '50%': { opacity: 0.6 },
+                                            '100%': { opacity: 1 },
+                                        },
+                                        '@keyframes checking': {
+                                            '0%': { transform: 'rotate(0deg)' },
+                                            '100%': { transform: 'rotate(360deg)' },
+                                        },
+                                    }}
+                                />
+                            </Tooltip>
+
+                            {/* Staff Group Registration Status Chip */}
+                            <Tooltip
+                                title={
+                                    isInStaffGroup === null
+                                        ? "Checking group registration..."
+                                        : isInStaffGroup
+                                            ? "Device registered in staff group - Ready to receive messages"
+                                            : "Device NOT in staff group - Click to re-register"
+                                }
+                            >
+                                <Chip
+                                    icon={
+                                        isInStaffGroup === null
+                                            ? <LoadingIcon />
+                                            : isInStaffGroup
+                                                ? <WifiIcon />
+                                                : <WifiOffIcon />
+                                    }
+                                    label={
+                                        isInStaffGroup === null
+                                            ? "Checking..."
+                                            : isInStaffGroup
+                                                ? "In Group"
+                                                : "Not in Group"
+                                    }
+                                    onClick={handleGroupStatusClick}
+                                    size="small"
+                                    sx={{
+                                        cursor: isInStaffGroup === false ? 'pointer' : 'default',
+                                        bgcolor: isInStaffGroup === null
+                                            ? '#fff3e0'
+                                            : isInStaffGroup
+                                                ? '#e8f5e8'
+                                                : '#ffebee',
+                                        color: isInStaffGroup === null
+                                            ? '#f57c00'
+                                            : isInStaffGroup
+                                                ? '#2e7d32'
+                                                : '#d32f2f',
+                                        border: `1px solid ${isInStaffGroup === null
+                                            ? '#ff9800'
+                                            : isInStaffGroup
+                                                ? '#4caf50'
+                                                : '#f44336'
+                                            }`,
+                                        '& .MuiChip-icon': {
+                                            color: isInStaffGroup === null
+                                                ? '#f57c00'
+                                                : isInStaffGroup
+                                                    ? '#2e7d32'
+                                                    : '#d32f2f',
+                                        },
+                                        '&:hover': {
+                                            bgcolor: isInStaffGroup === null
+                                                ? '#fff3e0'
+                                                : isInStaffGroup
+                                                    ? '#e8f5e8'
+                                                    : '#ffcdd2',
+                                        },
+                                        animation: isInStaffGroup === null
+                                            ? 'checking 1.5s infinite'
+                                            : isInStaffGroup
                                                 ? 'none'
                                                 : 'pulse 2s infinite',
                                         '@keyframes pulse': {
@@ -405,7 +526,7 @@ export function MainNav(): React.JSX.Element {
                 onClose={() => setShowCacheManager(false)}
             />
 
-            {/* SignalR Retry Dialog */}
+            {/* SignalR Connection Retry Dialog */}
             <Dialog
                 open={showRetryDialog}
                 onClose={() => setShowRetryDialog(false)}
@@ -460,6 +581,65 @@ export function MainNav(): React.JSX.Element {
                         startIcon={retrying ? <CircularProgress size={16} /> : <WifiIcon />}
                     >
                         {retrying ? 'Reconnecting...' : 'Retry Connection'}
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Staff Group Registration Retry Dialog */}
+            <Dialog
+                open={showGroupRetryDialog}
+                onClose={() => setShowGroupRetryDialog(false)}
+                maxWidth="sm"
+                fullWidth
+            >
+                <DialogTitle>
+                    <Box display="flex" alignItems="center" gap={1}>
+                        <WifiOffIcon color="error" />
+                        Device Not in Staff Group
+                    </Box>
+                </DialogTitle>
+                <DialogContent>
+                    <Typography variant="body1" paragraph>
+                        Your device is not currently registered in the staff group. This means you will NOT
+                        receive SignatureCompleted messages from patrons.
+                    </Typography>
+
+                    <Typography variant="body2" color="text.secondary" paragraph>
+                        Current Status:
+                    </Typography>
+
+                    <Box sx={{ bgcolor: '#f5f5f5', p: 2, borderRadius: 1, mb: 2 }}>
+                        <Typography variant="caption" component="pre" sx={{ fontSize: '0.75rem' }}>
+                            {JSON.stringify(signalRService.getConnectionInfo(), null, 2)}
+                        </Typography>
+                    </Box>
+
+                    <Typography variant="body2" color="text.secondary">
+                        Click "Re-register Device" to manually register this device in the staff group again.
+                    </Typography>
+                </DialogContent>
+                <DialogActions>
+                    <Button
+                        variant="outlined"
+                        onClick={() => setShowGroupRetryDialog(false)}
+                        color="inherit"
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        onClick={handleRefreshPage}
+                        variant="outlined"
+                        startIcon={<RefreshIcon />}
+                    >
+                        Refresh Page
+                    </Button>
+                    <Button
+                        onClick={handleReregisterDevice}
+                        variant="contained"
+                        disabled={retrying}
+                        startIcon={retrying ? <CircularProgress size={16} /> : <WifiIcon />}
+                    >
+                        {retrying ? 'Re-registering...' : 'Re-register Device'}
                     </Button>
                 </DialogActions>
             </Dialog>

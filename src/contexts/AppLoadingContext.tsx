@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
-import { signalRService } from '../services/signalRService';
 import { Box, CircularProgress, Typography, LinearProgress } from '@mui/material';
 
 interface AppLoadingContextType {
@@ -41,42 +40,11 @@ export const AppLoadingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
                 await new Promise(resolve => setTimeout(resolve, 500));
 
                 setLoadingStage('Initializing services...');
-                setProgress(50);
+                setProgress(70);
 
-                // Check if we have staffDeviceId from localStorage or any other source
-                let retryCount = 0;
-                const maxRetries = 3;
-                
-                while (retryCount < maxRetries) {
-                    try {
-                        setLoadingStage(`Connecting to notification service... (${retryCount + 1}/${maxRetries})`);
-                        setProgress(60 + (retryCount * 10));
-
-                        // Try to get staffDeviceId from localStorage first
-                        const savedStaffDeviceId = localStorage.getItem('staffDeviceId');
-                        const savedDeviceName = localStorage.getItem('staffDeviceHostName') || 'Unknown';
-                        
-                        if (savedStaffDeviceId) {
-                            await signalRService.startConnection(parseInt(savedStaffDeviceId), savedDeviceName);
-                        } else {
-                            // If no saved staffDeviceId, try with a default or skip SignalR for now
-                            console.log('🤔 No staffDeviceId found, skipping SignalR initialization for now');
-                        }
-                        
-                        break; // Success, exit retry loop
-                    } catch (error) {
-                        retryCount++;
-                        console.warn(`⚠️ SignalR connection attempt ${retryCount} failed:`, error);
-                        
-                        if (retryCount >= maxRetries) {
-                            console.log('🚫 SignalR connection failed after max retries, continuing without it');
-                            // Don't throw error, just continue without SignalR
-                        } else {
-                            // Wait before retry
-                            await new Promise(resolve => setTimeout(resolve, 1000));
-                        }
-                    }
-                }
+                // ℹ️ NOTE: SignalR is now initialized in AppDataContext after fetching staffDevice
+                // This ensures we always have the correct staffDeviceId from API, not localStorage
+                console.log('ℹ️ [AppLoadingContext] SignalR initialization delegated to AppDataContext');
 
                 setLoadingStage('Finalizing...');
                 setProgress(90);

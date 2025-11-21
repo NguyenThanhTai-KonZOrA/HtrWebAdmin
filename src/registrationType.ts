@@ -99,6 +99,7 @@ export interface CountryResponse {
 export interface CurrentStaffDeviceResponse {
     id: number;
     staffDeviceId: number;
+    deviceName: string;
     hostName: string;
     location: string;
     assignedStaffId: string;
