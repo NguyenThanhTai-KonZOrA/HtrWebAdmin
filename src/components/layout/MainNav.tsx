@@ -62,6 +62,20 @@ export function MainNav(): React.JSX.Element {
         let rapidCheckInterval: number | null = null;
         let slowMonitoringInterval: number | null = null;
 
+        // Register callback for automatic retry when SignalR detects connection lost
+        const handleSignalRConnectionLost = () => {
+            console.log('📞 SignalR service detected connection lost - triggering automatic retry');
+            if (signalRConnected !== false) {
+                setSignalRConnected(false);
+            }
+            // Auto retry after a short delay to avoid spam
+            setTimeout(() => {
+                handleRetryConnection();
+            }, 2000);
+        };
+
+        signalRService.onConnectionLost(handleSignalRConnectionLost);
+
         const checkConnectionStatus = () => {
             const connectionInfo = signalRService.getConnectionInfo();
             const isConnected = signalRService.isConnected();
@@ -186,6 +200,8 @@ export function MainNav(): React.JSX.Element {
             if (slowMonitoringInterval) {
                 clearInterval(slowMonitoringInterval);
             }
+            // Remove connection lost callback
+            signalRService.offConnectionLost();
         };
     }, [staffDevice?.staffDeviceId, signalRConnected]);
 
@@ -266,6 +282,11 @@ export function MainNav(): React.JSX.Element {
     };
 
     const handleRetryConnection = async () => {
+        if (retrying) {
+            console.log('🔄 Already retrying connection, skipping...');
+            return;
+        }
+        
         setRetrying(true);
         try {
             // Get staffDeviceId from context first, then fallback to localStorage
@@ -274,6 +295,9 @@ export function MainNav(): React.JSX.Element {
                 undefined;
 
             console.log('🔄 Retrying SignalR connection with staffDeviceId:', staffDeviceId);
+
+            // Temporarily remove callback to prevent loop during retry
+            signalRService.offConnectionLost();
 
             // Stop current connection if any
             await signalRService.stopConnection();
@@ -289,6 +313,19 @@ export function MainNav(): React.JSX.Element {
                 const isConnected = signalRService.isConnected();
                 setSignalRConnected(isConnected);
                 console.log('✅ SignalR connection retry result:', isConnected ? 'Connected' : 'Failed');
+                
+                // Re-register callback after retry
+                const handleSignalRConnectionLost = () => {
+                    console.log('📞 SignalR service detected connection lost - triggering automatic retry');
+                    if (signalRConnected !== false) {
+                        setSignalRConnected(false);
+                    }
+                    // Auto retry after a short delay to avoid spam
+                    setTimeout(() => {
+                        handleRetryConnection();
+                    }, 2000);
+                };
+                signalRService.onConnectionLost(handleSignalRConnectionLost);
             }, 2000);
 
             console.log('✅ SignalR connection retry completed');

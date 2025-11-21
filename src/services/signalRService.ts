@@ -26,6 +26,9 @@ class SignalRService {
 
     private heartbeatInterval: number | null = null;
     private connectionHealthCheckInterval: number | null = null;
+    
+    // Callback for when connection fails and needs retry from UI
+    private onConnectionLostCallback: (() => void) | null = null;
 
     // Set URL SignalR Hub for patron signature
     private hubUrl = (window as any)._env_?.API_BASE + '/patronSignatureHub';
@@ -222,7 +225,13 @@ class SignalRService {
                 // Send ping to server to keep connection alive
                 this.connection?.invoke('Ping').catch(error => {
                     console.warn('⚠️ Heartbeat ping failed:', error);
+                    // Trigger UI callback for automatic retry when heartbeat fails
+                    this.triggerConnectionLost();
                 });
+            } else {
+                console.warn('⚠️ Heartbeat: Connection lost');
+                // Trigger UI callback for automatic retry when connection lost
+                this.triggerConnectionLost();
             }
         }, 30000); // Send ping every 30 seconds
 
@@ -238,6 +247,9 @@ class SignalRService {
         this.connectionHealthCheckInterval = setInterval(async () => {
             if (!this.isConnected()) {
                 console.warn('⚠️ Connection health check: Not connected');
+                
+                // Trigger UI callback for automatic retry
+                this.triggerConnectionLost();
                 return;
             }
 
@@ -254,6 +266,9 @@ class SignalRService {
             } catch (error) {
                 console.error('❤️ Connection health check: Failed, attempting reconnect');
                 this.isInStaffGroup = false;
+                
+                // Trigger UI callback for automatic retry when health check fails
+                this.triggerConnectionLost();
                 this.attemptReconnect();
             }
         }, 60000); // Check every 60 seconds
@@ -294,6 +309,30 @@ class SignalRService {
         }
         // Add new callback
         listeners.push(callback);
+    }
+
+    // Register callback for when connection is lost and needs UI retry
+    public onConnectionLost(callback: () => void): void {
+        this.onConnectionLostCallback = callback;
+        console.log('📞 Connection lost callback registered');
+    }
+
+    // Remove connection lost callback
+    public offConnectionLost(): void {
+        this.onConnectionLostCallback = null;
+        console.log('📞 Connection lost callback removed');
+    }
+
+    // Trigger connection lost callback
+    private triggerConnectionLost(): void {
+        if (this.onConnectionLostCallback) {
+            console.log('📞 Triggering connection lost callback to UI');
+            try {
+                this.onConnectionLostCallback();
+            } catch (error) {
+                console.error('❌ Error in connection lost callback:', error);
+            }
+        }
     }
 
     // Listen to signature completed event
