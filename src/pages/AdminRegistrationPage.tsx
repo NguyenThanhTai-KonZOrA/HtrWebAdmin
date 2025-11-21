@@ -290,9 +290,9 @@ const AdminRegistrationPage: React.FC = () => {
                     icon: 'success',
                     title: 'Signature Completed!',
                     html: `
-                        <p><strong>Full name:</strong> ${message.fullName}</p>
+                        <p><strong>Full Name:</strong> ${message.fullName}</p>
                         <p><strong>Mobile Phone:</strong> ${message.mobilePhone}</p>
-                        <p>The customer has successfully completed the signature.</p>
+                        <p>The customer has successfully <strong>completed</strong> the signature.</p>
                     `,
                     confirmButtonText: 'OK',
                     confirmButtonColor: '#28a745',
@@ -949,7 +949,6 @@ const AdminRegistrationPage: React.FC = () => {
             const request: StaffSignatureRequest = {
                 PatronId: selectedPatron.pid
             };
-            debugger
             const success = await signatureService.staffRequestSignature(request);
 
             if (success) {

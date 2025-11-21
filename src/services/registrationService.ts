@@ -1,5 +1,5 @@
 import axios from "axios";
-import type { CheckPatronIdentificationRequest, CheckValidIncomeRequest, CheckValidIncomeResponse, CountryResponse, CreateMappingRequest, CreateMappingResponse, CurrentStaffDeviceResponse, GetAllMappingsResponse, GetMappingByStaffDeviceResponse, IncomeFileResponse, MappingDataResponse, PatronImagesResponse, PatronRegisterMembershipRequest, PatronRegisterMembershipResponse, PatronResponse, RenderDocumentResponse, StaffAndPatronDevicesResponse, StaffSignatureRequest, UpdateMappingRequest, UpdateMappingResponse } from "../registrationType";
+import type { CheckPatronIdentificationRequest, CheckValidIncomeRequest, CheckValidIncomeResponse, CountryResponse, CreateMappingRequest, CreateMappingResponse, CurrentStaffDeviceResponse, GetAllMappingsResponse, GetMappingByStaffDeviceResponse, IncomeFileResponse, MappingDataResponse, OnlineStaffDevicesResponse, PatronImagesResponse, PatronRegisterMembershipRequest, PatronRegisterMembershipResponse, PatronResponse, RenderDocumentResponse, StaffAndPatronDevicesResponse, StaffSignatureRequest, UpdateMappingRequest, UpdateMappingResponse } from "../registrationType";
 
 const API_BASE = (window as any)._env_?.API_BASE;
 const api = axios.create({
@@ -144,6 +144,11 @@ export const countryService = {
 export const staffDeviceService = {
     getCurrentStaffDevice: async (): Promise<CurrentStaffDeviceResponse> => {
         const response = await api.get<ApiEnvelope<CurrentStaffDeviceResponse>>("/api/PatronDevice/current-staff-device");
+        return unwrapApiEnvelope(response);
+    },
+
+    getOnlineStaffDevices: async (): Promise<OnlineStaffDevicesResponse[]> => {
+        const response = await api.get<ApiEnvelope<OnlineStaffDevicesResponse[]>>("/api/PatronDevice/online-staff-devices");
         return unwrapApiEnvelope(response);
     }
 };

@@ -102,6 +102,7 @@ export interface CurrentStaffDeviceResponse {
     hostName: string;
     location: string;
     assignedStaffId: string;
+    connectionId: string;
 }
 
 export interface CheckPatronIdentificationRequest {
@@ -164,6 +165,7 @@ export interface MappingDataResponse {
     staffDeviceId: number;
     staffDeviceName: string;
     staffIp: string;
+    staffDeviceIsOnline: boolean;
     patronDeviceId: number;
     patronDeviceName: string;
     patronIp: string;
@@ -220,4 +222,14 @@ export interface StaffDeviceResponse {
 export interface PatronDeviceResponse {
     patronDeviceId: number;
     patronDeviceName: string;
+}
+
+export interface OnlineStaffDevicesResponse {
+    id: number;
+    deviceName: string;
+    connectionId: string;
+    isOnline: boolean;
+    ipAddress: string;
+    staffUserName: string;
+    lastHeartbeat: string;
 }

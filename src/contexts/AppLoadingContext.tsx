@@ -54,9 +54,10 @@ export const AppLoadingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
                         // Try to get staffDeviceId from localStorage first
                         const savedStaffDeviceId = localStorage.getItem('staffDeviceId');
+                        const savedDeviceName = localStorage.getItem('staffDeviceHostName') || 'Unknown';
                         
                         if (savedStaffDeviceId) {
-                            await signalRService.startConnection(parseInt(savedStaffDeviceId));
+                            await signalRService.startConnection(parseInt(savedStaffDeviceId), savedDeviceName);
                         } else {
                             // If no saved staffDeviceId, try with a default or skip SignalR for now
                             console.log('🤔 No staffDeviceId found, skipping SignalR initialization for now');

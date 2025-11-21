@@ -331,14 +331,15 @@ const DeviceMappingSettingsPage: React.FC = () => {
                                         <TableRow>
                                             <TableCell>ID</TableCell>
                                             <TableCell>Staff Device</TableCell>
-                                            <TableCell>Staff IP</TableCell>
+                                            {/* <TableCell>Staff IP</TableCell> */}
+                                            <TableCell>Staff Online</TableCell>
                                             <TableCell>Patron Device</TableCell>
-                                            <TableCell>Patron IP</TableCell>
+                                            {/* <TableCell>Patron IP</TableCell> */}
+                                            <TableCell>Patron Online</TableCell>
                                             <TableCell>Location</TableCell>
                                             <TableCell>Notes</TableCell>
-                                            <TableCell>Status</TableCell>
-                                            <TableCell>Patron Online</TableCell>
                                             <TableCell>Last Verified</TableCell>
+                                            <TableCell>Status</TableCell>
                                             <TableCell>Created At</TableCell>
                                             <TableCell align="center">Actions</TableCell>
                                         </TableRow>
@@ -346,20 +347,17 @@ const DeviceMappingSettingsPage: React.FC = () => {
                                     <TableBody>
                                         {mappings.map((mapping) => (
                                             <TableRow key={mapping.id} hover>
-                                                <TableCell>{mapping.id}</TableCell>
+                                                {/* <TableCell>{mapping.id}</TableCell> */}
                                                 <TableCell>{mapping.staffDeviceName}</TableCell>
                                                 <TableCell>{mapping.staffIp || '-'}</TableCell>
-                                                <TableCell>{mapping.patronDeviceName}</TableCell>
-                                                <TableCell>{mapping.patronIp || '-'}</TableCell>
-                                                <TableCell>{mapping.location}</TableCell>
-                                                <TableCell>{mapping.notes || '-'}</TableCell>
                                                 <TableCell>
                                                     <Chip
-                                                        label={mapping.isActive ? 'Active' : 'Inactive'}
-                                                        color={mapping.isActive ? 'success' : 'default'}
+                                                        label={mapping.staffDeviceIsOnline ? 'Online' : 'Offline'}
+                                                        color={mapping.staffDeviceIsOnline ? 'success' : 'error'}
                                                         size="small"
                                                     />
                                                 </TableCell>
+                                                <TableCell>{mapping.patronDeviceName}</TableCell>
                                                 <TableCell>
                                                     <Chip
                                                         label={mapping.patronIsOnline ? 'Online' : 'Offline'}
@@ -367,7 +365,19 @@ const DeviceMappingSettingsPage: React.FC = () => {
                                                         size="small"
                                                     />
                                                 </TableCell>
+                                                {/* <TableCell>{mapping.patronIp || '-'}</TableCell> */}
+                                                <TableCell>{mapping.location}</TableCell>
+                                                <TableCell>{mapping.notes || '-'}</TableCell>
+
+
                                                 <TableCell>{formatDate(mapping.lastVerified)}</TableCell>
+                                                <TableCell>
+                                                    <Chip
+                                                        label={mapping.isActive ? 'Active' : 'Inactive'}
+                                                        color={mapping.isActive ? 'success' : 'default'}
+                                                        size="small"
+                                                    />
+                                                </TableCell>
                                                 <TableCell>{formatDate(mapping.createdAt)}</TableCell>
                                                 <TableCell align="center">
                                                     <Stack direction="row" spacing={1} justifyContent="center">

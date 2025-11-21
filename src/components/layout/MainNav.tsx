@@ -57,17 +57,15 @@ export function MainNav(): React.JSX.Element {
 
     // Monitor SignalR connection status
     useEffect(() => {
-        let checkCount = 0;
-        const maxChecks = 10;
-        let rapidCheckInterval: number | null = null;
-        let slowMonitoringInterval: number | null = null;
+        console.log('🔍 Setting up SignalR status monitoring...');
+        
+        let statusCheckInterval: number | null = null;
 
         // Register callback for automatic retry when SignalR detects connection lost
         const handleSignalRConnectionLost = () => {
             console.log('📞 SignalR service detected connection lost - triggering automatic retry');
-            if (signalRConnected !== false) {
-                setSignalRConnected(false);
-            }
+            setSignalRConnected(false);
+            
             // Auto retry after a short delay to avoid spam
             setTimeout(() => {
                 handleRetryConnection();
@@ -76,185 +74,46 @@ export function MainNav(): React.JSX.Element {
 
         signalRService.onConnectionLost(handleSignalRConnectionLost);
 
-        const checkConnectionStatus = () => {
-            const connectionInfo = signalRService.getConnectionInfo();
+        // Function to check and update SignalR connection status
+        const updateConnectionStatus = () => {
             const isConnected = signalRService.isConnected();
-
-            console.log(`🔍 MainNav checking SignalR status (attempt ${checkCount + 1}/${maxChecks}):`, {
+            const connectionInfo = signalRService.getConnectionInfo();
+            
+            console.log('🔄 Updating SignalR status:', {
                 isConnected,
+                currentState: signalRConnected,
                 connectionState: connectionInfo.state,
                 connectionId: connectionInfo.connectionId,
                 staffDeviceId: connectionInfo.staffDeviceId,
-                baseUrl: connectionInfo.baseUrl
+                isInStaffGroup: connectionInfo.isInStaffGroup
             });
 
-            checkCount++;
-
-            // If connected, update status and stop rapid checking
-            if (isConnected) {
-                console.log('✅ SignalR connected! Stopping rapid checks and switching to slow monitoring');
-                setSignalRConnected(true);
-
-                // Clear rapid checking
-                if (rapidCheckInterval) {
-                    clearInterval(rapidCheckInterval);
-                    rapidCheckInterval = null;
-                }
-
-                // Start slow monitoring (every 30 seconds)
-                if (!slowMonitoringInterval) {
-                    slowMonitoringInterval = setInterval(() => {
-                        const currentlyConnected = signalRService.isConnected();
-                        if (!currentlyConnected && signalRConnected === true) {
-                            console.log('⚠️ SignalR connection lost! Updating status');
-                            setSignalRConnected(false);
-                        }
-                    }, 30000);
-                    console.log('🐌 Started slow monitoring (30s intervals)');
-                }
-
-                return true; // Signal to stop initial rapid checking
+            // Update state if different
+            if (isConnected !== signalRConnected) {
+                console.log(`🔔 SignalR status changed: ${signalRConnected} → ${isConnected}`);
+                setSignalRConnected(isConnected);
             }
-
-            // If we've checked many times and still not connected
-            if (checkCount >= maxChecks) {
-                // Check if we have staffDevice but SignalR was never initialized
-                if (staffDevice?.staffDeviceId &&
-                    connectionInfo.staffDeviceId === null &&
-                    connectionInfo.state === 'Disconnected' &&
-                    connectionInfo.connectionId === null) {
-                    console.log('🔧 SignalR was never initialized despite having staffDevice, trying to init...');
-
-                    // Try to initialize SignalR with staffDevice
-                    signalRService.startConnection(staffDevice.staffDeviceId)
-                        .then(() => {
-                            console.log('✅ Late SignalR initialization successful');
-                            setTimeout(() => {
-                                const connected = signalRService.isConnected();
-                                setSignalRConnected(connected);
-                                if (connected && rapidCheckInterval) {
-                                    clearInterval(rapidCheckInterval);
-                                    rapidCheckInterval = null;
-                                    console.log('🛑 Stopped rapid checks after late initialization');
-                                }
-                            }, 2000);
-                        })
-                        .catch(error => {
-                            console.error('❌ Late SignalR initialization failed:', error);
-                            setSignalRConnected(false);
-                            if (rapidCheckInterval) {
-                                clearInterval(rapidCheckInterval);
-                                rapidCheckInterval = null;
-                            }
-                        });
-
-                    return false; // Continue checking
-                } else {
-                    console.log('❌ SignalR failed to connect after multiple attempts - stopping rapid checks');
-                    setSignalRConnected(false);
-                    if (rapidCheckInterval) {
-                        clearInterval(rapidCheckInterval);
-                        rapidCheckInterval = null;
-                    }
-                    return true; // Stop checking
-                }
-            }
-
-            // If SignalR service has been initialized (has connection object) but not connected
-            if (connectionInfo.state !== 'Disconnected' || connectionInfo.connectionId !== null) {
-                console.log('⏳ SignalR is initializing...');
-                return false;
-            }
-
-            // Still waiting for initialization
-            console.log('⌛ Waiting for SignalR initialization...');
-            return false;
         };
 
-        // Initial rapid checks every 3 seconds
-        rapidCheckInterval = setInterval(() => {
-            const shouldStop = checkConnectionStatus();
-            if (shouldStop && rapidCheckInterval) {
-                clearInterval(rapidCheckInterval);
-                rapidCheckInterval = null;
-                console.log('🛑 Stopped rapid SignalR checking');
-            }
-        }, 3000);
-
-        // First immediate check after 5 seconds
+        // Initial check after a short delay
         const initialTimer = setTimeout(() => {
-            const shouldStop = checkConnectionStatus();
-            if (shouldStop && rapidCheckInterval) {
-                clearInterval(rapidCheckInterval);
-                rapidCheckInterval = null;
-                console.log('🛑 Stopped rapid SignalR checking (initial check)');
-            }
+            updateConnectionStatus();
+        }, 2000);
+
+        // Check status every 5 seconds
+        statusCheckInterval = setInterval(() => {
+            updateConnectionStatus();
         }, 5000);
 
         return () => {
             console.log('🧹 Cleaning up MainNav SignalR monitoring');
             clearTimeout(initialTimer);
-            if (rapidCheckInterval) {
-                clearInterval(rapidCheckInterval);
+            if (statusCheckInterval) {
+                clearInterval(statusCheckInterval);
             }
-            if (slowMonitoringInterval) {
-                clearInterval(slowMonitoringInterval);
-            }
-            // Remove connection lost callback
             signalRService.offConnectionLost();
         };
-    }, [staffDevice?.staffDeviceId, signalRConnected]);
-
-    // Watch for staffDevice changes (force initialize SignalR if needed)
-    useEffect(() => {
-        // Only run if we have staffDevice but SignalR status is still unknown/checking
-        if (staffDevice?.staffDeviceId && signalRConnected === null) {
-            console.log('🎯 StaffDevice loaded, checking if SignalR needs initialization...');
-
-            const forceInitializeSignalR = async () => {
-                try {
-                    const connectionInfo = signalRService.getConnectionInfo();
-
-                    // If SignalR is not initialized at all, force initialize it
-                    if (connectionInfo.state === 'Disconnected' &&
-                        connectionInfo.connectionId === null &&
-                        connectionInfo.staffDeviceId === null) {
-
-                        console.log('🚀 Force initializing SignalR with staffDeviceId:', staffDevice.staffDeviceId);
-                        await signalRService.startConnection(staffDevice.staffDeviceId);
-
-                        // Check status after initialization (only once)
-                        setTimeout(() => {
-                            const newConnectionInfo = signalRService.getConnectionInfo();
-                            const isConnected = signalRService.isConnected();
-
-                            console.log('✅ Force initialization result:', {
-                                isConnected,
-                                connectionState: newConnectionInfo.state,
-                                connectionId: newConnectionInfo.connectionId,
-                                staffDeviceId: newConnectionInfo.staffDeviceId
-                            });
-
-                            setSignalRConnected(isConnected);
-                        }, 3000);
-
-                    } else {
-                        // SignalR is already initialized, just check status once
-                        console.log('🔄 SignalR already initialized, checking status once...');
-                        const isConnected = signalRService.isConnected();
-                        setSignalRConnected(isConnected);
-                    }
-
-                } catch (error) {
-                    console.error('❌ Force SignalR initialization failed:', error);
-                    setSignalRConnected(false);
-                }
-            };
-
-            // Only run once when staffDevice becomes available
-            forceInitializeSignalR();
-        }
-    }, [staffDevice?.staffDeviceId]); // Removed signalRConnected dependency to prevent re-runs
+    }, []); // Remove dependencies to avoid re-running
 
     const handleClick = (event: React.MouseEvent<HTMLElement>) => {
         setAnchorEl(event.currentTarget);
@@ -305,8 +164,11 @@ export function MainNav(): React.JSX.Element {
             // Wait a moment
             await new Promise(resolve => setTimeout(resolve, 1000));
 
-            // Restart connection
-            await signalRService.startConnection(staffDeviceId);
+            // Restart connection with device name
+            const deviceName = localStorage.getItem('staffDeviceHostName') || 
+                               staffDevice?.hostName || 
+                               'Unknown';
+            await signalRService.startConnection(staffDeviceId, deviceName);
 
             // Force check status after a short delay
             setTimeout(() => {
