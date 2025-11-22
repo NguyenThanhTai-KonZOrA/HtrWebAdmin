@@ -1,6 +1,7 @@
 import * as signalR from '@microsoft/signalr';
 import type { ChangeQueueStatusResponse, TicketResponse } from '../type';
 import type { PatronResponse } from '../registrationType';
+import { staffDeviceService } from './registrationService';
 
 // Message types for SignalR events
 export interface SignatureCompletedMessage {
@@ -28,7 +29,7 @@ class SignalRService {
     private connectionHealthCheckInterval: number | null = null;
     private onlineDevicesCheckInterval: number | null = null;
     private verificationInterval: number | null = null; // Periodic verification interval
-    
+
     // Callback for when connection fails and needs retry from UI
     private onConnectionLostCallback: (() => void) | null = null;
 
@@ -38,14 +39,14 @@ class SignalRService {
     // Initialize connection
     public async startConnection(staffDeviceId?: number, staffDeviceName?: string): Promise<void> {
         console.log('🚀 Starting SignalR connection with staffDeviceId:', staffDeviceId, 'deviceName:', staffDeviceName);
-        
+
         // Store staffDeviceId and deviceName for later use
         this.staffDeviceId = staffDeviceId || null;
         this.staffDeviceName = staffDeviceName || null;
-        
+
         if (this.connection?.state === signalR.HubConnectionState.Connected) {
             console.log('⚠️ SignalR already connected');
-            
+
             // If we have a new staffDeviceId and it's different, update it
             if (staffDeviceId && staffDeviceId !== this.staffDeviceId) {
                 console.log('🔄 Updating existing connection staffDeviceId from', this.staffDeviceId, 'to', staffDeviceId);
@@ -62,7 +63,7 @@ class SignalRService {
             // Build connection URL with query params for device type and name
             const deviceNameParam = staffDeviceName ? `&deviceName=${encodeURIComponent(staffDeviceName)}` : '';
             const connectionUrl = `${this.hubUrl}?deviceType=staff${deviceNameParam}`;
-            
+
             console.log('🔗 Connecting to:', connectionUrl);
 
             // Create connection with automatic reconnect built-in
@@ -108,7 +109,7 @@ class SignalRService {
             if (this.staffDeviceId && this.staffDeviceName) {
                 console.log('📝 Registering staff device with ID:', this.staffDeviceId, 'Name:', this.staffDeviceName);
                 await this.registerStaffDevice();
-                
+
                 // ✅ STEP 3: After successful registration, re-register listeners to ensure they're active
                 console.log('🔄 Re-registering listeners after device registration...');
                 this.registerStoredEventListeners();
@@ -136,7 +137,7 @@ class SignalRService {
         // ✅ Listen for StaffDeviceRegistered confirmation from backend
         this.connection.on('StaffDeviceRegistered', (response: any) => {
             console.log('📨 Received StaffDeviceRegistered:', response);
-            
+
             if (response.success) {
                 this.isInStaffGroup = true;
                 console.log(`✅ Backend confirmed registration: ${response.message}`);
@@ -144,7 +145,7 @@ class SignalRService {
             } else {
                 this.isInStaffGroup = false;
                 console.error(`❌ Backend registration failed: ${response.message}`);
-                
+
                 // Retry registration after 5 seconds
                 setTimeout(() => {
                     console.log('🔄 Retrying registration due to backend failure...');
@@ -168,16 +169,16 @@ class SignalRService {
         this.connection.onreconnected(async (connectionId) => {
             console.log('✅ SignalR reconnected successfully:', connectionId);
             this.isInStaffGroup = false; // Reset group status
-            
+
             // ✅ STEP 1: Re-register event listeners FIRST
             console.log('🔧 Re-registering event listeners after reconnection...');
             this.reregisterEventListeners();
-            
+
             // ✅ STEP 2: Backend auto re-joins group in OnConnectedAsync, but we still call register for consistency
             if (this.staffDeviceId && this.staffDeviceName) {
                 console.log('🔄 Re-registering staff device after reconnection');
                 await this.registerStaffDevice();
-                
+
                 // ✅ STEP 3: Re-register listeners again after device registration
                 console.log('🔄 Re-registering listeners after device registration...');
                 this.reregisterEventListeners();
@@ -189,7 +190,7 @@ class SignalRService {
             console.error('❌ SignalR connection closed:', error);
             console.log('ℹ️  SDK will automatically attempt to reconnect...');
             this.isInStaffGroup = false; // Reset group status
-            
+
             // Notify UI about connection loss if callback is set
             if (this.onConnectionLostCallback) {
                 this.onConnectionLostCallback();
@@ -203,7 +204,7 @@ class SignalRService {
         console.log('🔗 Connection:', this.connection ? 'Available' : 'NULL');
         console.log('🆔 StaffDeviceId:', this.staffDeviceId);
         console.log('💻 StaffDeviceName:', this.staffDeviceName);
-        
+
         if (!this.connection || !this.staffDeviceId || !this.staffDeviceName) {
             console.log('ℹ️ Cannot register staff device - connection, staffDeviceId or deviceName not available');
             return;
@@ -220,21 +221,21 @@ class SignalRService {
         for (let attempt = 1; attempt <= maxRetries; attempt++) {
             try {
                 console.log(`🎯 Calling server method 'RegisterStaffDevice' (attempt ${attempt}/${maxRetries}) with Name: ${this.staffDeviceName}, ID: ${this.staffDeviceId}`);
-                
+
                 // ✅ Call backend: RegisterStaffDevice(deviceName, staffDeviceId)
                 await this.connection.invoke('RegisterStaffDevice', this.staffDeviceName, this.staffDeviceId);
-                
+
                 // ✅ Success - backend will send StaffDeviceRegistered confirmation
                 this.isInStaffGroup = true;
                 this.registerDeviceRetryCount = 0; // Reset retry counter on success
                 console.log(`✅ Staff Device Registered Successfully: ${this.staffDeviceName} (ID: ${this.staffDeviceId})`);
                 console.log(`👥 Joined group: Staff_${this.staffDeviceId}`);
                 return; // Success - exit
-                
+
             } catch (error) {
                 this.isInStaffGroup = false;
                 this.registerDeviceRetryCount++;
-                
+
                 console.error(`❌ Error registering staff device (attempt ${attempt}/${maxRetries}):`, error);
                 console.error('   Error details:', {
                     name: (error as any)?.name,
@@ -274,7 +275,7 @@ class SignalRService {
             try {
                 console.log(`🔄 Ensuring staff group membership (attempt ${retryCount + 1}/${maxRetries})`);
                 await this.joinStaffGroup();
-                
+
                 if (this.isInStaffGroup) {
                     console.log('✅ Staff group membership confirmed');
                     break;
@@ -282,7 +283,7 @@ class SignalRService {
             } catch (error) {
                 console.warn(`⚠️ Failed to join staff group (attempt ${retryCount + 1}):`, error);
             }
-            
+
             retryCount++;
             if (retryCount < maxRetries) {
                 await new Promise(resolve => setTimeout(resolve, 10000)); // Wait 10 seconds before retry
@@ -303,8 +304,10 @@ class SignalRService {
         this.heartbeatInterval = setInterval(async () => {
             if (this.isConnected() && this.staffDeviceId) {
                 try {
+                    debugger
                     // ✅ Send heartbeat to backend: SendHeartbeat(deviceType, deviceId)
                     await this.connection?.invoke('SendHeartbeat', 'staff', this.staffDeviceId.toString());
+
                     console.log('💓 Heartbeat sent successfully');
                 } catch (error) {
                     console.warn('⚠️ Heartbeat failed:', error);
@@ -336,11 +339,11 @@ class SignalRService {
         const checkOnlineDevices = async () => {
             try {
                 // Dynamic import to get the API service
-                const { staffDeviceService } = await import('./registrationService');
+                //const { staffDeviceService } = await import('./registrationService');
                 const onlineDevices = await staffDeviceService.getOnlineStaffDevices();
-                
-                //console.log('📱 Online staff devices:', onlineDevices.length);
-                
+
+                console.log('📱 Online staff devices:', onlineDevices?.length);
+
                 // Check if current device is in the online list
                 if (this.staffDeviceId) {
                     const isOnline = onlineDevices.some(device => device.id === this.staffDeviceId);
@@ -394,7 +397,7 @@ class SignalRService {
         this.connectionHealthCheckInterval = setInterval(async () => {
             if (!this.isConnected()) {
                 console.warn('⚠️ Connection health check: Not connected');
-                
+
                 // Trigger UI callback for automatic retry
                 this.triggerConnectionLost();
                 return;
@@ -410,7 +413,7 @@ class SignalRService {
             try {
                 await this.connection?.invoke('Ping');
                 console.log('💚 Connection health check: OK (isInStaffGroup:', this.isInStaffGroup, ')');
-                
+
                 // Additional verification: If we think we're in the group, but haven't received any messages in a while,
                 // consider re-registering as a safety measure
                 if (this.isInStaffGroup && this.registerDeviceRetryCount > 0) {
@@ -420,10 +423,10 @@ class SignalRService {
             } catch (error) {
                 console.error('❤️ Connection health check: Ping failed');
                 this.isInStaffGroup = false;
-                
+
                 // Just log - SDK will handle reconnection automatically
                 console.log('ℹ️  Connection appears to be down - SDK will auto-reconnect');
-                
+
                 // Trigger UI callback to update status
                 this.triggerConnectionLost();
             }
@@ -455,23 +458,23 @@ class SignalRService {
         console.log(`📝 Registering ${this.eventListeners.size} stored event listener(s)...`);
         console.log(`📡 Expected group: Staff_${this.staffDeviceId}`);
         console.log(`🔌 Connection ID: ${this.connection.connectionId}`);
-        
+
         for (const [eventName, callbacks] of this.eventListeners.entries()) {
             try {
                 // Remove existing listeners first to avoid duplicates
                 this.connection.off(eventName);
-                
+
                 // Register all callbacks for this event
                 for (const callback of callbacks) {
                     this.connection.on(eventName, callback);
                 }
-                
+
                 console.log(`✅ Registered ${callbacks.length} listener(s) for "${eventName}"`);
             } catch (error) {
                 console.error(`❌ Error registering listener "${eventName}":`, error);
             }
         }
-        
+
         // Log final state
         console.log(`📊 Total active event listeners: ${this.eventListeners.size}`);
         console.log(`💡 Ready to receive messages from group: Staff_${this.staffDeviceId}`);
@@ -484,7 +487,7 @@ class SignalRService {
         if (!this.eventListeners.has(eventName)) {
             this.eventListeners.set(eventName, []);
         }
-        
+
         const listeners = this.eventListeners.get(eventName)!;
         // Remove existing callback if it exists
         const existingIndex = listeners.indexOf(callback);
@@ -493,7 +496,7 @@ class SignalRService {
         }
         // Add new callback
         listeners.push(callback);
-        
+
         console.log(`💾 Stored callback for ${eventName} (total: ${listeners.length})`);
     }
 
@@ -505,7 +508,7 @@ class SignalRService {
         }
 
         console.log('🔍 Verifying event listeners...');
-        
+
         if (this.eventListeners.size === 0) {
             console.warn('⚠️ No event listeners stored! This might be a problem.');
             return;
@@ -513,7 +516,7 @@ class SignalRService {
 
         // Force re-register all listeners
         this.registerStoredEventListeners();
-        
+
         console.log('✅ Event listeners verified and re-registered');
     }
 
@@ -545,14 +548,14 @@ class SignalRService {
     public onSignatureCompleted(callback: (message: SignatureCompletedMessage) => void): void {
         // ✅ Backend sends "SignatureCompleted" (PascalCase) via Group(Staff_{staffDeviceId})
         const eventName = 'SignatureCompleted';
-        
+
         console.log('');
         console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
         console.log('📝 onSignatureCompleted called - storing callback');
         console.log('   Connection state:', this.connection?.state || 'No connection');
         console.log('   StaffDeviceId:', this.staffDeviceId || 'Not set');
         console.log('   IsInStaffGroup:', this.isInStaffGroup);
-        
+
         // ALWAYS store callback first for re-registration after reconnect
         this.storeEventListener(eventName, callback);
 
@@ -577,7 +580,7 @@ class SignalRService {
         console.log('✅ SignalR IS CONNECTED - registering listener immediately');
         console.log('   Expected group: Staff_' + this.staffDeviceId);
         console.log('   Connection ID:', this.connection.connectionId);
-        
+
         // Unregister existing listener first to avoid duplicates
         this.connection.off(eventName);
 
@@ -597,7 +600,7 @@ class SignalRService {
             console.log(`   CompletedAt: ${message.completedAt}`);
             console.log('============================================');
             console.log('');
-            
+
             // Transform backend response to frontend interface if needed
             const transformedMessage: SignatureCompletedMessage = {
                 patronId: message.patronId,
@@ -605,11 +608,11 @@ class SignalRService {
                 fullName: message.fullName,
                 mobilePhone: message.mobilePhone
             };
-            
+
             console.log('🔄 Transformed message:', transformedMessage);
             console.log('🔊 Playing notification sound...');
             this.playNotificationSound(); // Auto play sound
-            
+
             console.log('📞 Calling user callback...');
             try {
                 callback(transformedMessage);
@@ -628,38 +631,82 @@ class SignalRService {
 
     // Listen to new registration event
     public onNewRegistration(callback: (message: NewRegistrationMessage) => void): void {
-        const eventName = 'NewRegistration';
-        
+        // ✅ Listen to all possible case variations from backend
+        const eventNames = ['NewRegistration', 'newregistration', 'newRegistration'];
+
+        console.log('');
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
         console.log('📝 onNewRegistration called - storing callback');
-        
-        // ALWAYS store callback first for re-registration after reconnect
-        this.storeEventListener(eventName, callback);
+        console.log('   Connection state:', this.connection?.state || 'No connection');
+        console.log('   StaffDeviceId:', this.staffDeviceId || 'Not set');
+        console.log('   IsInStaffGroup:', this.isInStaffGroup);
+
+        // Create a wrapper callback that will be used for all event name variations
+        const wrappedCallback = (message: any) => {
+            console.log('');
+            console.log('🎉🎉🎉 ============================================');
+            console.log('✅ RECEIVED NewRegistration MESSAGE FROM BACKEND!');
+            console.log('🎉🎉🎉 ============================================');
+            console.log('Message payload:', message);
+            console.log('Details:');
+            console.log(`   PatronId: ${message.patronId}`);
+            console.log(`   FullName: ${message.fullName}`);
+            console.log(`   SubmitType: ${message.submitType}`);
+            console.log('============================================');
+            console.log('');
+
+            console.log('🔊 Playing notification sound...');
+            this.playNotificationSound(); // Auto play sound
+
+            console.log('📞 Calling user callback...');
+            try {
+                callback(message);
+                console.log('✅ User callback executed successfully');
+            } catch (error) {
+                console.error('❌ Error in user callback:', error);
+            }
+        };
+
+        // ALWAYS store callback for the primary event name for re-registration after reconnect
+        this.storeEventListener(eventNames[0], wrappedCallback);
 
         // Only register immediately if connection is ready
         if (!this.connection) {
-            console.warn('⚠️ SignalR connection not initialized - event listener STORED and will be registered when connected');
+            console.warn('⚠️ SignalR connection not initialized yet');
+            console.warn('   → Listener STORED and will auto-register when connection established');
+            console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+            console.log('');
             return;
         }
 
         if (this.connection.state !== signalR.HubConnectionState.Connected) {
-            console.warn('⚠️ SignalR not connected yet - event listener STORED and will be registered when connected');
+            console.warn('⚠️ SignalR not connected yet (state:', this.connection.state, ')');
+            console.warn('   → Listener STORED and will auto-register when connected');
+            console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+            console.log('');
             return;
         }
 
-        // Connection is ready - register now
-        console.log('✅ SignalR connected - registering event listener immediately');
-        
-        // Unregister existing listener first
-        this.connection.off(eventName);
+        // Connection is ready - register now for ALL case variations
+        console.log('✅ SignalR IS CONNECTED - registering listeners for all case variations');
+        console.log('   Event names:', eventNames);
+        console.log('   Expected group: Staff_' + this.staffDeviceId);
+        console.log('   Connection ID:', this.connection.connectionId);
 
-        // Register new listener
-        this.connection.on(eventName, (message: NewRegistrationMessage) => {
-            console.log('🆕 Received NewRegistration message:', message);
-            this.playNotificationSound(); // Auto play sound
-            callback(message);
+        // Unregister all existing listeners first to avoid duplicates
+        eventNames.forEach(name => {
+            this.connection!.off(name);
         });
 
-        console.log(`✅ Registered ${eventName} event listener`);
+        // Register the same callback for all event name variations
+        eventNames.forEach(name => {
+            this.connection!.on(name, wrappedCallback);
+            console.log(`✅ Registered listener for "${name}"`);
+        });
+
+        console.log(`📡 NOW listening for messages from group: Staff_${this.staffDeviceId}`);
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        console.log('');
     }
 
     // Unregister signature completed event
@@ -674,8 +721,13 @@ class SignalRService {
     // Unregister new registration event
     public offNewRegistration(): void {
         if (this.connection) {
-            this.connection.off('NewRegistration');
-            console.log('🔇 Unregistered NewRegistration event listener');
+            // Remove all case variations
+            const eventNames = ['NewRegistration', 'newregistration', 'newRegistration'];
+            eventNames.forEach(name => {
+                this.connection!.off(name);
+            });
+            this.eventListeners.delete('NewRegistration');
+            console.log('🔇 Unregistered NewRegistration event listeners (all variations)');
         }
     }
 
@@ -686,7 +738,7 @@ class SignalRService {
             clearInterval(this.heartbeatInterval);
             this.heartbeatInterval = null;
         }
-        
+
         if (this.connectionHealthCheckInterval) {
             clearInterval(this.connectionHealthCheckInterval);
             this.connectionHealthCheckInterval = null;
@@ -724,13 +776,13 @@ class SignalRService {
         if (staffDeviceName) {
             console.log('🔄 Updating staffDeviceName from', this.staffDeviceName, 'to', staffDeviceName);
         }
-        
+
         this.staffDeviceId = staffDeviceId;
         if (staffDeviceName) {
             this.staffDeviceName = staffDeviceName;
         }
         this.isInStaffGroup = false; // Reset group status
-        
+
         if (this.isConnected()) {
             console.log('🔗 Connection active, registering staff device...');
             await this.registerStaffDevice();
