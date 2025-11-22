@@ -285,7 +285,7 @@ class SignalRService {
             
             retryCount++;
             if (retryCount < maxRetries) {
-                await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds before retry
+                await new Promise(resolve => setTimeout(resolve, 10000)); // Wait 10 seconds before retry
             }
         }
 
@@ -321,9 +321,9 @@ class SignalRService {
                 // Trigger UI callback for automatic retry when connection lost
                 this.triggerConnectionLost();
             }
-        }, 30000); // Send heartbeat every 30 seconds
+        }, 40000); // Send heartbeat every 40 seconds
 
-        console.log('💓 Heartbeat started (30s interval with SendHeartbeat)');
+        console.log('💓 Heartbeat started (40s interval with SendHeartbeat)');
     }
 
     // Start checking online staff devices
@@ -362,12 +362,12 @@ class SignalRService {
         // Check immediately on start
         checkOnlineDevices();
 
-        // Then check every 30 seconds
+        // Then check every 40 seconds
         this.onlineDevicesCheckInterval = setInterval(() => {
             checkOnlineDevices();
-        }, 30000); // Check every 30 seconds
+        }, 40000); // Check every 40 seconds
 
-        console.log('📱 Online devices check started (30s interval)');
+        console.log('📱 Online devices check started (40s interval)');
     }
 
     // Start periodic listener verification
