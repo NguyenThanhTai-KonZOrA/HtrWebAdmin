@@ -47,6 +47,7 @@ import AdminLayout from '../layout/AdminLayout';
 import { useSetPageTitle } from '../hooks/useSetPageTitle';
 import { PAGE_TITLES } from '../constants/pageTitles';
 import Swal from 'sweetalert2';
+import { FormatUtcTime } from '../utils/formatUtcTime';
 
 const DeviceMappingSettingsPage: React.FC = () => {
     useSetPageTitle(PAGE_TITLES.DEVICE_MAPPING);
@@ -246,9 +247,21 @@ const DeviceMappingSettingsPage: React.FC = () => {
                 await mappingDeviceService.deleteMapping(mapping.id);
                 showSnackbar('Mapping deleted successfully', 'success');
                 loadMappings();
-            } catch (err) {
-                console.error('Error deleting mapping:', err);
-                showSnackbar('Failed to delete mapping', 'error');
+            } catch (error: any) {
+
+                // Handle HTTP error responses (400, 500, etc.)
+                let errorMessage = "Failed to send signature request.";
+                if (error?.response?.data?.message) {
+                    errorMessage = error.response.data.message;
+                } else if (error?.response?.data?.data) {
+                    errorMessage = typeof error.response.data.data === 'string'
+                        ? error.response.data.data
+                        : (error.response.data.data?.message || JSON.stringify(error.response.data.data));
+                } else if (error?.message) {
+                    errorMessage = error.message;
+                }
+
+                showSnackbar(errorMessage, 'error');
             }
         }
     };
@@ -329,57 +342,42 @@ const DeviceMappingSettingsPage: React.FC = () => {
                                 <Table stickyHeader>
                                     <TableHead>
                                         <TableRow>
+                                            <TableCell align='center'
+                                                sx={{
+                                                    position: 'sticky',
+                                                    left: 0,
+                                                    backgroundColor: 'background.paper',
+                                                    zIndex: 3,
+                                                    boxShadow: '2px 0 5px rgba(0,0,0,0.1)'
+                                                }}>
+                                                Actions
+                                            </TableCell>
                                             <TableCell>ID</TableCell>
                                             <TableCell sx={{ minWidth: 120 }}>Staff Device</TableCell>
-                                            {/* <TableCell>Staff IP</TableCell> */}
+                                            <TableCell sx={{ minWidth: 120 }}>Staff IP</TableCell>
                                             <TableCell sx={{ minWidth: 120 }}>Staff Online</TableCell>
                                             <TableCell sx={{ minWidth: 120 }}>Patron Device</TableCell>
-                                            {/* <TableCell>Patron IP</TableCell> */}
+                                            <TableCell sx={{ minWidth: 120 }}>Patron IP</TableCell>
                                             <TableCell sx={{ minWidth: 120 }}>Patron Online</TableCell>
                                             <TableCell sx={{ minWidth: 120 }}>Location</TableCell>
                                             <TableCell sx={{ minWidth: 120 }}>Notes</TableCell>
-                                            <TableCell sx={{ minWidth: 120 }}>Last Verified</TableCell>
+                                            <TableCell sx={{ minWidth: 150 }}>Last Verified</TableCell>
                                             <TableCell>Status</TableCell>
-                                            <TableCell sx={{ minWidth: 120 }}>Created At</TableCell>
-                                            <TableCell align="center">Actions</TableCell>
+                                            <TableCell sx={{ minWidth: 150 }}>Created At</TableCell>
+
                                         </TableRow>
                                     </TableHead>
                                     <TableBody>
                                         {mappings.map((mapping) => (
                                             <TableRow key={mapping.id} hover>
-                                                <TableCell>{mapping.id}</TableCell>
-                                                <TableCell>{mapping.staffDeviceName}</TableCell>
-                                                {/* <TableCell>{mapping.staffIp || '-'}</TableCell> */}
-                                                <TableCell>
-                                                    <Chip
-                                                        label={mapping.staffDeviceIsOnline ? 'Online' : 'Offline'}
-                                                        color={mapping.staffDeviceIsOnline ? 'success' : 'error'}
-                                                        size="small"
-                                                    />
-                                                </TableCell>
-                                                <TableCell>{mapping.patronDeviceName}</TableCell>
-                                                <TableCell>
-                                                    <Chip
-                                                        label={mapping.patronIsOnline ? 'Online' : 'Offline'}
-                                                        color={mapping.patronIsOnline ? 'success' : 'error'}
-                                                        size="small"
-                                                    />
-                                                </TableCell>
-                                                {/* <TableCell>{mapping.patronIp || '-'}</TableCell> */}
-                                                <TableCell>{mapping.location}</TableCell>
-                                                <TableCell>{mapping.notes || '-'}</TableCell>
-
-
-                                                <TableCell>{formatDate(mapping.lastVerified)}</TableCell>
-                                                <TableCell>
-                                                    <Chip
-                                                        label={mapping.isActive ? 'Active' : 'Inactive'}
-                                                        color={mapping.isActive ? 'success' : 'default'}
-                                                        size="small"
-                                                    />
-                                                </TableCell>
-                                                <TableCell>{formatDate(mapping.createdAt)}</TableCell>
-                                                <TableCell align="center">
+                                                <TableCell
+                                                    sx={{
+                                                        position: 'sticky',
+                                                        left: 0,
+                                                        backgroundColor: 'background.paper',
+                                                        zIndex: 1,
+                                                        boxShadow: '2px 0 5px rgba(0,0,0,0.1)'
+                                                    }}>
                                                     <Stack direction="row" spacing={1} justifyContent="center">
                                                         <Tooltip title="Edit">
                                                             <IconButton
@@ -401,6 +399,39 @@ const DeviceMappingSettingsPage: React.FC = () => {
                                                         </Tooltip>
                                                     </Stack>
                                                 </TableCell>
+                                                <TableCell>{mapping.id}</TableCell>
+                                                <TableCell>{mapping.staffDeviceName}</TableCell>
+                                                <TableCell>{mapping.staffIp || '-'}</TableCell>
+                                                <TableCell>
+                                                    <Chip
+                                                        label={mapping.staffDeviceIsOnline ? 'Online' : 'Offline'}
+                                                        color={mapping.staffDeviceIsOnline ? 'success' : 'error'}
+                                                        size="small"
+                                                    />
+                                                </TableCell>
+                                                <TableCell>{mapping.patronDeviceName}</TableCell>
+                                                <TableCell>{mapping.patronIp || '-'}</TableCell>
+                                                <TableCell>
+                                                    <Chip
+                                                        label={mapping.patronIsOnline ? 'Online' : 'Offline'}
+                                                        color={mapping.patronIsOnline ? 'success' : 'error'}
+                                                        size="small"
+                                                    />
+                                                </TableCell>
+                                                <TableCell>{mapping.location}</TableCell>
+                                                <TableCell>{mapping.notes || '-'}</TableCell>
+
+
+                                                <TableCell>{FormatUtcTime.formatDateTime(mapping.lastVerified)}</TableCell>
+                                                <TableCell>
+                                                    <Chip
+                                                        label={mapping.isActive ? 'Active' : 'Inactive'}
+                                                        color={mapping.isActive ? 'success' : 'default'}
+                                                        size="small"
+                                                    />
+                                                </TableCell>
+                                                <TableCell>{FormatUtcTime.formatDateTime(mapping.createdAt)}</TableCell>
+
                                             </TableRow>
                                         ))}
                                     </TableBody>
