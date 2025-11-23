@@ -25,10 +25,10 @@ class SignalRService {
     private eventListeners: Map<string, ((...args: any[]) => any)[]> = new Map();
     private registerDeviceRetryCount = 0; // Track registration retry attempts
 
-    private heartbeatInterval: number | null = null;
-    private connectionHealthCheckInterval: number | null = null;
-    private onlineDevicesCheckInterval: number | null = null;
-    private verificationInterval: number | null = null; // Periodic verification interval
+    private heartbeatInterval: ReturnType<typeof setInterval> | null = null;
+    private connectionHealthCheckInterval: ReturnType<typeof setInterval> | null = null;
+    private onlineDevicesCheckInterval: ReturnType<typeof setInterval> | null = null;
+    private verificationInterval: ReturnType<typeof setInterval> | null = null;
 
     // Callback for when connection fails and needs retry from UI
     private onConnectionLostCallback: (() => void) | null = null;
@@ -117,8 +117,8 @@ class SignalRService {
                 console.log('🤔 No staffDeviceId or deviceName available, skipping device registration');
             }
 
-            // Start connection health monitoring
-            this.startConnectionHealthCheck();
+            // Start connection health monitoring - ALWAYS start these even if registration fails
+            // this.startConnectionHealthCheck();
             this.startHeartbeat();
             this.startOnlineDevicesCheck();
             this.startListenerVerification(); // Start periodic listener verification
@@ -304,7 +304,6 @@ class SignalRService {
         this.heartbeatInterval = setInterval(async () => {
             if (this.isConnected() && this.staffDeviceId) {
                 try {
-                    debugger
                     // ✅ Send heartbeat to backend: SendHeartbeat(deviceType, deviceId)
                     await this.connection?.invoke('SendHeartbeat', 'staff', this.staffDeviceId.toString());
 

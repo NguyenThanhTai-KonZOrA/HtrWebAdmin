@@ -107,12 +107,12 @@ export function MainNav(): React.JSX.Element {
         // Initial check after a short delay
         const initialTimer = setTimeout(() => {
             updateConnectionStatus();
-        }, 2000);
+        }, 10000);
 
-        // Check status every 5 seconds
+        // Check status every 20 seconds
         statusCheckInterval = setInterval(() => {
             updateConnectionStatus();
-        }, 5000);
+        }, 20000);
 
         return () => {
             console.log('🧹 Cleaning up MainNav SignalR monitoring');
@@ -373,7 +373,7 @@ export function MainNav(): React.JSX.Element {
                                                     : '#ffcdd2',
                                         },
                                         animation: signalRConnected === null
-                                            ? 'checking 1.5s infinite'
+                                            ? 'checking 1.2s ease-in-out infinite'
                                             : signalRConnected
                                                 ? 'none'
                                                 : 'pulse 2s infinite',
@@ -383,8 +383,9 @@ export function MainNav(): React.JSX.Element {
                                             '100%': { opacity: 1 },
                                         },
                                         '@keyframes checking': {
-                                            '0%': { transform: 'rotate(0deg)' },
-                                            '100%': { transform: 'rotate(360deg)' },
+                                            '0%': { transform: 'scale(1)', opacity: 1 },
+                                            '50%': { transform: 'scale(0.92)', opacity: 0.7 },
+                                            '100%': { transform: 'scale(1)', opacity: 1 },
                                         },
                                     }}
                                 />
@@ -450,7 +451,7 @@ export function MainNav(): React.JSX.Element {
                                                     : '#ffcdd2',
                                         },
                                         animation: isInStaffGroup === null
-                                            ? 'checking 1.5s infinite'
+                                            ? 'checking 1.2s ease-in-out infinite'
                                             : isInStaffGroup
                                                 ? 'none'
                                                 : 'pulse 2s infinite',
@@ -460,8 +461,9 @@ export function MainNav(): React.JSX.Element {
                                             '100%': { opacity: 1 },
                                         },
                                         '@keyframes checking': {
-                                            '0%': { transform: 'rotate(0deg)' },
-                                            '100%': { transform: 'rotate(360deg)' },
+                                            '0%': { transform: 'scale(1)', opacity: 1 },
+                                            '50%': { transform: 'scale(0.92)', opacity: 0.7 },
+                                            '100%': { transform: 'scale(1)', opacity: 1 },
                                         },
                                     }}
                                 />
