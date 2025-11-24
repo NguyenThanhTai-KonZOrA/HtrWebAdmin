@@ -96,15 +96,20 @@ export function MobileNav({ onClose, open }: MobileNavProps): React.JSX.Element 
             }}
             sx={{ display: { lg: 'none' } }}
         >
-            <Stack spacing={2} sx={{ p: 3 }}>
-                <Stack direction="row" justifyContent="space-between" alignItems="center">
-                    <Box sx={{ display: 'inline-flex' }}>
-                        <img src="/images/TheGrandHoTram.png" alt="Logo" style={{ height: 70, width: 'auto' }} />
+            <Stack spacing={2} sx={{ p: 1 }}>
+                <Box sx={{ display: 'inline-center', justifyContent: 'center', alignItems: 'center' }}>
+                    <Box sx={{ display: 'inline-center', justifyContent: 'center', alignItems: 'center' }}>
+                        <img src="/images/TheGrandHoTram.png" alt="Logo" style={{ height: 90, width: 'auto' }} />
                     </Box>
-                    <IconButton onClick={onClose} sx={{ color: 'white' }}>
-                        <CloseIcon />
-                    </IconButton>
-                </Stack>
+                </Box>
+            </Stack>
+
+            <Stack spacing={1} sx={{ p: 1 }}>
+                <Box sx={{ display: 'inline-center', justifyContent: 'center', alignItems: 'center' }}>
+                    <Box sx={{ display: 'inline-center', justifyContent: 'center', alignItems: 'center', color: 'white', fontSize: 20, fontWeight: 'bold' }}>
+                        HTR Admin Portal
+                    </Box>
+                </Box>
             </Stack>
 
             <Box
