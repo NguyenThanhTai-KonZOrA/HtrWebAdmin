@@ -275,7 +275,7 @@ const AdminRegistrationPage: React.FC = () => {
                 });
 
                 // Play notification sound
-                signalR.playNotificationSound();
+                //signalR.playNotificationSound();
 
                 // Reload new registrations table
                 loadNewRegistrations();
@@ -304,7 +304,7 @@ const AdminRegistrationPage: React.FC = () => {
                 });
 
                 // Play notification sound
-                signalR.playNotificationSound();
+                //signalR.playNotificationSound();
 
                 // Highlight the patron row
                 setHighlightedPatronId(message.patronId);

@@ -78,6 +78,6 @@ export const useSignalR = (staffDeviceId?: number) => {
         offNewRegistration,
         isConnected: () => signalRService.isConnected(),
         getConnectionInfo: () => signalRService.getConnectionInfo(),
-        playNotificationSound: () => signalRService.playNotificationSound()
+        //playNotificationSound: () => signalRService.playNotificationSound()
     };
 };

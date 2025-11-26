@@ -9,6 +9,7 @@ export interface SignatureCompletedMessage {
     sessionId: string;
     fullName: string;
     mobilePhone?: string;
+    sessionIdNumber?: number; // Add numeric sessionId for ACK
 }
 
 export interface NewRegistrationMessage {
@@ -555,8 +556,55 @@ class SignalRService {
         console.log('   StaffDeviceId:', this.staffDeviceId || 'Not set');
         console.log('   IsInStaffGroup:', this.isInStaffGroup);
 
-        // ALWAYS store callback first for re-registration after reconnect
-        this.storeEventListener(eventName, callback);
+        // Create wrapped callback with acknowledge logic
+        const wrappedCallback = (message: any) => {
+            console.log('');
+            console.log('🎉🎉🎉 ============================================');
+            console.log(`✅ RECEIVED ${eventName} MESSAGE FROM BACKEND!`);
+            console.log('🎉🎉🎉 ============================================');
+            // console.log('Message payload:', message);
+            // console.log('Details:');
+            // console.log(`   SessionId: ${message.sessionId}`);
+            // console.log(`   PatronId: ${message.patronId}`);
+            // console.log(`   Success: ${message.success}`);
+            // console.log(`   FullName: ${message.fullName}`);
+            // console.log(`   MobilePhone: ${message.mobilePhone}`);
+            // console.log(`   CompletedAt: ${message.completedAt}`);
+            console.log('============================================');
+            console.log('');
+
+            // Transform backend response to frontend interface if needed
+            const transformedMessage: SignatureCompletedMessage = {
+                patronId: message.patronId,
+                sessionId: message.sessionId.toString(),
+                fullName: message.fullName,
+                mobilePhone: message.mobilePhone,
+                sessionIdNumber: typeof message.sessionId === 'number' ? message.sessionId : parseInt(message.sessionId)
+            };
+
+            console.log('🔄 Transformed message:', transformedMessage);
+            console.log('🔊 Playing notification sound...');
+            this.playNotificationSound(); // Auto play sound
+
+            console.log('📞 Calling user callback...');
+            try {
+                callback(transformedMessage);
+                console.log('✅ User callback executed successfully');
+            } catch (error) {
+                console.error('❌ Error in user callback:', error);
+            }
+
+            // Auto-acknowledge the notification
+            if (transformedMessage.sessionIdNumber) {
+                console.log('📨 Auto-acknowledging notification...');
+                this.acknowledgeSignatureCompleted(transformedMessage.sessionIdNumber).catch(err => {
+                    console.error('❌ Auto-acknowledge failed:', err);
+                });
+            }
+        };
+
+        // ALWAYS store WRAPPED callback (with acknowledge logic) for re-registration after reconnect
+        this.storeEventListener(eventName, wrappedCallback);
 
         // Only register immediately if connection is ready
         if (!this.connection) {
@@ -583,43 +631,8 @@ class SignalRService {
         // Unregister existing listener first to avoid duplicates
         this.connection.off(eventName);
 
-        // Register listener for SignatureCompleted
-        this.connection.on(eventName, (message: any) => {
-            console.log('');
-            console.log('🎉🎉🎉 ============================================');
-            console.log(`✅ RECEIVED ${eventName} MESSAGE FROM BACKEND!`);
-            console.log('🎉🎉🎉 ============================================');
-            console.log('Message payload:', message);
-            console.log('Details:');
-            console.log(`   SessionId: ${message.sessionId}`);
-            console.log(`   PatronId: ${message.patronId}`);
-            console.log(`   Success: ${message.success}`);
-            console.log(`   FullName: ${message.fullName}`);
-            console.log(`   MobilePhone: ${message.mobilePhone}`);
-            console.log(`   CompletedAt: ${message.completedAt}`);
-            console.log('============================================');
-            console.log('');
-
-            // Transform backend response to frontend interface if needed
-            const transformedMessage: SignatureCompletedMessage = {
-                patronId: message.patronId,
-                sessionId: message.sessionId.toString(),
-                fullName: message.fullName,
-                mobilePhone: message.mobilePhone
-            };
-
-            console.log('🔄 Transformed message:', transformedMessage);
-            console.log('🔊 Playing notification sound...');
-            this.playNotificationSound(); // Auto play sound
-
-            console.log('📞 Calling user callback...');
-            try {
-                callback(transformedMessage);
-                console.log('✅ User callback executed successfully');
-            } catch (error) {
-                console.error('❌ Error in user callback:', error);
-            }
-        });
+        // Register the WRAPPED callback (with acknowledge logic)
+        this.connection.on(eventName, wrappedCallback);
 
         console.log(`✅ Registered ${eventName} event listener successfully`);
         console.log(`📡 NOW listening for messages from group: Staff_${this.staffDeviceId}`);
@@ -646,11 +659,11 @@ class SignalRService {
             console.log('🎉🎉🎉 ============================================');
             console.log('✅ RECEIVED NewRegistration MESSAGE FROM BACKEND!');
             console.log('🎉🎉🎉 ============================================');
-            console.log('Message payload:', message);
-            console.log('Details:');
-            console.log(`   PatronId: ${message.patronId}`);
-            console.log(`   FullName: ${message.fullName}`);
-            console.log(`   SubmitType: ${message.submitType}`);
+            // console.log('Message payload:', message);
+            // console.log('Details:');
+            // console.log(`   PatronId: ${message.patronId}`);
+            // console.log(`   FullName: ${message.fullName}`);
+            // console.log(`   SubmitType: ${message.submitType}`);
             console.log('============================================');
             console.log('');
 
@@ -828,6 +841,22 @@ class SignalRService {
             audio.play().catch(err => console.log('⚠️ Could not play notification sound:', err));
         } catch (error) {
             // Ignore sound errors
+        }
+    }
+
+    // Acknowledge that SignatureCompleted notification was received
+    public async acknowledgeSignatureCompleted(sessionId: number): Promise<void> {
+        if (!this.isConnected()) {
+            console.warn('⚠️ Cannot acknowledge - not connected');
+            return;
+        }
+
+        try {
+            console.log(`📝 Acknowledging SignatureCompleted for sessionId: ${sessionId}`);
+            await this.connection!.invoke('AcknowledgeSignatureCompleted', sessionId);
+            console.log(`✅ Acknowledged sessionId: ${sessionId}`);
+        } catch (error) {
+            console.error(`❌ Failed to acknowledge sessionId ${sessionId}:`, error);
         }
     }
 
