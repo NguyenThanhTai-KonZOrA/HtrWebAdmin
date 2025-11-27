@@ -464,6 +464,14 @@ const AdminRegistrationPage: React.FC = () => {
         }, 800);
     };
 
+    const getTodayString = (): string => {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
     // Check ID number exists with debounce
     const checkIdNumber = async (idType: number, idNumber: string) => {
         // Clear previous timer
@@ -666,11 +674,32 @@ const AdminRegistrationPage: React.FC = () => {
         if (!editedPatron.identificationExpiration) {
             errors.identificationExpiration = 'Expiration Date is required';
         }
+        else if (new Date(editedPatron.identificationExpiration) <= new Date()) {
+            errors.identificationExpiration = 'Expiration Date must be a future date';
+        }
         if (!editedPatron.gender?.trim()) {
             errors.gender = 'Gender is required';
         }
         if (!editedPatron.birthday) {
             errors.birthday = 'Birthday is required';
+        } else if (new Date(editedPatron.birthday) >= new Date()) {
+            errors.birthday = 'Birthday must be a past date';
+        } else if (editedPatron.birthday) {
+            // Check if age is at least 18
+            const birthDate = new Date(editedPatron.birthday);
+            const today = new Date();
+            const age = today.getFullYear() - birthDate.getFullYear();
+            const monthDiff = today.getMonth() - birthDate.getMonth();
+            if (age < 18 || (age === 18 && monthDiff < 0) || (age === 18 && monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                errors.birthday = 'Patron must be at least 18 years old';
+            }
+
+            // Check if age is at least 21 for Vietnamese nationals
+            if (editedPatron.identificationCountry === String(VIETNAM_COUNTRY_ID)) {
+                if (age < 21 || (age === 21 && monthDiff < 0) || (age === 21 && monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                    errors.birthday = 'Vietnamese nationals must be at least 21 years old';
+                }
+            }
         }
 
         // Address validation
@@ -1738,6 +1767,9 @@ const AdminRegistrationPage: React.FC = () => {
                                                     size="small"
                                                     error={!!validationErrors.identificationExpiration}
                                                     helperText={validationErrors.identificationExpiration}
+                                                    inputProps={{
+                                                        min: getTodayString() // Prevent selecting past dates
+                                                    }}
                                                 />
 
                                                 <FormControl component="fieldset" error={!!validationErrors.gender} fullWidth>
@@ -1766,6 +1798,9 @@ const AdminRegistrationPage: React.FC = () => {
                                                     size="small"
                                                     error={!!validationErrors.birthday}
                                                     helperText={validationErrors.birthday}
+                                                    inputProps={{
+                                                        max: getTodayString() // Prevent selecting future dates
+                                                    }}
                                                 />
                                             </Stack>
                                         </CardContent>
