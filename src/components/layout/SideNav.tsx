@@ -21,8 +21,18 @@ import {
     PersonAdd as PersonAddIcon
 } from '@mui/icons-material';
 import { useSidebar } from '../../contexts/SidebarContext';
+import { usePermission } from '../../hooks/usePermission';
+import { Permission } from '../../constants/roles';
 
-const navItems = [
+interface NavItem {
+    key: string;
+    title: string;
+    href: string;
+    icon: React.ElementType;
+    requiredPermission?: Permission; // ← Thêm field này
+}
+
+const navItems: NavItem[] = [
     // {
     //     key: 'dashboard',
     //     title: 'Dashboard',
@@ -45,13 +55,15 @@ const navItems = [
         key: 'admin-registration',
         title: 'Registration Management',
         href: '/admin-registration',
-        icon: PersonAddIcon
+        icon: PersonAddIcon,
+        requiredPermission: Permission.VIEW_ADMIN_REGISTRATION, // ← Thêm permission
     },
     {
         key: 'admin-device-mapping',
         title: 'Device Mapping Settings',
         href: '/admin-device-mapping',
-        icon: SettingsIcon
+        icon: SettingsIcon,
+        requiredPermission: Permission.VIEW_DEVICE_MAPPING, // ← Thêm permission
     },
     // {
     //     key: 'admin-issued-processed-by-hour',
@@ -88,6 +100,17 @@ const navItems = [
 export function SideNav(): React.JSX.Element {
     const location = useLocation();
     const { isCollapsed } = useSidebar();
+    const { can } = usePermission(); // ← Thêm hook usePermission
+
+    // Filter nav items base on permissions
+    const filteredNavItems = navItems.filter((item) => {
+        // If item does not require permission, always show
+        if (!item.requiredPermission) {
+            return true;
+        }
+        // Only show if user has permission
+        return can(item.requiredPermission);
+    });
 
     return (
         <Box
@@ -131,7 +154,7 @@ export function SideNav(): React.JSX.Element {
                 }}
             >
                 <List sx={{ p: 1 }}>
-                    {navItems.map((item) => {
+                    {filteredNavItems.map((item) => {
                         const Icon = item.icon;
                         const isActive = location.pathname === item.href;
 
