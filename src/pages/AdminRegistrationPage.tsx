@@ -264,7 +264,6 @@ const AdminRegistrationPage: React.FC = () => {
                     icon: 'info',
                     title: 'New Registration',
                     html: `
-                        <strong>New Registration!</strong><br/>
                         <strong>Patron ID:</strong> ${message.patronId}<br/>
                         <strong>Name:</strong> ${message.fullName}<br/>
                         <strong>Registration Type:</strong> ${message.submitType === 1 ? 'Online' : 'Manual'}
@@ -566,7 +565,30 @@ const AdminRegistrationPage: React.FC = () => {
 
             setSelectedPatron(patronDetail);
             setPatronImages(patronImagesData);
-            setEditedPatron({ ...patronDetail });
+
+            // Set specify fields if job title or position is not in the predefined options
+            const jobTitleExists = JOB_TITLE_OPTIONS.some(opt => opt.value === patronDetail.jobTitle);
+            const positionExists = POSITION_OPTIONS.some(opt => opt.value === patronDetail.position);
+
+            // Prepare edited patron with proper job title and position handling
+            const preparedPatron = { ...patronDetail };
+
+            if (!jobTitleExists && patronDetail.jobTitle) {
+                setSpecifyJobTitle(patronDetail.jobTitle);
+                preparedPatron.jobTitle = 'Other';
+            } else {
+                setSpecifyJobTitle('');
+            }
+
+            if (!positionExists && patronDetail.position) {
+                setSpecifyPosition(patronDetail.position);
+                preparedPatron.position = 'Other';
+            } else {
+                setSpecifyPosition('');
+            }
+
+            // Set edited patron once with all changes
+            setEditedPatron(preparedPatron);
             setIsEditing(!patron.isHaveMembership); // Only allow editing for non-members
             setDialogOpen(true);
             setValidationErrors({});
@@ -575,24 +597,6 @@ const AdminRegistrationPage: React.FC = () => {
             setIncomeDocument(patronDetail.incomeDocument || '');
             setExpireDate(patronDetail.incomeExpiryDate || getTomorrowDate());
             setIncomeApproved(patronDetail.isValidIncomeDocument);
-
-            // Set specify fields if job title or position is not in the predefined options
-            const jobTitleExists = JOB_TITLE_OPTIONS.some(opt => opt.value === patronDetail.jobTitle);
-            const positionExists = POSITION_OPTIONS.some(opt => opt.value === patronDetail.position);
-
-            if (!jobTitleExists && patronDetail.jobTitle) {
-                setSpecifyJobTitle(patronDetail.jobTitle);
-                setEditedPatron(prev => prev ? { ...prev, jobTitle: 'Other' } : null);
-            } else {
-                setSpecifyJobTitle('');
-            }
-
-            if (!positionExists && patronDetail.position) {
-                setSpecifyPosition(patronDetail.position);
-                setEditedPatron(prev => prev ? { ...prev, position: 'Other' } : null);
-            } else {
-                setSpecifyPosition('');
-            }
 
             // Reset document HTML
             setDocumentHtml('');
@@ -757,6 +761,11 @@ const AdminRegistrationPage: React.FC = () => {
 
             // Update job title and position with specify values if "Other" is selected
             const updatedPatron = { ...editedPatron };
+
+            // Store the actual specify values before update
+            const actualJobTitle = updatedPatron.jobTitle === 'Other' ? specifyJobTitle : updatedPatron.jobTitle;
+            const actualPosition = updatedPatron.position === 'Other' ? specifyPosition : updatedPatron.position;
+
             if (updatedPatron.jobTitle === 'Other') {
                 updatedPatron.jobTitle = specifyJobTitle;
             }
@@ -771,12 +780,44 @@ const AdminRegistrationPage: React.FC = () => {
             // Reset unsaved changes flag
             setHasUnsavedChanges(false);
 
-            const finalPatron = {
+            // After update, need to check if the values exist in options
+            // If not, we need to show them in "Other" + specify fields
+            const jobTitleExists = JOB_TITLE_OPTIONS.some(opt => opt.value === actualJobTitle);
+            const positionExists = POSITION_OPTIONS.some(opt => opt.value === actualPosition);
+
+            // Prepare the final patron state for editing (with "Other" if custom value)
+            const finalEditedPatron = {
                 ...updatedPatron,
-                isUpdated: true
+                isUpdated: true,
+                // Keep as "Other" if value doesn't exist in options
+                jobTitle: !jobTitleExists && actualJobTitle ? 'Other' : actualJobTitle,
+                position: !positionExists && actualPosition ? 'Other' : actualPosition
             };
-            setEditedPatron(finalPatron);
-            setSelectedPatron(finalPatron);
+
+            // For selectedPatron, use actual values (not "Other") for comparison
+            const finalSelectedPatron = {
+                ...updatedPatron,
+                isUpdated: true,
+                // Use actual values for comparison
+                jobTitle: actualJobTitle,
+                position: actualPosition
+            };
+
+            setEditedPatron(finalEditedPatron);
+            setSelectedPatron(finalSelectedPatron);
+
+            // Set specify fields if values are not in options
+            if (!jobTitleExists && actualJobTitle) {
+                setSpecifyJobTitle(actualJobTitle);
+            } else {
+                setSpecifyJobTitle('');
+            }
+
+            if (!positionExists && actualPosition) {
+                setSpecifyPosition(actualPosition);
+            } else {
+                setSpecifyPosition('');
+            }
 
             // Refresh data
             await loadNewRegistrations();
