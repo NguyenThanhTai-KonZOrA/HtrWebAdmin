@@ -57,14 +57,11 @@ import {
 } from '../services/registrationService';
 import type {
     PatronResponse,
-    CountryResponse,
     PatronImagesResponse,
     CheckValidIncomeRequest,
-    FileDataRequest,
     PatronRegisterMembershipRequest,
     StaffSignatureRequest,
-    IncomeFileResponse,
-    BatchesDataResponse
+    IncomeFileResponse
 } from '../registrationType';
 import AdminLayout from '../layout/AdminLayout';
 import { useSetPageTitle } from '../hooks/useSetPageTitle';
@@ -419,9 +416,11 @@ const AdminRegistrationPage: React.FC = () => {
         const cleanPhone = phoneNumber.replace(/\s+/g, '').replace(/[^\d+]/g, '');
 
         // Vietnamese phone number patterns
+        // Mobile numbers
+        // Landline numbers
         const vnPhonePatterns = [
-            /^(\+84|84|0)(3[2-9]|5[6-9]|7[0|6-9]|8[1-9]|9[0-9])[0-9]{7}$/,  // Mobile numbers
-            /^(\+84|84|0)(2[0-9])[0-9]{8}$/  // Landline numbers
+            /^(\+84|84|0)(3[2-9]|5[6-9]|7[0|6-9]|8[1-9]|9[0-9])[0-9]{7}$/,
+            /^(\+84|84|0)(2[0-9])[0-9]{8}$/
         ];
 
         return vnPhonePatterns.some(pattern => pattern.test(cleanPhone));
@@ -772,7 +771,6 @@ const AdminRegistrationPage: React.FC = () => {
             // Reset unsaved changes flag
             setHasUnsavedChanges(false);
 
-            // Update the edited patron with the new values and mark as updated
             const finalPatron = {
                 ...updatedPatron,
                 isUpdated: true
@@ -1066,20 +1064,20 @@ const AdminRegistrationPage: React.FC = () => {
     const canRequestSignature = (): boolean => {
         if (!selectedPatron) return false;
 
-        // Phải update patron trước (isUpdated === true)
+        // Must update patron before (isUpdated === true)
         const isPatronUpdated = selectedPatron.isUpdated || patronUpdated;
         if (!isPatronUpdated) {
             return false;
         }
 
-        // Nếu là người Việt Nam, phải approve income trước
+        // If Vietnamese, must approve income first
         if (isVietnamese()) {
             if (!incomeApproved && !selectedPatron.isValidIncomeDocument) {
                 return false;
             }
         }
 
-        // Đã ký rồi thì không cần request nữa
+        // If already signed, no need to request again
         // if (selectedPatron.isSigned || editedPatron?.isSigned) {
         //     return false;
         // }
@@ -1101,17 +1099,17 @@ const AdminRegistrationPage: React.FC = () => {
     const canApproveIncome = (): boolean => {
         if (!selectedPatron) return false;
 
-        // Bước 1: Phải update patron trước (isUpdated === true)
+        // Must update patron before (isUpdated === true)
         if (!selectedPatron.isUpdated && !patronUpdated) {
             return false;
         }
 
-        // Bước 2: Phải là người Việt Nam
+        // Must be Vietnamese
         if (!isVietnamese()) {
             return false;
         }
 
-        // Kiểm tra form hợp lệ và chưa approve
+        // Check if form is valid and not approved
         return areRequiredFieldsFilled() && isIncomeFormValid() && !incomeApproved && !selectedPatron.isValidIncomeDocument;
     };
 
@@ -1119,14 +1117,14 @@ const AdminRegistrationPage: React.FC = () => {
     const canEnrollPlayer = (): boolean => {
         if (!selectedPatron || !editedPatron) return false;
 
-        // Phải điền đầy đủ thông tin
+        // Must fill in all required information
         if (!areRequiredFieldsFilled()) return false;
 
-        // Kiểm tra isUpdated và isSigned
+        // Check isUpdated and isSigned
         const isPatronUpdated = selectedPatron.isUpdated || patronUpdated;
         const isPatronSigned = selectedPatron.isSigned || editedPatron.isSigned;
 
-        // Nếu chưa update -> không hiện
+        // If not updated, do not show
         if (!isPatronUpdated) {
             return false;
         }
@@ -1136,13 +1134,12 @@ const AdminRegistrationPage: React.FC = () => {
             return false;
         }
 
-        // Nếu là người Việt Nam
+        // If Vietnamese, must approve income and signed
         if (isVietnamese()) {
-            // Phải approve income và đã ký
             return (incomeApproved || selectedPatron.isValidIncomeDocument) && isPatronSigned;
         }
 
-        // Nếu không phải người Việt Nam: chỉ cần isUpdated = true và isSigned = true
+        // If not Vietnamese: only need isUpdated = true and isSigned = true
         return isPatronSigned;
     };
 
@@ -1601,6 +1598,12 @@ const AdminRegistrationPage: React.FC = () => {
                                                 <FormControl fullWidth disabled={!isEditing} error={!!validationErrors.jobTitle} size="small" required>
                                                     <InputLabel>Occupation</InputLabel>
                                                     <Select
+                                                        // value={
+                                                        //     editedPatron.jobTitle !== undefined &&
+                                                        //         JOB_TITLE_OPTIONS.some(opt => opt.value === editedPatron.jobTitle)
+                                                        //         ? editedPatron.jobTitle
+                                                        //         : ''
+                                                        // }
                                                         value={editedPatron.jobTitle || ''}
                                                         onChange={(e) => setEditedPatron({ ...editedPatron, jobTitle: e.target.value })}
                                                         label="Occupation *"
@@ -1618,6 +1621,12 @@ const AdminRegistrationPage: React.FC = () => {
                                                 <FormControl fullWidth disabled={!isEditing} error={!!validationErrors.position} size="small" required>
                                                     <InputLabel>Position</InputLabel>
                                                     <Select
+                                                        // value={
+                                                        //     editedPatron.position !== undefined &&
+                                                        //         POSITION_OPTIONS.some(opt => opt.value === editedPatron.position)
+                                                        //         ? editedPatron.position
+                                                        //         : ''
+                                                        // }
                                                         value={editedPatron.position || ''}
                                                         onChange={(e) => setEditedPatron({ ...editedPatron, position: e.target.value })}
                                                         label="Position *"
