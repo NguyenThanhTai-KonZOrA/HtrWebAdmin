@@ -19,7 +19,7 @@ function AppContent() {
 
   return (
     <>
-      {/* Network Alert - hiển thị trên toàn app */}
+      {/* Network Alert - Show network status all application */}
       <NetworkAlert {...networkStatus} />
 
       <Routes>

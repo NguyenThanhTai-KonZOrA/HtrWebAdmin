@@ -1,4 +1,3 @@
-// src/pages/EmployeeReportPage.tsx
 import {
     Box,
     Card,
