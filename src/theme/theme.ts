@@ -39,15 +39,6 @@ const baseTheme: ThemeOptions = {
       styleOverrides: {
         root: {
           borderRadius: 12,
-          boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)',
-        },
-      },
-    },
-    MuiAppBar: {
-      styleOverrides: {
-        root: {
-          boxShadow: 'none',
-          borderBottom: '1px solid #e2e8f0',
         },
       },
     },
@@ -79,6 +70,33 @@ export const lightTheme = createTheme({
       secondary: '#64748b',
     },
   },
+  components: {
+    ...baseTheme.components,
+    MuiCard: {
+      styleOverrides: {
+        root: {
+          borderRadius: 12,
+          boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)',
+        },
+      },
+    },
+    MuiAppBar: {
+      styleOverrides: {
+        root: {
+          boxShadow: 'none',
+          borderBottom: '1px solid #e2e8f0',
+          backgroundColor: '#fafafa',
+        },
+      },
+    },
+    MuiPaper: {
+      styleOverrides: {
+        root: {
+          backgroundImage: 'none',
+        },
+      },
+    },
+  },
 });
 
 export const darkTheme = createTheme({
@@ -86,16 +104,16 @@ export const darkTheme = createTheme({
   palette: {
     mode: 'dark',
     primary: {
-      main: '#3d5a5f',
-      dark: '#274549',
-      light: '#5a7a80',
+      main: '#60a5fa',
+      dark: '#3b82f6',
+      light: '#93c5fd',
       contrastText: '#ffffff',
     },
     secondary: {
       main: '#4fb3d4',
       dark: '#0d93c9',
       light: '#7cc4df',
-      contrastText: '#000000',
+      contrastText: '#ffffff',
     },
     background: {
       default: '#0f172a',
@@ -104,6 +122,43 @@ export const darkTheme = createTheme({
     text: {
       primary: '#f1f5f9',
       secondary: '#94a3b8',
+    },
+    divider: '#334155',
+  },
+  components: {
+    ...baseTheme.components,
+    MuiCard: {
+      styleOverrides: {
+        root: {
+          borderRadius: 12,
+          boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.3)',
+          backgroundImage: 'none',
+        },
+      },
+    },
+    MuiAppBar: {
+      styleOverrides: {
+        root: {
+          boxShadow: 'none',
+          borderBottom: '1px solid #334155',
+          backgroundColor: '#1e293b',
+        },
+      },
+    },
+    MuiPaper: {
+      styleOverrides: {
+        root: {
+          backgroundImage: 'none',
+        },
+      },
+    },
+    MuiDrawer: {
+      styleOverrides: {
+        paper: {
+          backgroundColor: '#1e293b',
+          backgroundImage: 'none',
+        },
+      },
     },
   },
 });

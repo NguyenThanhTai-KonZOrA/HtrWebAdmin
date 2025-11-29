@@ -52,8 +52,8 @@ export function MobileNav({ onClose, open }: MobileNavProps): React.JSX.Element 
             open={open}
             PaperProps={{
                 sx: {
-                    bgcolor: '#274549',
-                    color: 'var(--mui-palette-common-white)',
+                    bgcolor: 'background.paper',
+                    color: 'text.primary',
                     width: '320px',
                 },
             }}
@@ -69,7 +69,7 @@ export function MobileNav({ onClose, open }: MobileNavProps): React.JSX.Element 
 
             <Stack spacing={1} sx={{ p: 1 }}>
                 <Box sx={{ display: 'inline-center', justifyContent: 'center', alignItems: 'center' }}>
-                    <Box sx={{ display: 'inline-center', justifyContent: 'center', alignItems: 'center', color: 'white', fontSize: 20, fontWeight: 'bold' }}>
+                    <Box sx={{ display: 'inline-center', justifyContent: 'center', alignItems: 'center', color: 'text.primary', fontSize: 20, fontWeight: 'bold' }}>
                         HTR Admin Portal
                     </Box>
                 </Box>
@@ -77,7 +77,8 @@ export function MobileNav({ onClose, open }: MobileNavProps): React.JSX.Element 
 
             <Box
                 sx={{
-                    borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+                    borderTop: '1px solid',
+                    borderColor: 'divider',
                     flex: '1 1 auto',
                     overflow: 'auto'
                 }}
@@ -95,12 +96,12 @@ export function MobileNav({ onClose, open }: MobileNavProps): React.JSX.Element 
                                     onClick={onClose}
                                     sx={{
                                         borderRadius: 1,
-                                        color: isActive ? 'white' : 'rgba(255, 255, 255, 0.7)',
-                                        backgroundColor: isActive ? 'var(--mui-palette-primary-main)' : 'transparent',
+                                        color: isActive ? 'primary.contrastText' : 'text.secondary',
+                                        backgroundColor: isActive ? 'primary.main' : 'transparent',
                                         '&:hover': {
                                             backgroundColor: isActive
-                                                ? 'var(--mui-palette-primary-dark)'
-                                                : 'rgba(255, 255, 255, 0.04)',
+                                                ? 'primary.dark'
+                                                : 'action.hover',
                                         },
                                         py: 1,
                                         px: 2,

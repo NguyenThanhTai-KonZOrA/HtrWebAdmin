@@ -31,6 +31,7 @@ import {
     WifiOff as WifiOffIcon,
     Refresh as RefreshIcon,
     HourglassEmpty as LoadingIcon,
+    Palette as PaletteIcon,
 } from '@mui/icons-material';
 import { MobileNav } from './MobileNav';
 import { useNavigate } from "react-router-dom";
@@ -40,6 +41,7 @@ import { useSidebar } from "../../contexts/SidebarContext";
 import { useAppData } from "../../contexts/AppDataContext";
 import { signalRService } from "../../services/signalRService";
 import CacheManager from '../CacheManager';
+import { ThemeSelector } from '../ThemeSelector';
 
 export function MainNav(): React.JSX.Element {
     const [openNav, setOpenNav] = useState<boolean>(false);
@@ -252,10 +254,9 @@ export function MainNav(): React.JSX.Element {
             <AppBar
                 position="sticky"
                 sx={{
-                    backgroundColor: '#fafafa',
-                    borderBottom: '1px solid var(--mui-palette-divider)',
+                    borderBottom: '1px solid',
+                    borderColor: 'divider',
                     boxShadow: 'none',
-                    color: 'var(--mui-palette-text-primary)',
                 }}
             >
                 <Toolbar
@@ -476,7 +477,7 @@ export function MainNav(): React.JSX.Element {
                                         cursor: 'pointer',
                                         width: 40,
                                         height: 40,
-                                        bgcolor: '#274549'
+                                        bgcolor: 'primary.main'
                                     }}
                                 >
                                     Hi!
@@ -498,11 +499,13 @@ export function MainNav(): React.JSX.Element {
                     mt: 1,
                     '& .MuiPaper-root': {
                         borderRadius: 2,
-                        minWidth: 200,
+                        minWidth: 280,
                         boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
                     },
                 }}
             >
+                <ThemeSelector onClose={handleClose} />
+                <Divider />
                 <MenuItem onClick={handleClearCache}>
                     <ListItemIcon>
                         <ClearAllIcon fontSize="small" />

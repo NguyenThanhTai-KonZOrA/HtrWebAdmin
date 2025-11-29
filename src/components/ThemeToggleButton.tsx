@@ -1,13 +1,27 @@
 import React from 'react';
 import { IconButton, Tooltip } from '@mui/material';
-import { Brightness4, Brightness7 } from '@mui/icons-material';
+import { Brightness4, Brightness7, SettingsBrightness } from '@mui/icons-material';
 import { useTheme } from '../contexts/ThemeContext';
 
 export const ThemeToggleButton: React.FC = () => {
-  const { mode, toggleTheme } = useTheme();
+  const { mode, appliedTheme, toggleTheme } = useTheme();
+
+  const getIcon = () => {
+    if (mode === 'system') {
+      return <SettingsBrightness />;
+    }
+    return appliedTheme === 'light' ? <Brightness4 /> : <Brightness7 />;
+  };
+
+  const getTooltip = () => {
+    if (mode === 'system') {
+      return `System theme (currently ${appliedTheme}) - Click to switch`;
+    }
+    return `Switch to ${appliedTheme === 'light' ? 'dark' : 'light'} mode`;
+  };
 
   return (
-    <Tooltip title={`Switch to ${mode === 'light' ? 'dark' : 'light'} mode`}>
+    <Tooltip title={getTooltip()}>
       <IconButton 
         onClick={toggleTheme} 
         color="inherit"
@@ -18,7 +32,7 @@ export const ThemeToggleButton: React.FC = () => {
           },
         }}
       >
-        {mode === 'light' ? <Brightness4 /> : <Brightness7 />}
+        {getIcon()}
       </IconButton>
     </Tooltip>
   );

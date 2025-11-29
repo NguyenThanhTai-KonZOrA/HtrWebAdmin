@@ -4,11 +4,14 @@ import { ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
 import { CssBaseline } from '@mui/material';
 import { lightTheme, darkTheme } from '../theme/theme';
 
-type ThemeMode = 'light' | 'dark';
+type ThemeMode = 'light' | 'dark' | 'system';
+type AppliedTheme = 'light' | 'dark';
 
 interface ThemeContextType {
   mode: ThemeMode;
-  toggleTheme: () => void;
+  appliedTheme: AppliedTheme;
+  setThemeMode: (mode: ThemeMode) => void;
+  toggleTheme: () => void; // Keep for backward compatibility
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -27,25 +30,67 @@ interface ThemeProviderProps {
 
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   const [mode, setMode] = useState<ThemeMode>(() => {
-    // Get from localStorage or default to light
+    // Get from localStorage or default to system
     const savedMode = localStorage.getItem('themeMode') as ThemeMode;
-    return savedMode || 'light';
+    return savedMode || 'system';
   });
 
-  const toggleTheme = () => {
-    const newMode = mode === 'light' ? 'dark' : 'light';
+  const [appliedTheme, setAppliedTheme] = useState<AppliedTheme>('light');
+
+  // Detect system theme preference
+  const getSystemTheme = (): AppliedTheme => {
+    if (typeof window !== 'undefined' && window.matchMedia) {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    return 'light';
+  };
+
+  // Update applied theme based on mode
+  useEffect(() => {
+    const updateAppliedTheme = () => {
+      if (mode === 'system') {
+        setAppliedTheme(getSystemTheme());
+      } else {
+        setAppliedTheme(mode);
+      }
+    };
+
+    updateAppliedTheme();
+
+    // Listen for system theme changes when in system mode
+    if (mode === 'system') {
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      const handleChange = (e: MediaQueryListEvent) => {
+        setAppliedTheme(e.matches ? 'dark' : 'light');
+      };
+
+      // Modern browsers
+      if (mediaQuery.addEventListener) {
+        mediaQuery.addEventListener('change', handleChange);
+        return () => mediaQuery.removeEventListener('change', handleChange);
+      } else {
+        // Fallback for older browsers
+        mediaQuery.addListener(handleChange);
+        return () => mediaQuery.removeListener(handleChange);
+      }
+    }
+  }, [mode]);
+
+  const setThemeMode = (newMode: ThemeMode) => {
     setMode(newMode);
     localStorage.setItem('themeMode', newMode);
   };
 
-  useEffect(() => {
-    localStorage.setItem('themeMode', mode);
-  }, [mode]);
+  const toggleTheme = () => {
+    // Simple toggle between light and dark (skip system)
+    const newMode = appliedTheme === 'light' ? 'dark' : 'light';
+    setThemeMode(newMode);
+  };
 
-  const currentTheme = mode === 'light' ? lightTheme : darkTheme;
+  const currentTheme = appliedTheme === 'light' ? lightTheme : darkTheme;
 
   return (
-    <ThemeContext.Provider value={{ mode, toggleTheme }}>
+    <ThemeContext.Provider value={{ mode, appliedTheme, setThemeMode, toggleTheme }}>
       <MuiThemeProvider theme={currentTheme}>
         <CssBaseline />
         {children}

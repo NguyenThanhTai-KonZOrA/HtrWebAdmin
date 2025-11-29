@@ -51,7 +51,7 @@ function DashboardLayoutContent({ children }: DashboardLayoutProps): React.JSX.E
             sx={{
               flex: '1 1 auto',
               py: 2,
-              bgcolor: '#f8fafc',
+              bgcolor: 'background.default',
             }}
           >
             <Container maxWidth="xl" sx={{ height: '100%' }}>
