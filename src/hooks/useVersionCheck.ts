@@ -2,8 +2,8 @@ import { useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 
 /**
- * Hook kiểm tra version của app để force logout khi có deploy mới
- * Kiểm tra version.json mỗi 30 giây
+ * Hook check version application to force logout when there is a new deployment
+ * Check version.json every 30 seconds
  */
 export const useVersionCheck = () => {
   const { logout, token } = useAuth();
@@ -47,7 +47,7 @@ export const useVersionCheck = () => {
 
       // Clear version to force check again
       localStorage.removeItem('app-version');
-      
+
       // Logout user
       logout();
     }

@@ -63,7 +63,7 @@ import type {
     StaffSignatureRequest,
     IncomeFileResponse
 } from '../registrationType';
-import AdminLayout from '../layout/AdminLayout';
+import AdminLayout from '../components/layout/AdminLayout';
 import { useSetPageTitle } from '../hooks/useSetPageTitle';
 import { PAGE_TITLES } from '../constants/pageTitles';
 import { useAppData } from '../contexts/AppDataContext';
@@ -1581,20 +1581,22 @@ const AdminRegistrationPage: React.FC = () => {
                                         </Typography>
                                         <Stack spacing={2}>
                                             <Stack direction="row" spacing={2}>
+                                                {/* auto upper case last name */}
                                                 <TextField
                                                     label="Middle & Last Name *"
                                                     value={editedPatron.lastName || ''}
-                                                    onChange={(e) => setEditedPatron({ ...editedPatron, lastName: e.target.value })}
+                                                    onChange={(e) => setEditedPatron({ ...editedPatron, lastName: e.target.value.toUpperCase() })}
                                                     disabled={!isEditing}
                                                     fullWidth
                                                     size="small"
                                                     error={!!validationErrors.lastName}
                                                     helperText={validationErrors.lastName}
                                                 />
+                                                {/* auto upper case first name */}
                                                 <TextField
                                                     label="First Name *"
                                                     value={editedPatron.firstName || ''}
-                                                    onChange={(e) => setEditedPatron({ ...editedPatron, firstName: e.target.value })}
+                                                    onChange={(e) => setEditedPatron({ ...editedPatron, firstName: e.target.value.toUpperCase() })}
                                                     disabled={!isEditing}
                                                     fullWidth
                                                     size="small"

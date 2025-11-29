@@ -8,21 +8,21 @@ interface NetworkAlertProps {
   connectionType?: string;
 }
 
-const NetworkAlert: React.FC<NetworkAlertProps> = ({ 
-  isOnline, 
-  isConnected, 
-  connectionType 
+const NetworkAlert: React.FC<NetworkAlertProps> = ({
+  isOnline,
+  isConnected,
+  connectionType
 }) => {
   const [isVisible, setIsVisible] = useState(true);
   const [hasBeenDismissed, setHasBeenDismissed] = useState(false);
 
-  // Tự động hiện lại khi network status thay đổi
+  // Auto show alert when network status changes
   useEffect(() => {
     if (!isOnline || !isConnected) {
       setIsVisible(true);
       setHasBeenDismissed(false);
     } else {
-      // Tự động ẩn khi kết nối lại
+      // Auto hide when reconnected
       const timer = setTimeout(() => {
         setIsVisible(false);
       }, 2000);
@@ -35,7 +35,7 @@ const NetworkAlert: React.FC<NetworkAlertProps> = ({
     setHasBeenDismissed(true);
   };
 
-  // Không hiển thị nếu mạng OK hoặc user đã tắt
+  // Do not show if network is OK or user has dismissed
   if ((isOnline && isConnected) || !isVisible || hasBeenDismissed) {
     return null;
   }
@@ -54,8 +54,8 @@ const NetworkAlert: React.FC<NetworkAlertProps> = ({
     //   return {
     //     severity: 'warning' as const,
     //     icon: <WifiOff />,
-    //     title: 'Kết nối mạng không ổn định',
-    //     message: 'Kết nối đến server có vấn đề. Một số tính năng có thể không hoạt động.'
+    //     title: 'Internal Network Issue',
+    //     message: 'There is a problem connecting to the server. Some features may not work.'
     //   };
     // }
 

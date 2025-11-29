@@ -6,12 +6,12 @@ interface PermissionGuardProps {
   children: React.ReactNode;
   requiredPermission?: Permission;
   requiredPermissions?: Permission[];
-  requireAll?: boolean; // true = cần tất cả permissions, false = chỉ cần 1 trong số đó
-  fallback?: React.ReactNode; // Component hiển thị khi không có quyền
+  requireAll?: boolean; // true = Need all permissions, false = only need 1 of them
+  fallback?: React.ReactNode; // Component to show when no permission
 }
 
 /**
- * Component để ẩn/hiện UI elements dựa trên permissions
+ * Component to hide/show UI elements based on permissions
  * 
  * Usage examples:
  * 
@@ -51,17 +51,15 @@ const PermissionGuard: React.FC<PermissionGuardProps> = ({
   if (requiredPermission) {
     hasAccess = can(requiredPermission);
   } else if (requiredPermissions && requiredPermissions.length > 0) {
-    hasAccess = requireAll 
+    hasAccess = requireAll
       ? canAll(requiredPermissions)
       : canAny(requiredPermissions);
   }
 
-  // Nếu có quyền, render children
   if (hasAccess) {
     return <>{children}</>;
   }
 
-  // Nếu không có quyền, render fallback hoặc null
   return <>{fallback}</>;
 };
 

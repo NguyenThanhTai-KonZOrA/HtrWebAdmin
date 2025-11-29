@@ -43,7 +43,7 @@ import type {
     StaffDeviceResponse,
     PatronDeviceResponse
 } from '../registrationType';
-import AdminLayout from '../layout/AdminLayout';
+import AdminLayout from '../components/layout/AdminLayout';
 import { useSetPageTitle } from '../hooks/useSetPageTitle';
 import { PAGE_TITLES } from '../constants/pageTitles';
 import Swal from 'sweetalert2';

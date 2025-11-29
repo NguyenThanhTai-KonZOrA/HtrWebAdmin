@@ -1,4 +1,3 @@
-// src/layouts/MainLayout.tsx
 import { Box, Button, MenuItem, Select, Typography } from "@mui/material";
 import { useTranslation } from "react-i18next";
 

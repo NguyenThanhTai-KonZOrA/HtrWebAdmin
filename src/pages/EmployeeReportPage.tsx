@@ -29,7 +29,7 @@ import {
     Assessment as AssessmentIcon
 } from "@mui/icons-material";
 import { useState, useEffect } from "react";
-import AdminLayout from "../layout/AdminLayout";
+import AdminLayout from "../components/layout/AdminLayout";
 import { employeeService } from "../services/queueService";
 import type { EmployeePerformanceResponse, EmployeePerformanceRequest } from "../type";
 import { useSetPageTitle } from "../hooks/useSetPageTitle";

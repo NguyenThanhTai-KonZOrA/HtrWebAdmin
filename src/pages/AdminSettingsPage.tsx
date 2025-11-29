@@ -40,7 +40,7 @@ import {
 } from "@mui/icons-material";
 import { useState, useEffect } from "react";
 
-import AdminLayout from "../layout/AdminLayout";
+import AdminLayout from "../components/layout/AdminLayout";
 import { settingsService } from "../services/queueService";
 import type { 
     SettingsResponse, 

@@ -1,4 +1,4 @@
-import DashboardLayout from '../components/layout/DashboardLayout';
+import DashboardLayout from './DashboardLayout';
 import type { ReactNode } from "react";
 
 interface AdminLayoutProps {
