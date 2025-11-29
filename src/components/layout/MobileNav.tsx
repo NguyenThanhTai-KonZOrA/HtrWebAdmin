@@ -9,39 +9,13 @@ import {
     ListItemButton,
     ListItemIcon,
     ListItemText,
-    IconButton,
 } from '@mui/material';
 import {
-    Dashboard as DashboardIcon,
-    Assignment as AssignmentIcon,
-    People as PeopleIcon,
     Settings as SettingsIcon,
-    Archive as ArchiveIcon,
-    Assessment as AssessmentIcon,
-    BarChart as BarChartIcon,
-    Close as CloseIcon,
     PersonAdd as PersonAddIcon
 } from '@mui/icons-material';
 
 const navItems = [
-    // {
-    //     key: 'dashboard',
-    //     title: 'Dashboard',
-    //     href: '/admin-dashboard',
-    //     icon: DashboardIcon
-    // },
-    // {
-    //     key: 'admin-call',
-    //     title: 'Counter Terminal',
-    //     href: '/admin-call',
-    //     icon: AssignmentIcon
-    // },
-    // {
-    //     key: 'admin-counter',
-    //     title: 'Counter Report',
-    //     href: '/admin-counter',
-    //     icon: PeopleIcon
-    // },
     {
         key: 'admin-registration',
         title: 'Registration Management',
@@ -53,24 +27,13 @@ const navItems = [
         title: 'Device Mapping Settings',
         href: '/admin-device-mapping',
         icon: SettingsIcon
-    }
-    // {
-    //     key: 'admin-issued-processed-by-hour',
-    //     title: 'Hourly Report',
-    //     href: '/admin-issued-processed-by-hour',
-    //     icon: AssessmentIcon
-    // },
-    // {
-    //     key: 'admin-service-report',
-    //     title: 'Service Report',
-    //     href: '/admin-service-report',
-    //     icon: BarChartIcon
-    // },
-    // {
-    //     key: 'admin-ticket-archived',
-    //     title: 'Ticket Archived',
-    //     href: '/admin-ticket-archived',
-    //     icon: ArchiveIcon
+    },
+    //{
+    //     key: 'admin-settings',
+    //     title: 'System Settings',
+    //     href: '/admin-settings',
+    //     icon: SettingsIcon,
+    //     requiredPermission: Permission.VIEW_ADMIN_SETTINGS,
     // },
 ];
 

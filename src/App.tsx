@@ -12,6 +12,7 @@ import './App.css'
 import AdminRegistrationPage from './pages/AdminRegistrationPage'
 import DeviceMappingSettingsPage from './pages/DeviceMappingSettingsPage'
 import { Permission } from './constants/roles'
+import AdminSettingsPage from './pages/AdminSettingsPage'
 
 function AppContent() {
   const networkStatus = useNetworkStatus();
@@ -42,12 +43,24 @@ function AppContent() {
 
         <Route path="/admin-device-mapping" element={
           <ProtectedRoute>
-            <RoleBasedRoute 
+            <RoleBasedRoute
               requiredPermission={Permission.VIEW_DEVICE_MAPPING}
               fallbackPath="/admin-registration"
               showAccessDenied={true}
             >
               <DeviceMappingSettingsPage />
+            </RoleBasedRoute>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/admin-settings" element={
+          <ProtectedRoute>
+            <RoleBasedRoute
+              requiredPermission={Permission.VIEW_DEVICE_MAPPING}
+              fallbackPath="/admin-settings"
+              showAccessDenied={true}
+            >
+              <AdminSettingsPage />
             </RoleBasedRoute>
           </ProtectedRoute>
         } />

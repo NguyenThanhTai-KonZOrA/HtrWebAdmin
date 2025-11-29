@@ -10,14 +10,7 @@ import {
     ListItemText,
 } from '@mui/material';
 import {
-    Dashboard as DashboardIcon,
-    Assignment as AssignmentIcon,
-    People as PeopleIcon,
     Settings as SettingsIcon,
-    Archive as ArchiveIcon,
-    Assessment as AssessmentIcon,
-    BarChart as BarChartIcon,
-    PersonSearch as PersonSearchIcon,
     PersonAdd as PersonAddIcon
 } from '@mui/icons-material';
 import { useSidebar } from '../../contexts/SidebarContext';
@@ -33,74 +26,33 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-    // {
-    //     key: 'dashboard',
-    //     title: 'Dashboard',
-    //     href: '/admin-dashboard',
-    //     icon: DashboardIcon
-    // },
-    // {
-    //     key: 'admin-call',
-    //     title: 'Counter Terminal',
-    //     href: '/admin-call',
-    //     icon: AssignmentIcon
-    // },
-    // {
-    //     key: 'admin-counter',
-    //     title: 'Counter Report',
-    //     href: '/admin-counter',
-    //     icon: PeopleIcon
-    // },
     {
         key: 'admin-registration',
         title: 'Registration Management',
         href: '/admin-registration',
         icon: PersonAddIcon,
-        requiredPermission: Permission.VIEW_ADMIN_REGISTRATION, // ← Thêm permission
+        requiredPermission: Permission.VIEW_ADMIN_REGISTRATION,
     },
     {
         key: 'admin-device-mapping',
         title: 'Device Mapping Settings',
         href: '/admin-device-mapping',
         icon: SettingsIcon,
-        requiredPermission: Permission.VIEW_DEVICE_MAPPING, // ← Thêm permission
+        requiredPermission: Permission.VIEW_DEVICE_MAPPING,
     },
-    // {
-    //     key: 'admin-issued-processed-by-hour',
-    //     title: 'Hourly Report',
-    //     href: '/admin-issued-processed-by-hour',
-    //     icon: AssessmentIcon
-    // },
-    // {
-    //     key: 'admin-service-report',
-    //     title: 'Service Report',
-    //     href: '/admin-service-report',
-    //     icon: BarChartIcon
-    // },
-    // {
-    //     key: 'employee-report',
-    //     title: 'Employee Report',
-    //     href: '/employee-report',
-    //     icon: PersonSearchIcon
-    // },
     // {
     //     key: 'admin-settings',
     //     title: 'System Settings',
     //     href: '/admin-settings',
-    //     icon: SettingsIcon
-    // },
-    // {
-    //     key: 'admin-ticket-archived',
-    //     title: 'Ticket Archived',
-    //     href: '/admin-ticket-archived',
-    //     icon: ArchiveIcon
+    //     icon: SettingsIcon,
+    //     requiredPermission: Permission.VIEW_ADMIN_SETTINGS,
     // },
 ];
 
 export function SideNav(): React.JSX.Element {
     const location = useLocation();
     const { isCollapsed } = useSidebar();
-    const { can } = usePermission(); // ← Thêm hook usePermission
+    const { can } = usePermission();
 
     // Filter nav items base on permissions
     const filteredNavItems = navItems.filter((item) => {

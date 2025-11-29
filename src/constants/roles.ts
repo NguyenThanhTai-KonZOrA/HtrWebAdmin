@@ -13,7 +13,7 @@ export const Permission = {
     // Device Mapping permissions
     VIEW_DEVICE_MAPPING: 'view_device_mapping',
     EDIT_DEVICE_MAPPING: 'edit_device_mapping',
-
+    VIEW_ADMIN_SETTINGS: 'view_admin_settings',
     // Future permissions can be added here
     // VIEW_REPORTS: 'view_reports',
     // MANAGE_USERS: 'manage_users',
@@ -32,6 +32,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
         Permission.VIEW_ADMIN_REGISTRATION,
         Permission.VIEW_DEVICE_MAPPING,
         Permission.EDIT_DEVICE_MAPPING,
+        Permission.VIEW_ADMIN_SETTINGS,
         // Add all future permissions here for admin
     ],
     [UserRole.USER]: [
