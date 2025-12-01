@@ -24,7 +24,11 @@ import {
     Alert,
     Snackbar,
     CircularProgress,
-    Autocomplete
+    Autocomplete,
+    ListItemSecondaryAction,
+    ListItem,
+    List,
+    ListItemText
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -32,16 +36,19 @@ import {
     Delete as DeleteIcon,
     Refresh as RefreshIcon,
     DevicesOther as DevicesIcon,
-    CheckCircle as CheckCircleIcon
+    CheckCircle as CheckCircleIcon,
+    Computer as ComputerIcon,
+    ContentCopy as ContentCopyIcon,
 } from '@mui/icons-material';
-import { mappingDeviceService } from '../services/registrationService';
+import { mappingDeviceService, signatureService, staffDeviceService } from '../services/registrationService';
 import type {
     MappingDataResponse,
     CreateMappingRequest,
     UpdateMappingRequest,
     GetMappingByStaffDeviceResponse,
     StaffDeviceResponse,
-    PatronDeviceResponse
+    PatronDeviceResponse,
+    CurrentHostNameResponse
 } from '../registrationType';
 import AdminLayout from '../components/layout/AdminLayout';
 import { useSetPageTitle } from '../hooks/useSetPageTitle';
@@ -62,7 +69,9 @@ const DeviceMappingSettingsPage: React.FC = () => {
     const [staffDevices, setStaffDevices] = useState<StaffDeviceResponse[]>([]);
     const [patronDevices, setPatronDevices] = useState<PatronDeviceResponse[]>([]);
     const [loadingDevices, setLoadingDevices] = useState(false);
-
+    const [hostnameLoading, setHostnameLoading] = useState(false);
+    const [hostnameData, setHostnameData] = useState<CurrentHostNameResponse | null>(null);
+    const [hostnameDialogOpen, setHostnameDialogOpen] = useState(false);
     // Form states for Create
     const [createForm, setCreateForm] = useState<CreateMappingRequest>({
         StaffDeviceName: '',
@@ -276,6 +285,38 @@ const DeviceMappingSettingsPage: React.FC = () => {
         });
     };
 
+    const handleCheckHostname = async () => {
+        try {
+            setHostnameLoading(true);
+            const data = await staffDeviceService.getCurrentHostName();
+            setHostnameData(data);
+            setHostnameDialogOpen(true);
+        } catch (error: any) {
+            console.error("Error getting hostname:", error);
+
+            let errorMessage = "Error getting hostname information";
+            if (error?.response?.data?.message) {
+                errorMessage = error.response.data.message;
+            } else if (error?.message) {
+                errorMessage = error.message;
+            }
+
+            showSnackbar(errorMessage, "error");
+        } finally {
+            setHostnameLoading(false);
+        }
+    };
+
+    const handleCopyToClipboard = async (text: string, label: string) => {
+        try {
+            await navigator.clipboard.writeText(text);
+            showSnackbar(`${label} copied to clipboard!`, "success");
+        } catch (error) {
+            console.error("Failed to copy to clipboard:", error);
+            showSnackbar(`Failed to copy ${label}`, "error");
+        }
+    };
+
     return (
         <AdminLayout>
             <Box sx={{ p: 3 }}>
@@ -300,6 +341,13 @@ const DeviceMappingSettingsPage: React.FC = () => {
                             onClick={handleCheckCurrentDevice}
                         >
                             Check Current Device
+                        </Button>
+                        <Button
+                            variant="outlined"
+                            startIcon={<ComputerIcon />}
+                            onClick={handleCheckHostname}
+                        >
+                            Check Hostname
                         </Button>
                         <Button
                             variant="contained"
@@ -581,6 +629,77 @@ const DeviceMappingSettingsPage: React.FC = () => {
                             startIcon={<CheckCircleIcon />}
                         >
                             Update
+                        </Button>
+                    </DialogActions>
+                </Dialog>
+
+                {/* Hostname Information Dialog */}
+                <Dialog
+                    open={hostnameDialogOpen}
+                    onClose={() => setHostnameDialogOpen(false)}
+                    maxWidth="sm"
+                    fullWidth
+                >
+                    <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <ComputerIcon />
+                        Current Computer Information
+                    </DialogTitle>
+                    <DialogContent>
+                        {hostnameData && (
+                            <List>
+                                <ListItem sx={{ px: 0 }}>
+                                    <ListItemText
+                                        primary="Computer Name"
+                                        secondary={hostnameData.computerName}
+                                        primaryTypographyProps={{ fontWeight: 600 }}
+                                        secondaryTypographyProps={{
+                                            fontSize: '1.1rem',
+                                            color: 'primary.main',
+                                            fontFamily: 'monospace'
+                                        }}
+                                    />
+                                    <ListItemSecondaryAction>
+                                        <Tooltip title="Copy Computer Name">
+                                            <IconButton
+                                                edge="end"
+                                                onClick={() => handleCopyToClipboard(hostnameData.computerName, "Computer Name")}
+                                                size="small"
+                                            >
+                                                <ContentCopyIcon />
+                                            </IconButton>
+                                        </Tooltip>
+                                    </ListItemSecondaryAction>
+                                </ListItem>
+
+                                <ListItem sx={{ px: 0 }}>
+                                    <ListItemText
+                                        primary="IP Address"
+                                        secondary={hostnameData.ip}
+                                        primaryTypographyProps={{ fontWeight: 600 }}
+                                        secondaryTypographyProps={{
+                                            fontSize: '1.1rem',
+                                            color: 'secondary.main',
+                                            fontFamily: 'monospace'
+                                        }}
+                                    />
+                                    <ListItemSecondaryAction>
+                                        <Tooltip title="Copy IP Address">
+                                            <IconButton
+                                                edge="end"
+                                                onClick={() => handleCopyToClipboard(hostnameData.ip, "IP Address")}
+                                                size="small"
+                                            >
+                                                <ContentCopyIcon />
+                                            </IconButton>
+                                        </Tooltip>
+                                    </ListItemSecondaryAction>
+                                </ListItem>
+                            </List>
+                        )}
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={() => setHostnameDialogOpen(false)} variant="contained">
+                            Close
                         </Button>
                     </DialogActions>
                 </Dialog>

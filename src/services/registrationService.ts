@@ -1,5 +1,5 @@
 import axios from "axios";
-import type { CheckPatronIdentificationRequest, CheckValidIncomeRequest, CheckValidIncomeResponse, CountryResponse, CreateMappingRequest, CreateMappingResponse, CurrentStaffDeviceResponse, GetAllMappingsResponse, GetMappingByStaffDeviceResponse, IncomeFileResponse, MappingDataResponse, OnlineStaffDevicesResponse, PatronImagesResponse, PatronRegisterMembershipRequest, PatronRegisterMembershipResponse, PatronResponse, RenderDocumentResponse, StaffAndPatronDevicesResponse, StaffSignatureRequest, UpdateMappingRequest, UpdateMappingResponse } from "../registrationType";
+import type { CheckPatronIdentificationRequest, CheckValidIncomeRequest, CheckValidIncomeResponse, CountryResponse, CreateMappingRequest, CreateMappingResponse, CurrentHostNameResponse, CurrentStaffDeviceResponse, GetAllMappingsResponse, GetMappingByStaffDeviceResponse, IncomeFileResponse, MappingDataResponse, OnlineStaffDevicesResponse, PatronImagesResponse, PatronRegisterMembershipRequest, PatronRegisterMembershipResponse, PatronResponse, RenderDocumentResponse, StaffAndPatronDevicesResponse, StaffSignatureRequest, UpdateMappingRequest, UpdateMappingResponse } from "../registrationType";
 
 const API_BASE = (window as any)._env_?.API_BASE;
 const api = axios.create({
@@ -150,6 +150,10 @@ export const staffDeviceService = {
     getOnlineStaffDevices: async (): Promise<OnlineStaffDevicesResponse[]> => {
         const response = await api.get<ApiEnvelope<OnlineStaffDevicesResponse[]>>("/api/PatronDevice/online-staff-devices");
         return unwrapApiEnvelope(response);
+    },
+    getCurrentHostName: async (): Promise<CurrentHostNameResponse> => {
+        const res = await api.get(`/api/PatronDevice/client-name`);
+        return unwrapApiEnvelope(res);
     }
 };
 

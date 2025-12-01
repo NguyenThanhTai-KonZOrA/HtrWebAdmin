@@ -234,3 +234,8 @@ export interface OnlineStaffDevicesResponse {
     staffUserName: string;
     lastHeartbeat: string;
 }
+
+export interface CurrentHostNameResponse {
+    computerName: string;
+    ip: string;
+}
