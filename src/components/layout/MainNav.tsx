@@ -304,7 +304,7 @@ export function MainNav(): React.JSX.Element {
                                 sx={{
                                     flexGrow: 1,
                                     textAlign: 'center',
-                                    color: '#274549',
+                                    color: 'text.primary',
                                     fontWeight: 700,
                                     fontSize: '1.5rem'
                                 }}

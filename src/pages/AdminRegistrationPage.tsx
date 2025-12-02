@@ -1918,7 +1918,7 @@ const AdminRegistrationPage: React.FC = () => {
 
 
                                 {/* Workflow Status - Show progress */}
-                                <Card variant="outlined" sx={{ backgroundColor: '#f5f5f5' }}>
+                                <Card variant="outlined" sx={{ backgroundColor: 'background.paper' }}>
                                     <CardContent>
                                         <Typography variant="h6" gutterBottom sx={{ mb: 2, color: 'primary.main' }}>
                                             Registration Workflow Status

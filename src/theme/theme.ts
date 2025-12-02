@@ -70,33 +70,6 @@ export const lightTheme = createTheme({
       secondary: '#64748b',
     },
   },
-  components: {
-    ...baseTheme.components,
-    MuiCard: {
-      styleOverrides: {
-        root: {
-          borderRadius: 12,
-          boxShadow: '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)',
-        },
-      },
-    },
-    MuiAppBar: {
-      styleOverrides: {
-        root: {
-          boxShadow: 'none',
-          borderBottom: '1px solid #e2e8f0',
-          backgroundColor: '#fafafa',
-        },
-      },
-    },
-    MuiPaper: {
-      styleOverrides: {
-        root: {
-          backgroundImage: 'none',
-        },
-      },
-    },
-  },
 });
 
 export const darkTheme = createTheme({
@@ -104,7 +77,7 @@ export const darkTheme = createTheme({
   palette: {
     mode: 'dark',
     primary: {
-      main: '#60a5fa',
+      main: '#3b7ac7ff',
       dark: '#3b82f6',
       light: '#93c5fd',
       contrastText: '#ffffff',
@@ -121,7 +94,7 @@ export const darkTheme = createTheme({
     },
     text: {
       primary: '#f1f5f9',
-      secondary: '#94a3b8',
+      secondary: '#b2c7e6ff',
     },
     divider: '#334155',
   },
