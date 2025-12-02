@@ -46,7 +46,12 @@ import {
     Refresh as RefreshIcon,
     CloudUpload as UploadIcon,
     Delete as DeleteIcon,
-    Send as SendIcon
+    Send as SendIcon,
+    PictureAsPdf as PdfIcon,
+    Description as DocIcon,
+    TableChart as ExcelIcon,
+    Image as ImageIcon,
+    InsertDriveFile as FileIcon
 } from '@mui/icons-material';
 import {
     patronService,
@@ -407,6 +412,46 @@ const AdminRegistrationPage: React.FC = () => {
         setImageViewerOpen(true);
     };
 
+    // Handle file view - support images, PDF, DOCX, Excel
+    const handleFileView = (fileUrl: string, _fileName?: string) => {
+        setSelectedImage(fileUrl);
+        setImageViewerOpen(true);
+    };
+
+    // Get file type from filename
+    const getFileType = (fileName: string): 'image' | 'pdf' | 'doc' | 'excel' | 'other' => {
+        const ext = fileName.toLowerCase().split('.').pop() || '';
+
+        if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].includes(ext)) {
+            return 'image';
+        } else if (ext === 'pdf') {
+            return 'pdf';
+        } else if (['doc', 'docx'].includes(ext)) {
+            return 'doc';
+        } else if (['xls', 'xlsx'].includes(ext)) {
+            return 'excel';
+        }
+        return 'other';
+    };
+
+    // Get file icon based on file type
+    const getFileIcon = (fileName: string) => {
+        const fileType = getFileType(fileName);
+
+        switch (fileType) {
+            case 'image':
+                return <ImageIcon sx={{ color: '#4caf50' }} />;
+            case 'pdf':
+                return <PdfIcon sx={{ color: '#f44336' }} />;
+            case 'doc':
+                return <DocIcon sx={{ color: '#2196f3' }} />;
+            case 'excel':
+                return <ExcelIcon sx={{ color: '#4caf50' }} />;
+            default:
+                return <FileIcon sx={{ color: '#757575' }} />;
+        }
+    };
+
     // Validate Vietnamese phone number format
     const validateVietnamesePhoneNumber = (phoneNumber: string): boolean => {
         if (!phoneNumber) return false;
@@ -510,8 +555,10 @@ const AdminRegistrationPage: React.FC = () => {
         return newRegistrations.filter(patron =>
             patron.firstName?.toLowerCase().includes(newRegSearch.toLowerCase()) ||
             patron.lastName?.toLowerCase().includes(newRegSearch.toLowerCase()) ||
+            patron.gender?.toLowerCase().includes(newRegSearch.toLowerCase()) ||
             patron.mobilePhone?.includes(newRegSearch) ||
-            patron.identificationNumber?.includes(newRegSearch)
+            patron.identificationNumber?.includes(newRegSearch) ||
+            patron.identificationCountry?.includes(newRegSearch.toLowerCase())
         );
     }, [newRegistrations, newRegSearch]);
 
@@ -519,8 +566,11 @@ const AdminRegistrationPage: React.FC = () => {
         return memberships.filter(patron =>
             patron.firstName?.toLowerCase().includes(membershipSearch.toLowerCase()) ||
             patron.lastName?.toLowerCase().includes(membershipSearch.toLowerCase()) ||
+            patron.gender?.toLowerCase().includes(membershipSearch.toLowerCase()) ||
             patron.mobilePhone?.includes(membershipSearch) ||
-            patron.identificationNumber?.includes(membershipSearch)
+            patron.identificationNumber?.includes(membershipSearch) ||
+            patron.identificationCountry?.includes(membershipSearch.toLowerCase()) ||
+            patron.playerId?.toString().includes(membershipSearch)
         );
     }, [memberships, membershipSearch]);
 
@@ -1295,7 +1345,7 @@ const AdminRegistrationPage: React.FC = () => {
                                         </IconButton>
                                     </Tooltip>
                                 </TableCell>
-                                <TableCell>
+                                <TableCell align="center">
                                     <Chip label={patron.submitType == 1 ? 'Online' : 'Manual'}
                                         color={patron.submitType == 1 ? 'success' : 'secondary'}
                                         size='small' />
@@ -2201,27 +2251,67 @@ const AdminRegistrationPage: React.FC = () => {
                                                                     sx={{
                                                                         display: 'flex',
                                                                         alignItems: 'center',
-                                                                        p: 1,
-                                                                        bgcolor: 'grey.100',
-                                                                        borderRadius: 1
+                                                                        p: 1.5,
+                                                                        bgcolor: 'background.paper',
+                                                                        borderRadius: 1,
+                                                                        border: '1px solid',
+                                                                        borderColor: 'divider',
+                                                                        '&:hover': {
+                                                                            bgcolor: 'action.hover',
+                                                                        },
+                                                                        transition: 'all 0.2s ease'
                                                                     }}
                                                                 >
-                                                                    <Typography sx={{ flexGrow: 1 }}>{file.originalName}</Typography>
-                                                                    <Chip size="small" label={`${(file.size / 1024).toFixed(1)} KB`} sx={{ mr: 1 }} />
-                                                                    <IconButton
-                                                                        size="small"
-                                                                        onClick={() => handleImageClick(Api_URL + file.url)}
-                                                                        sx={{ mr: 1 }}
-                                                                    >
-                                                                        <VisibilityIcon />
-                                                                    </IconButton>
-                                                                    <IconButton
-                                                                        size="small"
-                                                                        color="error"
-                                                                        onClick={() => handleDeleteFile(file.batchId, file.savedAs)}
-                                                                    >
-                                                                        <DeleteIcon />
-                                                                    </IconButton>
+                                                                    {/* File Icon */}
+                                                                    <Box sx={{ mr: 1.5, display: 'flex', alignItems: 'center' }}>
+                                                                        {getFileIcon(file.originalName)}
+                                                                    </Box>
+
+                                                                    {/* File Info */}
+                                                                    <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+                                                                        <Typography
+                                                                            variant="body2"
+                                                                            sx={{
+                                                                                fontWeight: 500,
+                                                                                overflow: 'hidden',
+                                                                                textOverflow: 'ellipsis',
+                                                                                whiteSpace: 'nowrap'
+                                                                            }}
+                                                                        >
+                                                                            {file.originalName}
+                                                                        </Typography>
+                                                                        <Typography variant="caption" color="text.secondary">
+                                                                            {(file.size / 1024).toFixed(1)} KB
+                                                                        </Typography>
+                                                                    </Box>
+
+                                                                    {/* Actions */}
+                                                                    <Box sx={{ display: 'flex', gap: 0.5 }}>
+                                                                        <Tooltip title="View file">
+                                                                            <IconButton
+                                                                                size="small"
+                                                                                onClick={() => handleFileView(Api_URL + file.url, file.originalName)}
+                                                                                sx={{
+                                                                                    color: 'primary.main',
+                                                                                    '&:hover': { bgcolor: 'primary.light', color: 'primary.contrastText' }
+                                                                                }}
+                                                                            >
+                                                                                <VisibilityIcon fontSize="small" />
+                                                                            </IconButton>
+                                                                        </Tooltip>
+                                                                        <Tooltip title="Delete file">
+                                                                            <IconButton
+                                                                                size="small"
+                                                                                color="error"
+                                                                                onClick={() => handleDeleteFile(file.batchId, file.savedAs)}
+                                                                                sx={{
+                                                                                    '&:hover': { bgcolor: 'error.light', color: 'error.contrastText' }
+                                                                                }}
+                                                                            >
+                                                                                <DeleteIcon fontSize="small" />
+                                                                            </IconButton>
+                                                                        </Tooltip>
+                                                                    </Box>
                                                                 </Box>
                                                             ))}
                                                         </Stack>
@@ -2430,7 +2520,7 @@ const AdminRegistrationPage: React.FC = () => {
                 >
                     <DialogTitle>
                         <Box display="flex" justifyContent="space-between" alignItems="center">
-                            <Typography variant="h6">Image Viewer</Typography>
+                            <Typography variant="h6">File Viewer</Typography>
                             <IconButton onClick={() => setImageViewerOpen(false)}>
                                 <CloseIcon />
                             </IconButton>
@@ -2438,18 +2528,114 @@ const AdminRegistrationPage: React.FC = () => {
                     </DialogTitle>
                     <DialogContent>
                         <Box display="flex" justifyContent="center" alignItems="center" sx={{ minHeight: 400 }}>
-                            <img
-                                src={selectedImage}
-                                alt="Patron"
-                                style={{
-                                    maxWidth: '100%',
-                                    maxHeight: '80vh',
-                                    objectFit: 'contain'
-                                }}
-                            />
+                            {(() => {
+                                // Extract filename from URL
+                                const urlParts = selectedImage.split('/');
+                                const fileName = urlParts[urlParts.length - 1];
+                                const fileType = getFileType(fileName);
+
+                                if (fileType === 'image') {
+                                    return (
+                                        <img
+                                            src={selectedImage}
+                                            alt="Document"
+                                            style={{
+                                                maxWidth: '100%',
+                                                maxHeight: '80vh',
+                                                objectFit: 'contain'
+                                            }}
+                                        />
+                                    );
+                                } else if (fileType === 'pdf') {
+                                    return (
+                                        <iframe
+                                            src={selectedImage}
+                                            title="PDF Viewer"
+                                            style={{
+                                                width: '100%',
+                                                height: '80vh',
+                                                border: 'none'
+                                            }}
+                                        />
+                                    );
+                                } else if (fileType === 'doc' || fileType === 'excel') {
+                                    // Use Google Docs Viewer for Office files
+                                    const viewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(selectedImage)}&embedded=true`;
+                                    // return (
+                                    //     <iframe
+                                    //         src={viewerUrl}
+                                    //         title="Document Viewer"
+                                    //         style={{
+                                    //             width: '100%',
+                                    //             height: '80vh',
+                                    //             border: 'none'
+                                    //         }}
+                                    //     />
+                                    // );
+                                    return (
+                                        <Box textAlign="center" p={4}>
+                                            <Typography variant="h6" color="text.secondary" gutterBottom>
+                                                Preview not available
+                                            </Typography>
+                                            <Typography variant="body2" color="text.secondary" paragraph>
+                                                This file type cannot be previewed in the browser.
+                                            </Typography>
+                                            <Button
+                                                variant="contained"
+                                                href={selectedImage}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                            >
+                                                Download File
+                                            </Button>
+                                        </Box>
+                                    );
+                                } else {
+                                    return (
+                                        <Box textAlign="center" p={4}>
+                                            <Typography variant="h6" color="text.secondary" gutterBottom>
+                                                Preview not available
+                                            </Typography>
+                                            <Typography variant="body2" color="text.secondary" paragraph>
+                                                This file type cannot be previewed in the browser.
+                                            </Typography>
+                                            <Button
+                                                variant="contained"
+                                                href={selectedImage}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                            >
+                                                Download File
+                                            </Button>
+                                        </Box>
+                                    );
+                                }
+                            })()}
                         </Box>
                     </DialogContent>
                     <DialogActions>
+                        {(() => {
+                            // Extract filename from URL to check file type
+                            const urlParts = selectedImage.split('/');
+                            const fileName = urlParts[urlParts.length - 1];
+                            const fileType = getFileType(fileName);
+
+                            // Don't show download for doc/excel as they use Google Docs Viewer
+                            // which already has download option
+                            const showDownload = fileType !== 'doc' && fileType !== 'excel';
+
+                            return showDownload ? (
+                                <Button
+                                    variant="outlined"
+                                    href={selectedImage}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    sx={{ mr: 'auto' }}
+                                >
+                                    Download
+                                </Button>
+                            ) : null;
+                        })()}
                         <Button onClick={() => setImageViewerOpen(false)} sx={{ border: '1px solid #ccc' }}>Close</Button>
                     </DialogActions>
                 </Dialog>
