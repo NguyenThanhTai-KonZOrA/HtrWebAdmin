@@ -368,6 +368,15 @@ const AdminRegistrationPage: React.FC = () => {
         setHasUnsavedChanges(hasChanges);
     }, [selectedPatron, editedPatron, specifyJobTitle, specifyPosition]);
 
+    // Reset page to 0 when search changes
+    useEffect(() => {
+        setNewRegPage(0);
+    }, [newRegSearch]);
+
+    useEffect(() => {
+        setMembershipPage(0);
+    }, [membershipSearch]);
+
     const loadNewRegistrations = async () => {
         try {
             setLoadingNewReg(true);
@@ -2529,11 +2538,26 @@ const AdminRegistrationPage: React.FC = () => {
                     <DialogContent>
                         <Box display="flex" justifyContent="center" alignItems="center" sx={{ minHeight: 400 }}>
                             {(() => {
-                                // Extract filename from URL
+                                // Check if it's a base64 image (patron images)
+                                if (selectedImage.startsWith('data:image')) {
+                                    return (
+                                        <img
+                                            src={selectedImage}
+                                            alt="Patron Document"
+                                            style={{
+                                                maxWidth: '100%',
+                                                maxHeight: '80vh',
+                                                objectFit: 'contain'
+                                            }}
+                                        />
+                                    );
+                                }
+                                
+                                // Extract filename from URL for uploaded files
                                 const urlParts = selectedImage.split('/');
                                 const fileName = urlParts[urlParts.length - 1];
                                 const fileType = getFileType(fileName);
-
+                                
                                 if (fileType === 'image') {
                                     return (
                                         <img
@@ -2560,7 +2584,7 @@ const AdminRegistrationPage: React.FC = () => {
                                     );
                                 } else if (fileType === 'doc' || fileType === 'excel') {
                                     // Use Google Docs Viewer for Office files
-                                    const viewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(selectedImage)}&embedded=true`;
+                                    // const viewerUrl = `https://docs.google.com/gview?url=${(selectedImage)}&embedded=true`;
                                     // return (
                                     //     <iframe
                                     //         src={viewerUrl}
@@ -2615,6 +2639,11 @@ const AdminRegistrationPage: React.FC = () => {
                     </DialogContent>
                     <DialogActions>
                         {(() => {
+                            // Don't show download button for base64 images (patron images)
+                            if (selectedImage.startsWith('data:image')) {
+                                return null;
+                            }
+                            
                             // Extract filename from URL to check file type
                             const urlParts = selectedImage.split('/');
                             const fileName = urlParts[urlParts.length - 1];
