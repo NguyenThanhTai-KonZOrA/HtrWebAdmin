@@ -26,23 +26,36 @@ api.interceptors.response.use(
     (response) => response,
     (error) => {
         if (error.response?.status === 401) {
-            // Only redirect if this is not a login request
+            // Only redirect if this is not a login request or token validation
             const isLoginRequest = error.config?.url?.includes('/api/auth/login');
+            const isTokenValidation = error.config?.headers?.['X-Token-Validation'] === 'true';
 
-            if (!isLoginRequest) {
-                // Clear token and redirect to login for authenticated requests
+            if (!isLoginRequest && !isTokenValidation) {
+                console.log('🔒 Received 401 Unauthorized - Token is invalid or expired');
+                
+                // Clear all auth data
                 localStorage.removeItem('token');
                 localStorage.removeItem('user');
                 localStorage.removeItem('userRole');
+                
+                // Trigger logout event for other tabs
+                localStorage.setItem('logout-event', Date.now().toString());
+                
+                // Show user-friendly message
+                console.log('🚪 Redirecting to login page...');
+                
+                // Redirect to login
                 window.location.href = '/login';
             }
         }
+        
         // Check if it's a network error
         if (!error.response && error.code === 'ERR_NETWORK') {
             console.error('Network error detected:', error.message);
-            // Có thể dispatch event để update network status
+            // Dispatch event to update network status
             window.dispatchEvent(new CustomEvent('network-error', { detail: error }));
         }
+        
         return Promise.reject(error);
     }
 );
@@ -216,5 +229,82 @@ export const mappingDeviceService = {
     deleteMapping: async (mappingId: number): Promise<void> => {
         const response = await api.delete<ApiEnvelope<void>>(`/api/DeviceMapping/delete/${mappingId}`);
         return unwrapApiEnvelope(response);
+    }
+};
+
+// Auth service for token validation
+export const authService = {
+    // Validate token by making a lightweight API call
+    validateToken: async (): Promise<boolean> => {
+        try {
+            console.log('🔍 [Token Validation] Calling backend to validate token...');
+            
+            // Use a lightweight endpoint to check if token is valid
+            // Add special header to prevent auto-redirect on 401
+            await api.get('/api/RegistrationAdmin/patron/all', {
+                params: { isMembership: false },
+                headers: {
+                    'X-Token-Validation': 'true'
+                }
+            });
+            
+            console.log('✅ [Token Validation] Backend accepted token - Token is VALID');
+            return true;
+        } catch (error: any) {
+            // If 401, token is invalid
+            if (error.response?.status === 401) {
+                console.error('❌ [Token Validation] Backend rejected token - 401 Unauthorized');
+                console.error('   → This could mean:');
+                console.error('   1. Token expired');
+                console.error('   2. Backend was restarted (if server_start validation enabled)');
+                console.error('   3. Token signature invalid');
+                console.error('   → User will be logged out');
+                return false;
+            }
+            // For other errors (network, server error), assume token is still valid
+            // to avoid unnecessary logouts
+            console.warn('⚠️ [Token Validation] Check failed with non-401 error:', error.message);
+            console.warn('   → Assuming token is still valid to avoid unnecessary logout');
+            return true;
+        }
+    },
+
+    // Check if token exists and is not expired (client-side check)
+    isTokenExpired: (token: string | null): boolean => {
+        if (!token) {
+            console.log('🔍 [Token Expiration] No token provided');
+            return true;
+        }
+
+        try {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            const exp = payload.exp;
+            const iat = payload.iat;
+            
+            if (!exp) {
+                console.log('⚠️ [Token Expiration] No exp claim in token');
+                return false; // No expiration in token
+            }
+
+            // Check if token is expired (with 30 second buffer)
+            const now = Math.floor(Date.now() / 1000);
+            const expiresIn = exp - now;
+            const tokenAge = now - (iat || now);
+            
+            const isExpired = exp < (now + 30);
+            
+            if (isExpired) {
+                console.error('❌ [Token Expiration] Token EXPIRED');
+                console.error(`   Token age: ${Math.floor(tokenAge / 60)} minutes`);
+                console.error(`   Expired: ${Math.abs(expiresIn)} seconds ago`);
+            } else {
+                console.log(`✅ [Token Expiration] Token valid, expires in ${Math.floor(expiresIn / 60)} minutes`);
+            }
+            
+            return isExpired;
+        } catch (error) {
+            console.error('❌ [Token Expiration] Error parsing token:', error);
+            return true; // If we can't parse, assume expired
+        }
     }
 };

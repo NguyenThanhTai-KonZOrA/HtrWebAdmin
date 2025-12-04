@@ -951,9 +951,22 @@ const AdminRegistrationPage: React.FC = () => {
             // Refresh data
             await loadNewRegistrations();
             await loadMemberships();
-        } catch (err) {
-            setDialogError('Failed to enroll player.');
-            console.error('Error enrolling player:', err);
+        } catch (error: any) {
+
+            // Handle HTTP error responses (400, 500, etc.)
+            let errorMessage = "Failed to send signature request.";
+            if (error?.response?.data?.message) {
+                errorMessage = error.response.data.message;
+            } else if (error?.response?.data?.data) {
+                errorMessage = typeof error.response.data.data === 'string'
+                    ? error.response.data.data
+                    : (error.response.data.data?.message || JSON.stringify(error.response.data.data));
+            } else if (error?.message) {
+                errorMessage = error.message;
+            }
+
+            setDialogError(errorMessage);
+            console.error('Error requesting signature:', errorMessage);
         } finally {
             setEnrolling(false);
         }
@@ -2552,12 +2565,12 @@ const AdminRegistrationPage: React.FC = () => {
                                         />
                                     );
                                 }
-                                
+
                                 // Extract filename from URL for uploaded files
                                 const urlParts = selectedImage.split('/');
                                 const fileName = urlParts[urlParts.length - 1];
                                 const fileType = getFileType(fileName);
-                                
+
                                 if (fileType === 'image') {
                                     return (
                                         <img
@@ -2643,7 +2656,7 @@ const AdminRegistrationPage: React.FC = () => {
                             if (selectedImage.startsWith('data:image')) {
                                 return null;
                             }
-                            
+
                             // Extract filename from URL to check file type
                             const urlParts = selectedImage.split('/');
                             const fileName = urlParts[urlParts.length - 1];
