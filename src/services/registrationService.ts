@@ -1,4 +1,5 @@
 import axios from "axios";
+import { showSessionExpiredNotification } from '../utils/sessionExpiredNotification';
 import type { CheckPatronIdentificationRequest, CheckValidIncomeRequest, CheckValidIncomeResponse, CountryResponse, CreateMappingRequest, CreateMappingResponse, CurrentHostNameResponse, CurrentStaffDeviceResponse, GetAllMappingsResponse, GetMappingByStaffDeviceResponse, IncomeFileResponse, MappingDataResponse, OnlineStaffDevicesResponse, PatronImagesResponse, PatronRegisterMembershipRequest, PatronRegisterMembershipResponse, PatronResponse, RenderDocumentResponse, StaffAndPatronDevicesResponse, StaffSignatureRequest, UpdateMappingRequest, UpdateMappingResponse } from "../registrationType";
 
 const API_BASE = (window as any)._env_?.API_BASE;
@@ -42,10 +43,13 @@ api.interceptors.response.use(
                 localStorage.setItem('logout-event', Date.now().toString());
                 
                 // Show user-friendly message
+                showSessionExpiredNotification();
                 console.log('🚪 Redirecting to login page...');
                 
-                // Redirect to login
-                window.location.href = '/login';
+                // Delay redirect to show notification
+                setTimeout(() => {
+                    window.location.href = '/login';
+                }, 3000);
             }
         }
         

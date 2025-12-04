@@ -1,4 +1,5 @@
 import axios from "axios";
+import { showSessionExpiredNotification } from '../utils/sessionExpiredNotification';
 import type {
   ChangeQueueStatusResponse, RegisterMemberRequest,
   RegisterNewUserRequest, TicketResponse, TicketStatusResponse,
@@ -83,7 +84,14 @@ api.interceptors.response.use(
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         localStorage.removeItem('userRole');
-        window.location.href = '/login';
+        
+        // Show user-friendly message
+        showSessionExpiredNotification();
+        
+        // Delay redirect to show notification
+        setTimeout(() => {
+          window.location.href = '/login';
+        }, 3000);
       }
     }
     // Check if it's a network error

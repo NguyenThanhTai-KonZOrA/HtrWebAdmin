@@ -34,7 +34,7 @@ const Login: React.FC = () => {
     useEffect(() => {
         // Only navigate if we have a valid token and not currently loading/submitting
         if (token && !loading) {
-            const from = (location.state as any)?.from?.pathname || "/admin-dashboard";
+            const from = (location.state as any)?.from?.pathname || "/admin-registration";
             navigate(from, { replace: true });
         }
     }, [token, navigate, location.state, loading]);
