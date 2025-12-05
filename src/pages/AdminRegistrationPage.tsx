@@ -51,7 +51,9 @@ import {
     Description as DocIcon,
     TableChart as ExcelIcon,
     Image as ImageIcon,
-    InsertDriveFile as FileIcon
+    InsertDriveFile as FileIcon,
+    DeleteForever as DeleteForeverIcon,
+    DeleteSweep as DeleteSweepIcon
 } from '@mui/icons-material';
 import {
     patronService,
@@ -887,6 +889,61 @@ const AdminRegistrationPage: React.FC = () => {
         }
     };
 
+    // Handle delete patron
+    const handleDeletePatron = async (patron: PatronResponse) => {
+        // Confirm before delete
+        const result = await Swal.fire({
+            title: 'Delete Patron?',
+            html: `
+                <p>Are you sure you want to delete this patron?</p>
+                <p><strong>Name:</strong> ${patron.firstName} ${patron.lastName}</p>
+                <p><strong>Mobile:</strong> ${patron.mobilePhone}</p>
+                <p class="text-danger"><strong>This action cannot be undone!</strong></p>
+            `,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, delete it!',
+            cancelButtonText: 'Cancel'
+        });
+
+        if (!result.isConfirmed) {
+            return;
+        }
+
+        try {
+            await patronService.deletePatron(patron.pid);
+
+            // Show success message
+            await Swal.fire({
+                icon: 'success',
+                title: 'Deleted!',
+                text: 'Patron has been deleted successfully.',
+                timer: 2000,
+                showConfirmButton: false
+            });
+
+            // Refresh data
+            await loadNewRegistrations();
+            await loadMemberships();
+        } catch (err: any) {
+            let errorMessage = 'Failed to delete patron.';
+            if (err?.response?.data?.message) {
+                errorMessage = err.response.data.message;
+            } else if (err?.message) {
+                errorMessage = err.message;
+            }
+
+            Swal.fire({
+                icon: 'error',
+                title: 'Delete Failed',
+                text: errorMessage
+            });
+            console.error('Error deleting patron:', err);
+        }
+    };
+
     // Handle income document approval
     const handleApproveIncome = async () => {
         if (!selectedPatron || !incomeDocument || !expireDate) return;
@@ -951,9 +1008,22 @@ const AdminRegistrationPage: React.FC = () => {
             // Refresh data
             await loadNewRegistrations();
             await loadMemberships();
-        } catch (err) {
-            setDialogError('Failed to enroll player.');
-            console.error('Error enrolling player:', err);
+        } catch (error: any) {
+
+            // Handle HTTP error responses (400, 500, etc.)
+            let errorMessage = "Failed to send signature request.";
+            if (error?.response?.data?.message) {
+                errorMessage = error.response.data.message;
+            } else if (error?.response?.data?.data) {
+                errorMessage = typeof error.response.data.data === 'string'
+                    ? error.response.data.data
+                    : (error.response.data.data?.message || JSON.stringify(error.response.data.data));
+            } else if (error?.message) {
+                errorMessage = error.message;
+            }
+
+            setDialogError(errorMessage);
+            console.error('Error requesting signature:', errorMessage);
         } finally {
             setEnrolling(false);
         }
@@ -1344,15 +1414,32 @@ const AdminRegistrationPage: React.FC = () => {
                                         boxShadow: '2px 0 5px rgba(0,0,0,0.1)'
                                     }}
                                 >
-                                    <Tooltip title={patron.isHaveMembership ? 'View Details' : 'Edit Details'}>
-                                        <IconButton
-                                            onClick={() => handlePatronAction(patron)}
-                                            color="primary"
-                                            size="small"
-                                        >
-                                            {patron.isHaveMembership ? <VisibilityIcon /> : <EditIcon />}
-                                        </IconButton>
-                                    </Tooltip>
+                                    <Stack direction="row" spacing={0.5}>
+                                        <Tooltip title={patron.isHaveMembership ? 'View Details' : 'Edit Details'}>
+                                            <IconButton
+                                                onClick={() => handlePatronAction(patron)}
+                                                color="primary"
+                                                size="small"
+                                            >
+                                                {patron.isHaveMembership ? <VisibilityIcon /> : <EditIcon />}
+                                            </IconButton>
+                                        </Tooltip>
+
+                                        {!patron.isHaveMembership && (
+                                            <Tooltip title="Delete Patron">
+                                                <IconButton
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleDeletePatron(patron);
+                                                    }}
+                                                    color="error"
+                                                    size="small"
+                                                >
+                                                    <DeleteSweepIcon />
+                                                </IconButton>
+                                            </Tooltip>
+                                        )}
+                                    </Stack>
                                 </TableCell>
                                 <TableCell align="center">
                                     <Chip label={patron.submitType == 1 ? 'Online' : 'Manual'}
@@ -2552,12 +2639,12 @@ const AdminRegistrationPage: React.FC = () => {
                                         />
                                     );
                                 }
-                                
+
                                 // Extract filename from URL for uploaded files
                                 const urlParts = selectedImage.split('/');
                                 const fileName = urlParts[urlParts.length - 1];
                                 const fileType = getFileType(fileName);
-                                
+
                                 if (fileType === 'image') {
                                     return (
                                         <img
@@ -2643,7 +2730,7 @@ const AdminRegistrationPage: React.FC = () => {
                             if (selectedImage.startsWith('data:image')) {
                                 return null;
                             }
-                            
+
                             // Extract filename from URL to check file type
                             const urlParts = selectedImage.split('/');
                             const fileName = urlParts[urlParts.length - 1];

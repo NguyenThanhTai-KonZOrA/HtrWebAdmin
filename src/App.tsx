@@ -7,6 +7,7 @@ import { AppDataProvider } from './contexts/AppDataContext'
 import { AppLoadingProvider } from './contexts/AppLoadingContext'
 import NetworkAlert from './components/NetworkAlert'
 import { useNetworkStatus } from './hooks/useNetworkStatus'
+import { useTokenValidator } from './hooks/useTokenValidator'
 import Login from './components/Login'
 import './App.css'
 import AdminRegistrationPage from './pages/AdminRegistrationPage'
@@ -16,6 +17,9 @@ import AdminSettingsPage from './pages/AdminSettingsPage'
 
 function AppContent() {
   const networkStatus = useNetworkStatus();
+  
+  // Validate token periodically
+  useTokenValidator();
 
   return (
     <>

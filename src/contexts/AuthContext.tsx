@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { authService } from "../services/registrationService";
 
 interface AuthContextType {
   user: string | null;
@@ -7,6 +8,7 @@ interface AuthContextType {
   isLoading: boolean;
   login: (user: string, token: string) => void;
   logout: () => void;
+  validateAndRefreshToken: () => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -19,17 +21,70 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Get token from localStorage when app load
   useEffect(() => {
-    const savedToken = localStorage.getItem("token");
-    const savedUser = localStorage.getItem("user");
-    const savedRole = localStorage.getItem("userRole");
-    
-    if (savedToken) setToken(savedToken);
-    if (savedUser) setUser(savedUser);
-    if (savedRole) setRole(savedRole);
-    
-    // Set loading to false after checking localStorage
-    setIsLoading(false);
+    const initAuth = async () => {
+      const savedToken = localStorage.getItem("token");
+      const savedUser = localStorage.getItem("user");
+      const savedRole = localStorage.getItem("userRole");
+      
+      if (savedToken && savedUser && savedRole) {
+        // Check if token is expired (client-side check)
+        const isExpired = authService.isTokenExpired(savedToken);
+        
+        if (isExpired) {
+          console.log('🔒 Token is expired (client-side check), clearing...');
+          logout();
+          setIsLoading(false);
+          return;
+        }
+
+        // Validate token with server
+        console.log('🔍 Validating token with server...');
+        const isValid = await authService.validateToken();
+        
+        if (isValid) {
+          console.log('✅ Token is valid, restoring session...');
+          setToken(savedToken);
+          setUser(savedUser);
+          setRole(savedRole);
+        } else {
+          console.log('❌ Token is invalid, clearing session...');
+          logout();
+        }
+      }
+      
+      // Set loading to false after checking
+      setIsLoading(false);
+    };
+
+    initAuth();
   }, []);
+
+  // Validate token and refresh if needed
+  const validateAndRefreshToken = async (): Promise<boolean> => {
+    const currentToken = localStorage.getItem("token");
+    
+    if (!currentToken) {
+      return false;
+    }
+
+    // Check client-side expiration first
+    if (authService.isTokenExpired(currentToken)) {
+      console.log('🔒 Token expired, logging out...');
+      logout();
+      return false;
+    }
+
+    // Validate with server
+    const isValid = await authService.validateToken();
+    
+    if (!isValid) {
+      console.log('❌ Token invalid, logging out...');
+      logout();
+      return false;
+    }
+
+    return true;
+  };
 
   // 👇 Global logout detection
   useEffect(() => {
@@ -99,7 +154,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }
 
   return (
-    <AuthContext.Provider value={{ user, token, role, isLoading, login, logout }}>
+    <AuthContext.Provider value={{ user, token, role, isLoading, login, logout, validateAndRefreshToken }}>
       {children}
     </AuthContext.Provider>
   );
