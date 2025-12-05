@@ -33,33 +33,33 @@ api.interceptors.response.use(
 
             if (!isLoginRequest && !isTokenValidation) {
                 console.log('🔒 Received 401 Unauthorized - Token is invalid or expired');
-                
+
                 // Clear all auth data
                 localStorage.removeItem('token');
                 localStorage.removeItem('user');
                 localStorage.removeItem('userRole');
-                
+
                 // Trigger logout event for other tabs
                 localStorage.setItem('logout-event', Date.now().toString());
-                
+
                 // Show user-friendly message
                 showSessionExpiredNotification();
                 console.log('🚪 Redirecting to login page...');
-                
+
                 // Delay redirect to show notification
                 setTimeout(() => {
                     window.location.href = '/login';
                 }, 3000);
             }
         }
-        
+
         // Check if it's a network error
         if (!error.response && error.code === 'ERR_NETWORK') {
             console.error('Network error detected:', error.message);
             // Dispatch event to update network status
             window.dispatchEvent(new CustomEvent('network-error', { detail: error }));
         }
-        
+
         return Promise.reject(error);
     }
 );
@@ -114,6 +114,11 @@ export const patronService = {
         const response = await api.post<ApiEnvelope<PatronRegisterMembershipResponse>>("/api/RegistrationAdmin/register/membership", request);
         return unwrapApiEnvelope(response);
     },
+
+    deletePatron: async (patronId: number): Promise<void> => {
+        const response = await api.post<ApiEnvelope<void>>(`/api/RegistrationAdmin/patron/delete/${patronId}`);
+        return unwrapApiEnvelope(response);
+    }
 };
 
 export const incomeDocumentService = {
@@ -242,7 +247,7 @@ export const authService = {
     validateToken: async (): Promise<boolean> => {
         try {
             console.log('🔍 [Token Validation] Calling backend to validate token...');
-            
+
             // Use a lightweight endpoint to check if token is valid
             // Add special header to prevent auto-redirect on 401
             await api.get('/api/RegistrationAdmin/patron/all', {
@@ -251,7 +256,7 @@ export const authService = {
                     'X-Token-Validation': 'true'
                 }
             });
-            
+
             console.log('✅ [Token Validation] Backend accepted token - Token is VALID');
             return true;
         } catch (error: any) {
@@ -284,7 +289,7 @@ export const authService = {
             const payload = JSON.parse(atob(token.split('.')[1]));
             const exp = payload.exp;
             const iat = payload.iat;
-            
+
             if (!exp) {
                 console.log('⚠️ [Token Expiration] No exp claim in token');
                 return false; // No expiration in token
@@ -294,9 +299,9 @@ export const authService = {
             const now = Math.floor(Date.now() / 1000);
             const expiresIn = exp - now;
             const tokenAge = now - (iat || now);
-            
+
             const isExpired = exp < (now + 30);
-            
+
             if (isExpired) {
                 console.error('❌ [Token Expiration] Token EXPIRED');
                 console.error(`   Token age: ${Math.floor(tokenAge / 60)} minutes`);
@@ -304,7 +309,7 @@ export const authService = {
             } else {
                 console.log(`✅ [Token Expiration] Token valid, expires in ${Math.floor(expiresIn / 60)} minutes`);
             }
-            
+
             return isExpired;
         } catch (error) {
             console.error('❌ [Token Expiration] Error parsing token:', error);
