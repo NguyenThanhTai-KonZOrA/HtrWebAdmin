@@ -81,7 +81,7 @@ export const showSessionExpiredNotification = () => {
           font-size: 14px;
           color: #5d4037;
           line-height: 1.5;
-        ">Your session has expired. Please log in again to continue.</div>
+        ">Your session has expired. Please sign in again to continue your work.</div>
       </div>
     </div>
   `;
