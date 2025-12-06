@@ -96,7 +96,7 @@ export const patronService = {
     },
 
     getAllPatronsWithPagination: async (request: PatronPagingRequest): Promise<PatronPagingResponse> => {
-        const response = await api.post<ApiEnvelope<PatronPagingResponse>>("/api/RegistrationAdmin/patron/all/paging", request);
+        const response = await api.post<ApiEnvelope<PatronPagingResponse>>("/api/RegistrationAdmin/patron/all/paginate", request);
         const result = unwrapApiEnvelope(response) as any;
 
         // If the API returns an object with pagination info
@@ -280,7 +280,7 @@ export const authService = {
 
             // Use a lightweight endpoint to check if token is valid
             // Add special header to prevent auto-redirect on 401
-            await api.post('/api/RegistrationAdmin/patron/all/paging', {
+            await api.post('/api/RegistrationAdmin/patron/all/paginate', {
                 Take: 1,
                 Skip: 0
             }, {

@@ -379,7 +379,7 @@ const AdminRegistrationPage: React.FC = () => {
     // Reset page to 0 when search changes
     useEffect(() => {
         setNewRegPage(0);
-        
+
         // If search is empty, clear server search
         if (newRegSearch.trim() === '') {
             if (newRegServerSearch !== '') {
@@ -388,7 +388,7 @@ const AdminRegistrationPage: React.FC = () => {
             }
             return;
         }
-        
+
         // Try client-side filter first
         const clientFiltered = newRegistrations.filter(patron =>
             patron.firstName?.toLowerCase().includes(newRegSearch.toLowerCase()) ||
@@ -403,13 +403,18 @@ const AdminRegistrationPage: React.FC = () => {
         if (clientFiltered.length === 0) {
             setNewRegServerSearch(newRegSearch);
             loadNewRegistrations(newRegSearch, 0, rowsPerPage);
+        } else {
+            // Clear server search if we found results client-side
+            if (newRegServerSearch !== '') {
+                setNewRegServerSearch('');
+            }
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [newRegSearch]);
 
     useEffect(() => {
         setMembershipPage(0);
-        
+
         // If search is empty, clear server search
         if (membershipSearch.trim() === '') {
             if (membershipServerSearch !== '') {
@@ -418,7 +423,7 @@ const AdminRegistrationPage: React.FC = () => {
             }
             return;
         }
-        
+
         // Try client-side filter first
         const clientFiltered = memberships.filter(patron =>
             patron.firstName?.toLowerCase().includes(membershipSearch.toLowerCase()) ||
@@ -434,6 +439,11 @@ const AdminRegistrationPage: React.FC = () => {
         if (clientFiltered.length === 0) {
             setMembershipServerSearch(membershipSearch);
             loadMemberships(membershipSearch, 0, rowsPerPage);
+        } else {
+            // Clear server search if we found results client-side
+            if (membershipServerSearch !== '') {
+                setMembershipServerSearch('');
+            }
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [membershipSearch]);
@@ -441,9 +451,9 @@ const AdminRegistrationPage: React.FC = () => {
     const loadNewRegistrations = async (searchTerm?: string, page?: number, pageSize?: number) => {
         try {
             setLoadingNewReg(true);
-            
+
             const currentSearchTerm = searchTerm !== undefined ? searchTerm : newRegServerSearch;
-            
+
             const request = {
                 IsMembership: false,
                 Page: (page ?? newRegPage) + 1, // Server expects 1-based page index
@@ -465,9 +475,9 @@ const AdminRegistrationPage: React.FC = () => {
     const loadMemberships = async (searchTerm?: string, page?: number, pageSize?: number) => {
         try {
             setLoadingMembership(true);
-            
+
             const currentSearchTerm = searchTerm !== undefined ? searchTerm : membershipServerSearch;
-            
+
             const request = {
                 IsMembership: true,
                 Page: (page ?? membershipPage) + 1, // Server expects 1-based page index
@@ -660,7 +670,7 @@ const AdminRegistrationPage: React.FC = () => {
                 patron.identificationCountry?.includes(newRegSearch.toLowerCase())
             );
         }
-        
+
         // Return all for server-side pagination or server search
         return newRegistrations;
     }, [newRegistrations, newRegSearch, newRegServerSearch]);
@@ -678,7 +688,7 @@ const AdminRegistrationPage: React.FC = () => {
                 patron.playerId?.toString().includes(membershipSearch)
             );
         }
-        
+
         // Return all for server-side pagination or server search
         return memberships;
     }, [memberships, membershipSearch, membershipServerSearch]);
@@ -689,7 +699,7 @@ const AdminRegistrationPage: React.FC = () => {
             const startIndex = newRegPage * rowsPerPage;
             return filteredNewRegistrations.slice(startIndex, startIndex + rowsPerPage);
         }
-        
+
         // Server already paginated
         return newRegistrations;
     }, [filteredNewRegistrations, newRegPage, rowsPerPage, newRegSearch, newRegServerSearch, newRegistrations]);
@@ -700,7 +710,7 @@ const AdminRegistrationPage: React.FC = () => {
             const startIndex = membershipPage * rowsPerPage;
             return filteredMemberships.slice(startIndex, startIndex + rowsPerPage);
         }
-        
+
         // Server already paginated
         return memberships;
     }, [filteredMemberships, membershipPage, rowsPerPage, membershipSearch, membershipServerSearch, memberships]);
@@ -1608,7 +1618,7 @@ const AdminRegistrationPage: React.FC = () => {
                     <CardContent>
                         <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
                             <Typography variant="h6">
-                                New Registration ({filteredNewRegistrations.length})
+                                New Registration ({newRegSearch.trim() && !newRegServerSearch ? filteredNewRegistrations.length : newRegTotalRecords})
                             </Typography>
                             <Box display="flex" gap={1} alignItems="center">
                                 <TextField
@@ -1666,7 +1676,7 @@ const AdminRegistrationPage: React.FC = () => {
                     <CardContent>
                         <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
                             <Typography variant="h6">
-                                Membership ({filteredMemberships.length})
+                                Membership ({membershipSearch.trim() && !membershipServerSearch ? filteredMemberships.length : membershipTotalRecords})
                             </Typography>
                             <Box display="flex" gap={1} alignItems="center">
                                 <TextField
