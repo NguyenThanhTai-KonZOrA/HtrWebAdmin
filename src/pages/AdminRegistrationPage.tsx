@@ -78,7 +78,6 @@ import { useSignalR } from '../hooks/useSignalR';
 import Swal from 'sweetalert2';
 import { FormatUtcTime } from '../utils/formatUtcTime';
 
-
 function formatDate(dateString: string): string {
     dateString = FormatUtcTime.formatDateTime(dateString);
     try {
@@ -129,6 +128,7 @@ const GENDER_OPTIONS = [
     { value: 'Female', label: 'Female' },
     { value: 'Other', label: 'Other' }
 ];
+
 const Api_URL = (window as any)._env_?.API_BASE || '';
 const VIETNAM_COUNTRY_ID = 704;
 
@@ -497,6 +497,11 @@ const AdminRegistrationPage: React.FC = () => {
         }
 
         // Validate Vietnamese phone number format first
+        if (!isVietnamese()) {
+            return;
+        }
+
+        // Validate Vietnamese phone number format first
         if (!validateVietnamesePhoneNumber(phoneNumber)) {
             setPhoneNumberWarning('⚠️ Please enter a valid Vietnamese phone number!');
             return;
@@ -710,7 +715,9 @@ const AdminRegistrationPage: React.FC = () => {
         if (!editedPatron.mobilePhone?.trim()) {
             errors.mobilePhone = 'Mobile Phone is required';
         } else if (!validateVietnamesePhoneNumber(editedPatron.mobilePhone)) {
-            errors.mobilePhone = 'Please enter a valid Vietnamese phone number';
+            if (!isVietnamese()) { } else {
+                errors.mobilePhone = 'Please enter a valid Vietnamese phone number';
+            }
         }
         if (!editedPatron.jobTitle?.trim()) {
             errors.jobTitle = 'Occupation is required';
@@ -791,8 +798,12 @@ const AdminRegistrationPage: React.FC = () => {
 
         // Validate Vietnamese phone number format first
         if (editedPatron.mobilePhone && !validateVietnamesePhoneNumber(editedPatron.mobilePhone)) {
-            setDialogError('Please enter a valid Vietnamese phone number.');
-            return;
+            if (!isVietnamese()) {
+
+            } else {
+                setDialogError('Please enter a valid Vietnamese phone number.');
+                return;
+            }
         }
 
         // Check for warnings from duplicate checks
@@ -1009,7 +1020,6 @@ const AdminRegistrationPage: React.FC = () => {
             await loadNewRegistrations();
             await loadMemberships();
         } catch (error: any) {
-
             // Handle HTTP error responses (400, 500, etc.)
             let errorMessage = "Failed to send signature request.";
             if (error?.response?.data?.message) {
