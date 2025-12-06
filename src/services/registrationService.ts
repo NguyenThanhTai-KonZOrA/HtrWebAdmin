@@ -280,10 +280,7 @@ export const authService = {
 
             // Use a lightweight endpoint to check if token is valid
             // Add special header to prevent auto-redirect on 401
-            await api.post('/api/RegistrationAdmin/patron/all/paginate', {
-                Take: 1,
-                Skip: 0
-            }, {
+            await api.get('/api/RegistrationAdmin/ping', {
                 headers: {
                     'X-Token-Validation': 'true'
                 }

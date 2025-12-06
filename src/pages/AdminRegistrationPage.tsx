@@ -1639,12 +1639,34 @@ const AdminRegistrationPage: React.FC = () => {
                             </Box>
                         </Box>
 
-                        {loadingNewReg ? (
-                            <Box display="flex" justifyContent="center" py={4}>
-                                <CircularProgress size={40} />
-                            </Box>
-                        ) : (
-                            <>
+                        <Box position="relative">
+                            {/* Loading overlay */}
+                            {loadingNewReg && (
+                                <Box
+                                    position="absolute"
+                                    top={0}
+                                    left={0}
+                                    right={0}
+                                    bottom={0}
+                                    display="flex"
+                                    alignItems="center"
+                                    justifyContent="center"
+                                    bgcolor="rgba(255, 255, 255, 0.7)"
+                                    zIndex={10}
+                                    sx={{
+                                        backdropFilter: 'blur(2px)'
+                                    }}
+                                >
+                                    <CircularProgress size={40} />
+                                </Box>
+                            )}
+
+                            {/* Table - always rendered */}
+                            <Box sx={{
+                                opacity: loadingNewReg ? 0.5 : 1,
+                                transition: 'opacity 0.2s ease-in-out',
+                                pointerEvents: loadingNewReg ? 'none' : 'auto'
+                            }}>
                                 {renderTable(paginatedNewRegistrations)}
                                 <TablePagination
                                     component="div"
@@ -1666,8 +1688,8 @@ const AdminRegistrationPage: React.FC = () => {
                                         loadNewRegistrations(newRegServerSearch, 0, newRowsPerPage);
                                     }}
                                 />
-                            </>
-                        )}
+                            </Box>
+                        </Box>
                     </CardContent>
                 </Card>
 
@@ -1697,12 +1719,34 @@ const AdminRegistrationPage: React.FC = () => {
                             </Box>
                         </Box>
 
-                        {loadingMembership ? (
-                            <Box display="flex" justifyContent="center" py={4}>
-                                <CircularProgress size={40} />
-                            </Box>
-                        ) : (
-                            <>
+                        <Box position="relative">
+                            {/* Loading overlay */}
+                            {loadingMembership && (
+                                <Box
+                                    position="absolute"
+                                    top={0}
+                                    left={0}
+                                    right={0}
+                                    bottom={0}
+                                    display="flex"
+                                    alignItems="center"
+                                    justifyContent="center"
+                                    bgcolor="rgba(255, 255, 255, 0.7)"
+                                    zIndex={10}
+                                    sx={{
+                                        backdropFilter: 'blur(2px)'
+                                    }}
+                                >
+                                    <CircularProgress size={40} />
+                                </Box>
+                            )}
+
+                            {/* Table - always rendered */}
+                            <Box sx={{
+                                opacity: loadingMembership ? 0.5 : 1,
+                                transition: 'opacity 0.2s ease-in-out',
+                                pointerEvents: loadingMembership ? 'none' : 'auto'
+                            }}>
                                 {renderTable(paginatedMemberships)}
                                 <TablePagination
                                     component="div"
@@ -1724,8 +1768,8 @@ const AdminRegistrationPage: React.FC = () => {
                                         loadMemberships(membershipServerSearch, 0, newRowsPerPage);
                                     }}
                                 />
-                            </>
-                        )}
+                            </Box>
+                        </Box>
                     </CardContent>
                 </Card>
 
