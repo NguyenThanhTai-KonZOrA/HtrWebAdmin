@@ -1,6 +1,6 @@
 import axios from "axios";
 import { showSessionExpiredNotification } from '../utils/sessionExpiredNotification';
-import type { CheckPatronIdentificationRequest, CheckValidIncomeRequest, CheckValidIncomeResponse, CountryResponse, CreateMappingRequest, CreateMappingResponse, CurrentHostNameResponse, CurrentStaffDeviceResponse, GetAllMappingsResponse, GetMappingByStaffDeviceResponse, IncomeFileResponse, MappingDataResponse, OnlineStaffDevicesResponse, PatronImagesResponse, PatronRegisterMembershipRequest, PatronRegisterMembershipResponse, PatronResponse, RenderDocumentResponse, StaffAndPatronDevicesResponse, StaffSignatureRequest, UpdateMappingRequest, UpdateMappingResponse } from "../registrationType";
+import type { CheckPatronIdentificationRequest, CheckValidIncomeRequest, CheckValidIncomeResponse, CountryResponse, CreateMappingRequest, CreateMappingResponse, CurrentHostNameResponse, CurrentStaffDeviceResponse, GetAllMappingsResponse, GetMappingByStaffDeviceResponse, IncomeFileResponse, MappingDataResponse, OnlineStaffDevicesResponse, PatronImagesResponse, PatronPagingRequest, PatronPagingResponse, PatronRegisterMembershipRequest, PatronRegisterMembershipResponse, PatronResponse, RenderDocumentResponse, StaffAndPatronDevicesResponse, StaffSignatureRequest, UpdateMappingRequest, UpdateMappingResponse } from "../registrationType";
 
 const API_BASE = (window as any)._env_?.API_BASE;
 const api = axios.create({
@@ -93,6 +93,36 @@ export const patronService = {
             params: { isMembership }
         });
         return unwrapApiEnvelope(response);
+    },
+
+    getAllPatronsWithPagination: async (request: PatronPagingRequest): Promise<PatronPagingResponse> => {
+        const response = await api.post<ApiEnvelope<PatronPagingResponse>>("/api/RegistrationAdmin/patron/all/paging", request);
+        const result = unwrapApiEnvelope(response) as any;
+
+        // If the API returns an object with pagination info
+        if (result && typeof result === 'object' && !Array.isArray(result)) {
+            return {
+                data: result.data || result.list || [],
+                totalRecords: result.totalRecords || result.total || 0,
+                page: result.page || 1,
+                pageSize: result.pageSize || request.Take || 10,
+                totalPages: result.totalPages || Math.ceil((result.totalRecords || result.total || 0) / (request.Take || 10)),
+                hasPrevious: result.hasPrevious || false,
+                hasNext: result.hasNext || false
+            } as PatronPagingResponse;
+        }
+
+        // If the API returns an array directly (legacy), wrap it in pagination structure
+        const dataArray = Array.isArray(result) ? result : [];
+        return {
+            data: dataArray,
+            totalRecords: dataArray.length,
+            page: 1,
+            pageSize: dataArray.length,
+            totalPages: 1,
+            hasPrevious: false,
+            hasNext: false
+        } as PatronPagingResponse;
     },
 
     getPatronDetail: async (patronId: number): Promise<PatronResponse> => {
@@ -250,8 +280,10 @@ export const authService = {
 
             // Use a lightweight endpoint to check if token is valid
             // Add special header to prevent auto-redirect on 401
-            await api.get('/api/RegistrationAdmin/patron/all', {
-                params: { isMembership: false },
+            await api.post('/api/RegistrationAdmin/patron/all/paging', {
+                Take: 1,
+                Skip: 0
+            }, {
                 headers: {
                     'X-Token-Validation': 'true'
                 }

@@ -155,6 +155,12 @@ const AdminRegistrationPage: React.FC = () => {
     const [membershipPage, setMembershipPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(10);
 
+    // Server-side pagination states
+    const [newRegTotalRecords, setNewRegTotalRecords] = useState(0);
+    const [membershipTotalRecords, setMembershipTotalRecords] = useState(0);
+    const [newRegServerSearch, setNewRegServerSearch] = useState('');
+    const [membershipServerSearch, setMembershipServerSearch] = useState('');
+
     // Dialog states
     const [dialogOpen, setDialogOpen] = useState(false);
     const [selectedPatron, setSelectedPatron] = useState<PatronResponse | null>(null);
@@ -373,17 +379,81 @@ const AdminRegistrationPage: React.FC = () => {
     // Reset page to 0 when search changes
     useEffect(() => {
         setNewRegPage(0);
+        
+        // If search is empty, clear server search
+        if (newRegSearch.trim() === '') {
+            if (newRegServerSearch !== '') {
+                setNewRegServerSearch('');
+                loadNewRegistrations('', 0, rowsPerPage);
+            }
+            return;
+        }
+        
+        // Try client-side filter first
+        const clientFiltered = newRegistrations.filter(patron =>
+            patron.firstName?.toLowerCase().includes(newRegSearch.toLowerCase()) ||
+            patron.lastName?.toLowerCase().includes(newRegSearch.toLowerCase()) ||
+            patron.gender?.toLowerCase().includes(newRegSearch.toLowerCase()) ||
+            patron.mobilePhone?.includes(newRegSearch) ||
+            patron.identificationNumber?.includes(newRegSearch) ||
+            patron.identificationCountry?.includes(newRegSearch.toLowerCase())
+        );
+
+        // If no client-side results and search term exists, fetch from server
+        if (clientFiltered.length === 0) {
+            setNewRegServerSearch(newRegSearch);
+            loadNewRegistrations(newRegSearch, 0, rowsPerPage);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [newRegSearch]);
 
     useEffect(() => {
         setMembershipPage(0);
+        
+        // If search is empty, clear server search
+        if (membershipSearch.trim() === '') {
+            if (membershipServerSearch !== '') {
+                setMembershipServerSearch('');
+                loadMemberships('', 0, rowsPerPage);
+            }
+            return;
+        }
+        
+        // Try client-side filter first
+        const clientFiltered = memberships.filter(patron =>
+            patron.firstName?.toLowerCase().includes(membershipSearch.toLowerCase()) ||
+            patron.lastName?.toLowerCase().includes(membershipSearch.toLowerCase()) ||
+            patron.gender?.toLowerCase().includes(membershipSearch.toLowerCase()) ||
+            patron.mobilePhone?.includes(membershipSearch) ||
+            patron.identificationNumber?.includes(membershipSearch) ||
+            patron.identificationCountry?.includes(membershipSearch.toLowerCase()) ||
+            patron.playerId?.toString().includes(membershipSearch)
+        );
+
+        // If no client-side results and search term exists, fetch from server
+        if (clientFiltered.length === 0) {
+            setMembershipServerSearch(membershipSearch);
+            loadMemberships(membershipSearch, 0, rowsPerPage);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [membershipSearch]);
 
-    const loadNewRegistrations = async () => {
+    const loadNewRegistrations = async (searchTerm?: string, page?: number, pageSize?: number) => {
         try {
             setLoadingNewReg(true);
-            const data = await patronService.getAllPatrons(false);
-            setNewRegistrations(data);
+            
+            const currentSearchTerm = searchTerm !== undefined ? searchTerm : newRegServerSearch;
+            
+            const request = {
+                IsMembership: false,
+                Page: (page ?? newRegPage) + 1, // Server expects 1-based page index
+                PageSize: pageSize ?? rowsPerPage,
+                SearchTerm: currentSearchTerm || undefined // Only send SearchTerm if it has value
+            };
+
+            const response = await patronService.getAllPatronsWithPagination(request);
+            setNewRegistrations(response.data);
+            setNewRegTotalRecords(response.totalRecords);
         } catch (err) {
             console.error('Error loading new registrations:', err);
             showSnackbar('Failed to load new registrations', 'error');
@@ -392,11 +462,22 @@ const AdminRegistrationPage: React.FC = () => {
         }
     };
 
-    const loadMemberships = async () => {
+    const loadMemberships = async (searchTerm?: string, page?: number, pageSize?: number) => {
         try {
             setLoadingMembership(true);
-            const data = await patronService.getAllPatrons(true);
-            setMemberships(data);
+            
+            const currentSearchTerm = searchTerm !== undefined ? searchTerm : membershipServerSearch;
+            
+            const request = {
+                IsMembership: true,
+                Page: (page ?? membershipPage) + 1, // Server expects 1-based page index
+                PageSize: pageSize ?? rowsPerPage,
+                SearchTerm: currentSearchTerm || undefined // Only send SearchTerm if it has value
+            };
+
+            const response = await patronService.getAllPatronsWithPagination(request);
+            setMemberships(response.data);
+            setMembershipTotalRecords(response.totalRecords);
         } catch (err) {
             console.error('Error loading memberships:', err);
             showSnackbar('Failed to load memberships', 'error');
@@ -568,37 +649,61 @@ const AdminRegistrationPage: React.FC = () => {
 
     // Filter and paginate data
     const filteredNewRegistrations = useMemo(() => {
-        return newRegistrations.filter(patron =>
-            patron.firstName?.toLowerCase().includes(newRegSearch.toLowerCase()) ||
-            patron.lastName?.toLowerCase().includes(newRegSearch.toLowerCase()) ||
-            patron.gender?.toLowerCase().includes(newRegSearch.toLowerCase()) ||
-            patron.mobilePhone?.includes(newRegSearch) ||
-            patron.identificationNumber?.includes(newRegSearch) ||
-            patron.identificationCountry?.includes(newRegSearch.toLowerCase())
-        );
-    }, [newRegistrations, newRegSearch]);
+        // Client-side filter only for search
+        if (newRegSearch.trim() && !newRegServerSearch) {
+            return newRegistrations.filter(patron =>
+                patron.firstName?.toLowerCase().includes(newRegSearch.toLowerCase()) ||
+                patron.lastName?.toLowerCase().includes(newRegSearch.toLowerCase()) ||
+                patron.gender?.toLowerCase().includes(newRegSearch.toLowerCase()) ||
+                patron.mobilePhone?.includes(newRegSearch) ||
+                patron.identificationNumber?.includes(newRegSearch) ||
+                patron.identificationCountry?.includes(newRegSearch.toLowerCase())
+            );
+        }
+        
+        // Return all for server-side pagination or server search
+        return newRegistrations;
+    }, [newRegistrations, newRegSearch, newRegServerSearch]);
 
     const filteredMemberships = useMemo(() => {
-        return memberships.filter(patron =>
-            patron.firstName?.toLowerCase().includes(membershipSearch.toLowerCase()) ||
-            patron.lastName?.toLowerCase().includes(membershipSearch.toLowerCase()) ||
-            patron.gender?.toLowerCase().includes(membershipSearch.toLowerCase()) ||
-            patron.mobilePhone?.includes(membershipSearch) ||
-            patron.identificationNumber?.includes(membershipSearch) ||
-            patron.identificationCountry?.includes(membershipSearch.toLowerCase()) ||
-            patron.playerId?.toString().includes(membershipSearch)
-        );
-    }, [memberships, membershipSearch]);
+        // Client-side filter only for search
+        if (membershipSearch.trim() && !membershipServerSearch) {
+            return memberships.filter(patron =>
+                patron.firstName?.toLowerCase().includes(membershipSearch.toLowerCase()) ||
+                patron.lastName?.toLowerCase().includes(membershipSearch.toLowerCase()) ||
+                patron.gender?.toLowerCase().includes(membershipSearch.toLowerCase()) ||
+                patron.mobilePhone?.includes(membershipSearch) ||
+                patron.identificationNumber?.includes(membershipSearch) ||
+                patron.identificationCountry?.includes(membershipSearch.toLowerCase()) ||
+                patron.playerId?.toString().includes(membershipSearch)
+            );
+        }
+        
+        // Return all for server-side pagination or server search
+        return memberships;
+    }, [memberships, membershipSearch, membershipServerSearch]);
 
     const paginatedNewRegistrations = useMemo(() => {
-        const startIndex = newRegPage * rowsPerPage;
-        return filteredNewRegistrations.slice(startIndex, startIndex + rowsPerPage);
-    }, [filteredNewRegistrations, newRegPage, rowsPerPage]);
+        // Use client-side pagination only when searching client-side
+        if (newRegSearch.trim() && !newRegServerSearch) {
+            const startIndex = newRegPage * rowsPerPage;
+            return filteredNewRegistrations.slice(startIndex, startIndex + rowsPerPage);
+        }
+        
+        // Server already paginated
+        return newRegistrations;
+    }, [filteredNewRegistrations, newRegPage, rowsPerPage, newRegSearch, newRegServerSearch, newRegistrations]);
 
     const paginatedMemberships = useMemo(() => {
-        const startIndex = membershipPage * rowsPerPage;
-        return filteredMemberships.slice(startIndex, startIndex + rowsPerPage);
-    }, [filteredMemberships, membershipPage, rowsPerPage]);
+        // Use client-side pagination only when searching client-side
+        if (membershipSearch.trim() && !membershipServerSearch) {
+            const startIndex = membershipPage * rowsPerPage;
+            return filteredMemberships.slice(startIndex, startIndex + rowsPerPage);
+        }
+        
+        // Server already paginated
+        return memberships;
+    }, [filteredMemberships, membershipPage, rowsPerPage, membershipSearch, membershipServerSearch, memberships]);
 
     // Handle patron detail view/edit
     const handlePatronAction = async (patron: PatronResponse) => {
@@ -1515,7 +1620,7 @@ const AdminRegistrationPage: React.FC = () => {
                                     sx={{ width: 250 }}
                                 />
                                 <IconButton
-                                    onClick={loadNewRegistrations}
+                                    onClick={() => loadNewRegistrations()}
                                     disabled={loadingNewReg}
                                     color="primary"
                                 >
@@ -1533,13 +1638,22 @@ const AdminRegistrationPage: React.FC = () => {
                                 {renderTable(paginatedNewRegistrations)}
                                 <TablePagination
                                     component="div"
-                                    count={filteredNewRegistrations.length}
+                                    count={newRegSearch.trim() && !newRegServerSearch ? filteredNewRegistrations.length : newRegTotalRecords}
                                     page={newRegPage}
-                                    onPageChange={(_, newPage) => setNewRegPage(newPage)}
+                                    onPageChange={(_, newPage) => {
+                                        setNewRegPage(newPage);
+                                        // Only load from server if not doing client-side search
+                                        if (!newRegSearch.trim() || newRegServerSearch) {
+                                            loadNewRegistrations(newRegServerSearch, newPage, rowsPerPage);
+                                        }
+                                    }}
                                     rowsPerPage={rowsPerPage}
                                     onRowsPerPageChange={(e) => {
-                                        setRowsPerPage(parseInt(e.target.value, 10));
+                                        const newRowsPerPage = parseInt(e.target.value, 10);
+                                        setRowsPerPage(newRowsPerPage);
                                         setNewRegPage(0);
+                                        // Always reload when changing rows per page
+                                        loadNewRegistrations(newRegServerSearch, 0, newRowsPerPage);
                                     }}
                                 />
                             </>
@@ -1564,7 +1678,7 @@ const AdminRegistrationPage: React.FC = () => {
                                     sx={{ width: 250 }}
                                 />
                                 <IconButton
-                                    onClick={loadMemberships}
+                                    onClick={() => loadMemberships()}
                                     disabled={loadingMembership}
                                     color="primary"
                                 >
@@ -1582,13 +1696,22 @@ const AdminRegistrationPage: React.FC = () => {
                                 {renderTable(paginatedMemberships)}
                                 <TablePagination
                                     component="div"
-                                    count={filteredMemberships.length}
+                                    count={membershipSearch.trim() && !membershipServerSearch ? filteredMemberships.length : membershipTotalRecords}
                                     page={membershipPage}
-                                    onPageChange={(_, newPage) => setMembershipPage(newPage)}
+                                    onPageChange={(_, newPage) => {
+                                        setMembershipPage(newPage);
+                                        // Only load from server if not doing client-side search
+                                        if (!membershipSearch.trim() || membershipServerSearch) {
+                                            loadMemberships(membershipServerSearch, newPage, rowsPerPage);
+                                        }
+                                    }}
                                     rowsPerPage={rowsPerPage}
                                     onRowsPerPageChange={(e) => {
-                                        setRowsPerPage(parseInt(e.target.value, 10));
+                                        const newRowsPerPage = parseInt(e.target.value, 10);
+                                        setRowsPerPage(newRowsPerPage);
                                         setMembershipPage(0);
+                                        // Always reload when changing rows per page
+                                        loadMemberships(membershipServerSearch, 0, newRowsPerPage);
                                     }}
                                 />
                             </>
