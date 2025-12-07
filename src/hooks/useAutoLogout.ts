@@ -26,9 +26,9 @@ export const useAutoLogout = () => {
     }
 
     // Set new timeout
-    timeoutRef.current = setTimeout(() => {
+    timeoutRef.current = setTimeout(async () => {
       console.log('🕒 Auto logout due to inactivity (30 minutes)');
-      logout();
+      await logout();
     }, IDLE_TIMEOUT);
   }, [logout, token]);
 

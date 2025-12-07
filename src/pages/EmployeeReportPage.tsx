@@ -29,10 +29,11 @@ import {
 } from "@mui/icons-material";
 import { useState, useEffect } from "react";
 import AdminLayout from "../components/layout/AdminLayout";
-import { employeeService } from "../services/queueService";
+
 import type { EmployeePerformanceResponse, EmployeePerformanceRequest } from "../type";
 import { useSetPageTitle } from "../hooks/useSetPageTitle";
 import { PAGE_TITLES } from "../constants/pageTitles";
+import { employeeService } from "../services/registrationService";
 
 export default function EmployeeReportPage() {
     useSetPageTitle(PAGE_TITLES.EMPLOYEE_PERFORMANCE);

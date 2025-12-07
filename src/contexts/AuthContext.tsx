@@ -1,12 +1,13 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { authService } from "../services/registrationService";
+import { authManager } from "../utils/authManager";
 
 interface AuthContextType {
   user: string | null;
   token: string | null;
   role: string | null;
   isLoading: boolean;
-  login: (user: string, token: string) => void;
+  login: (user: string, token: string, refreshToken: string, tokenExpiration: string) => void;
   logout: () => void;
   validateAndRefreshToken: () => Promise<boolean>;
 }
@@ -19,20 +20,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [role, setRole] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
+  // Helper function to clear session without API call (for internal use)
+  const clearSession = () => {
+    setUser(null);
+    setToken(null);
+    setRole(null);
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    localStorage.removeItem("userRole");
+    authManager.clearTokens();
+  };
+
+  // Set up authManager logout callback
+  useEffect(() => {
+    authManager.setOnLogout(() => {
+      // Clear state and redirect to login
+      clearSession();
+      window.location.href = '/login';
+    });
+  }, []);
+
   // Get token from localStorage when app load
   useEffect(() => {
     const initAuth = async () => {
       const savedToken = localStorage.getItem("token");
       const savedUser = localStorage.getItem("user");
       const savedRole = localStorage.getItem("userRole");
-      
+
       if (savedToken && savedUser && savedRole) {
         // Check if token is expired (client-side check)
         const isExpired = authService.isTokenExpired(savedToken);
-        
+
         if (isExpired) {
           console.log('🔒 Token is expired (client-side check), clearing...');
-          logout();
+          clearSession();
           setIsLoading(false);
           return;
         }
@@ -40,18 +61,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Validate token with server
         console.log('🔍 Validating token with server...');
         const isValid = await authService.validateToken();
-        
+
         if (isValid) {
           console.log('✅ Token is valid, restoring session...');
           setToken(savedToken);
           setUser(savedUser);
           setRole(savedRole);
+          // Start auto-refresh if we have tokens in storage
+          if (authManager.isAuthenticated()) {
+            authManager.startAutoRefresh();
+          }
         } else {
           console.log('❌ Token is invalid, clearing session...');
-          logout();
+          clearSession();
         }
       }
-      
+
       // Set loading to false after checking
       setIsLoading(false);
     };
@@ -62,7 +87,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Validate token and refresh if needed
   const validateAndRefreshToken = async (): Promise<boolean> => {
     const currentToken = localStorage.getItem("token");
-    
+
     if (!currentToken) {
       return false;
     }
@@ -70,16 +95,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Check client-side expiration first
     if (authService.isTokenExpired(currentToken)) {
       console.log('🔒 Token expired, logging out...');
-      logout();
+      clearSession();
       return false;
     }
 
     // Validate with server
     const isValid = await authService.validateToken();
-    
+
     if (!isValid) {
       console.log('❌ Token invalid, logging out...');
-      logout();
+      clearSession();
       return false;
     }
 
@@ -114,7 +139,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
-  const login = (user: string, token: string) => {
+  const login = (user: string, token: string, refreshToken: string, tokenExpiration: string) => {
     setUser(user);
     setToken(token);
     const payload = parseJwt(token);
@@ -123,15 +148,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem("token", token);
     localStorage.setItem("user", user);
     localStorage.setItem("userRole", role);
+
+    // Save tokens using authManager (this will also start auto-refresh)
+    authManager.saveTokens(token, refreshToken, tokenExpiration);
   };
 
-  const logout = () => {
-    setUser(null);
-    setToken(null);
-    setRole(null);
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    localStorage.removeItem("userRole");
+  const logout = async () => {
+    // Use authManager to handle logout (will revoke token and clear everything)
+    await authManager.logout();
+
+    // Clear local state
+    clearSession();
 
     // Trigger global logout event for other tabs
     localStorage.setItem('logout-event', Date.now().toString());

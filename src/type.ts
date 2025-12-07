@@ -149,7 +149,15 @@ export type LoginRequest = {
 export type LoginResponse = {
   userName: string;
   token: string;
+  refreshToken: string;
   role: string;
+  employeeId: number;
+  employeeCode: string;
+  tokenExpiration: string;
+}
+
+export interface RefreshTokenRequest {
+  refreshToken: string;
 }
 
 export interface DashboardResponse {
