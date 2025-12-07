@@ -137,15 +137,21 @@ class SignalRService {
 
         // ✅ Listen for StaffDeviceRegistered confirmation from backend
         this.connection.on('StaffDeviceRegistered', (response: any) => {
-            console.log('📨 Received StaffDeviceRegistered:', response);
+            console.log('📨 Received StaffDeviceRegistered event from backend:', response);
+            console.log('   - Success:', response.success);
+            console.log('   - Message:', response.message);
+            console.log('   - StaffDeviceId:', response.staffDeviceId);
 
             if (response.success) {
                 this.isInStaffGroup = true;
-                console.log(`✅ Backend confirmed registration: ${response.message}`);
-                console.log(`👥 In group: Staff_${response.staffDeviceId}`);
+                console.log(`✅ ✅ ✅ CONFIRMED: Device is NOW in staff group: Staff_${response.staffDeviceId}`);
+                console.log(`✅ ✅ ✅ Backend message: ${response.message}`);
+                console.log(`✅ ✅ ✅ Will receive SignatureCompleted messages for this device`);
             } else {
                 this.isInStaffGroup = false;
-                console.error(`❌ Backend registration failed: ${response.message}`);
+                console.error(`❌ ❌ ❌ FAILED: Device registration rejected by backend`);
+                console.error(`❌ ❌ ❌ Backend message: ${response.message}`);
+                console.error(`❌ ❌ ❌ Will NOT receive SignatureCompleted messages`);
 
                 // Retry registration after 5 seconds
                 setTimeout(() => {
@@ -224,14 +230,13 @@ class SignalRService {
                 console.log(`🎯 Calling server method 'RegisterStaffDevice' (attempt ${attempt}/${maxRetries}) with Name: ${this.staffDeviceName}, ID: ${this.staffDeviceId}`);
 
                 // ✅ Call backend: RegisterStaffDevice(deviceName, staffDeviceId)
+                // Note: isInStaffGroup will be set to true ONLY when we receive StaffDeviceRegistered event
                 await this.connection.invoke('RegisterStaffDevice', this.staffDeviceName, this.staffDeviceId);
 
-                // ✅ Success - backend will send StaffDeviceRegistered confirmation
-                this.isInStaffGroup = true;
-                this.registerDeviceRetryCount = 0; // Reset retry counter on success
-                console.log(`✅ Staff Device Registered Successfully: ${this.staffDeviceName} (ID: ${this.staffDeviceId})`);
-                console.log(`👥 Joined group: Staff_${this.staffDeviceId}`);
-                return; // Success - exit
+                this.registerDeviceRetryCount = 0; // Reset retry counter on successful invoke
+                console.log(`✅ RegisterStaffDevice invoked successfully (waiting for backend confirmation...)`);
+                console.log(`⏳ Waiting for StaffDeviceRegistered event to confirm group membership...`);
+                return; // Success - exit (wait for StaffDeviceRegistered event)
 
             } catch (error) {
                 this.isInStaffGroup = false;
@@ -562,14 +567,17 @@ class SignalRService {
             console.log('🎉🎉🎉 ============================================');
             console.log(`✅ RECEIVED ${eventName} MESSAGE FROM BACKEND!`);
             console.log('🎉🎉🎉 ============================================');
-            // console.log('Message payload:', message);
-            // console.log('Details:');
-            // console.log(`   SessionId: ${message.sessionId}`);
-            // console.log(`   PatronId: ${message.patronId}`);
-            // console.log(`   Success: ${message.success}`);
-            // console.log(`   FullName: ${message.fullName}`);
-            // console.log(`   MobilePhone: ${message.mobilePhone}`);
-            // console.log(`   CompletedAt: ${message.completedAt}`);
+            console.log('📊 Current Status:');
+            console.log(`   🔌 Connection State: ${this.connection?.state || 'No connection'}`);
+            console.log(`   👥 IsInStaffGroup: ${this.isInStaffGroup} ${this.isInStaffGroup ? '✅' : '❌'}`);
+            console.log(`   🆔 StaffDeviceId: ${this.staffDeviceId || 'Not set'}`);
+            console.log(`   💻 StaffDeviceName: ${this.staffDeviceName || 'Not set'}`);
+            console.log(`   🎯 Expected Group: Staff_${this.staffDeviceId || '?'}`);
+            console.log('📦 Message Details:');
+            console.log(`   SessionId: ${message.sessionId}`);
+            console.log(`   PatronId: ${message.patronId}`);
+            console.log(`   FullName: ${message.fullName}`);
+            console.log(`   MobilePhone: ${message.mobilePhone || 'N/A'}`);
             console.log('============================================');
             console.log('');
 
@@ -890,6 +898,35 @@ class SignalRService {
                     registeredListeners: Array.from(this.eventListeners.keys())
                 });
             },
+            verifyGroupMembership: async () => {
+                if (!this.staffDeviceId) {
+                    console.error('❌ No staffDeviceId set!');
+                    return;
+                }
+                try {
+                    console.log(`🔍 Verifying group membership for Staff_${this.staffDeviceId}...`);
+                    // Call backend to check if this connection is actually in the group
+                    const result = await this.connection?.invoke('CheckStaffDeviceRegistration', this.staffDeviceId);
+                    console.log('📊 Backend verification result:', result);
+                    console.log(`   Frontend thinks isInStaffGroup: ${this.isInStaffGroup}`);
+                    console.log(`   Backend says in group: ${result?.isRegistered || 'unknown'}`);
+
+                    if (result?.isRegistered !== this.isInStaffGroup) {
+                        console.warn('⚠️ MISMATCH detected between frontend and backend!');
+                        console.warn(`   Frontend: ${this.isInStaffGroup}`);
+                        console.warn(`   Backend: ${result?.isRegistered}`);
+
+                        // Update to match backend's truth
+                        this.isInStaffGroup = result?.isRegistered || false;
+                        console.log(`   Updated isInStaffGroup to match backend: ${this.isInStaffGroup}`);
+                    }
+
+                    return result;
+                } catch (error) {
+                    console.error('❌ Failed to verify group membership:', error);
+                    console.log('   Backend may not have CheckStaffDeviceRegistration method');
+                }
+            },
             testMessage: async (staffDeviceId?: number) => {
                 const targetId = staffDeviceId || this.staffDeviceId;
                 if (!targetId) {
@@ -912,9 +949,10 @@ class SignalRService {
 🔧 SignalR Debug Commands:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 📊 Status & Info:
-  • signalRDebug.isConnected()        - Check connection status
-  • signalRDebug.getInfo()              - Get detailed connection info
-  • signalRDebug.checkGroupStatus()     - Check group membership status
+  • signalRDebug.isConnected()          - Check connection status
+  • signalRDebug.getInfo()               - Get detailed connection info
+  • signalRDebug.checkGroupStatus()      - Check group membership status
+  • signalRDebug.verifyGroupMembership() - Verify with backend (truth source)
   
 🔄 Connection Management:
   • signalRDebug.reconnect()            - Force reconnection
@@ -935,8 +973,9 @@ class SignalRService {
 💡 Quick Debug:
    1. Run: signalRDebug.getInfo()
    2. Check: isInStaffGroup must be true
-   3. Run: signalRDebug.testMessage()
-   4. Should see: "🎉 RECEIVED SignatureCompleted MESSAGE"
+   3. Run: signalRDebug.verifyGroupMembership() - verify with backend
+   4. Run: signalRDebug.testMessage()
+   5. Should see: "🎉 RECEIVED SignatureCompleted MESSAGE"
                 `);
             }
         };
