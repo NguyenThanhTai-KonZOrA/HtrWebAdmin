@@ -1507,7 +1507,7 @@ const AdminRegistrationPage: React.FC = () => {
                         <TableCell sx={{ minWidth: 120 }}>Nationality</TableCell>
                         <TableCell sx={{ minWidth: 250 }}>Address</TableCell>
                         <TableCell sx={{ minWidth: 200 }}>Address in Vietnam</TableCell>
-                        <TableCell sx={{ minWidth: 120 }}>Country</TableCell>
+                        <TableCell sx={{ minWidth: 180 }}>Country</TableCell>
                         <TableCell>Status</TableCell>
                         <TableCell sx={{ minWidth: 160 }}>Submit Date</TableCell>
                     </TableRow>
