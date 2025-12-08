@@ -161,6 +161,10 @@ const AdminRegistrationPage: React.FC = () => {
     const [newRegServerSearch, setNewRegServerSearch] = useState('');
     const [membershipServerSearch, setMembershipServerSearch] = useState('');
 
+    // Search debounce loading states
+    const [searchingNewReg, setSearchingNewReg] = useState(false);
+    const [searchingMembership, setSearchingMembership] = useState(false);
+
     // Dialog states
     const [dialogOpen, setDialogOpen] = useState(false);
     const [selectedPatron, setSelectedPatron] = useState<PatronResponse | null>(null);
@@ -235,6 +239,8 @@ const AdminRegistrationPage: React.FC = () => {
     // Debounce timer refs
     const phoneCheckTimerRef = React.useRef<number | null>(null);
     const idCheckTimerRef = React.useRef<number | null>(null);
+    const newRegSearchTimerRef = React.useRef<number | null>(null);
+    const membershipSearchTimerRef = React.useRef<number | null>(null);
 
     // Load initial data
     useEffect(() => {
@@ -248,6 +254,12 @@ const AdminRegistrationPage: React.FC = () => {
             }
             if (idCheckTimerRef.current) {
                 clearTimeout(idCheckTimerRef.current);
+            }
+            if (newRegSearchTimerRef.current) {
+                clearTimeout(newRegSearchTimerRef.current);
+            }
+            if (membershipSearchTimerRef.current) {
+                clearTimeout(membershipSearchTimerRef.current);
             }
         };
     }, []);
@@ -378,10 +390,16 @@ const AdminRegistrationPage: React.FC = () => {
 
     // Reset page to 0 when search changes
     useEffect(() => {
+        // Clear previous timer
+        if (newRegSearchTimerRef.current) {
+            clearTimeout(newRegSearchTimerRef.current);
+        }
+
         setNewRegPage(0);
 
-        // If search is empty, clear server search
+        // If search is empty, clear server search immediately
         if (newRegSearch.trim() === '') {
+            setSearchingNewReg(false);
             if (newRegServerSearch !== '') {
                 setNewRegServerSearch('');
                 loadNewRegistrations('', 0, rowsPerPage);
@@ -389,34 +407,54 @@ const AdminRegistrationPage: React.FC = () => {
             return;
         }
 
-        // Try client-side filter first
-        const clientFiltered = newRegistrations.filter(patron =>
-            patron.firstName?.toLowerCase().includes(newRegSearch.toLowerCase()) ||
-            patron.lastName?.toLowerCase().includes(newRegSearch.toLowerCase()) ||
-            patron.gender?.toLowerCase().includes(newRegSearch.toLowerCase()) ||
-            patron.mobilePhone?.includes(newRegSearch) ||
-            patron.identificationNumber?.includes(newRegSearch) ||
-            patron.identificationCountry?.includes(newRegSearch.toLowerCase())
-        );
+        // Show searching indicator
+        setSearchingNewReg(true);
 
-        // If no client-side results and search term exists, fetch from server
-        if (clientFiltered.length === 0) {
-            setNewRegServerSearch(newRegSearch);
-            loadNewRegistrations(newRegSearch, 0, rowsPerPage);
-        } else {
-            // Clear server search if we found results client-side
-            if (newRegServerSearch !== '') {
-                setNewRegServerSearch('');
+        // Debounce: Wait 800ms after user stops typing before processing search
+        newRegSearchTimerRef.current = window.setTimeout(() => {
+            // Try client-side filter first
+            const clientFiltered = newRegistrations.filter(patron =>
+                patron.firstName?.toLowerCase().includes(newRegSearch.toLowerCase()) ||
+                patron.lastName?.toLowerCase().includes(newRegSearch.toLowerCase()) ||
+                patron.gender?.toLowerCase().includes(newRegSearch.toLowerCase()) ||
+                patron.mobilePhone?.includes(newRegSearch) ||
+                patron.identificationNumber?.includes(newRegSearch) ||
+                patron.identificationCountry?.includes(newRegSearch.toLowerCase())
+            );
+
+            // If no client-side results and search term exists, fetch from server
+            if (clientFiltered.length === 0) {
+                setNewRegServerSearch(newRegSearch);
+                loadNewRegistrations(newRegSearch, 0, rowsPerPage);
+            } else {
+                // Clear server search if we found results client-side
+                if (newRegServerSearch !== '') {
+                    setNewRegServerSearch('');
+                }
+                setSearchingNewReg(false);
             }
-        }
+        }, 800); // Wait 800ms after user stops typing
+
+        // Cleanup
+        return () => {
+            if (newRegSearchTimerRef.current) {
+                clearTimeout(newRegSearchTimerRef.current);
+            }
+        };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [newRegSearch]);
 
     useEffect(() => {
+        // Clear previous timer
+        if (membershipSearchTimerRef.current) {
+            clearTimeout(membershipSearchTimerRef.current);
+        }
+
         setMembershipPage(0);
 
-        // If search is empty, clear server search
+        // If search is empty, clear server search immediately
         if (membershipSearch.trim() === '') {
+            setSearchingMembership(false);
             if (membershipServerSearch !== '') {
                 setMembershipServerSearch('');
                 loadMemberships('', 0, rowsPerPage);
@@ -424,27 +462,41 @@ const AdminRegistrationPage: React.FC = () => {
             return;
         }
 
-        // Try client-side filter first
-        const clientFiltered = memberships.filter(patron =>
-            patron.firstName?.toLowerCase().includes(membershipSearch.toLowerCase()) ||
-            patron.lastName?.toLowerCase().includes(membershipSearch.toLowerCase()) ||
-            patron.gender?.toLowerCase().includes(membershipSearch.toLowerCase()) ||
-            patron.mobilePhone?.includes(membershipSearch) ||
-            patron.identificationNumber?.includes(membershipSearch) ||
-            patron.identificationCountry?.includes(membershipSearch.toLowerCase()) ||
-            patron.playerId?.toString().includes(membershipSearch)
-        );
+        // Show searching indicator
+        setSearchingMembership(true);
 
-        // If no client-side results and search term exists, fetch from server
-        if (clientFiltered.length === 0) {
-            setMembershipServerSearch(membershipSearch);
-            loadMemberships(membershipSearch, 0, rowsPerPage);
-        } else {
-            // Clear server search if we found results client-side
-            if (membershipServerSearch !== '') {
-                setMembershipServerSearch('');
+        // Debounce: Wait 800ms after user stops typing before processing search
+        membershipSearchTimerRef.current = window.setTimeout(() => {
+            // Try client-side filter first
+            const clientFiltered = memberships.filter(patron =>
+                patron.firstName?.toLowerCase().includes(membershipSearch.toLowerCase()) ||
+                patron.lastName?.toLowerCase().includes(membershipSearch.toLowerCase()) ||
+                patron.gender?.toLowerCase().includes(membershipSearch.toLowerCase()) ||
+                patron.mobilePhone?.includes(membershipSearch) ||
+                patron.identificationNumber?.includes(membershipSearch) ||
+                patron.identificationCountry?.includes(membershipSearch.toLowerCase()) ||
+                patron.playerId?.toString().includes(membershipSearch)
+            );
+
+            // If no client-side results and search term exists, fetch from server
+            if (clientFiltered.length === 0) {
+                setMembershipServerSearch(membershipSearch);
+                loadMemberships(membershipSearch, 0, rowsPerPage);
+            } else {
+                // Clear server search if we found results client-side
+                if (membershipServerSearch !== '') {
+                    setMembershipServerSearch('');
+                }
+                setSearchingMembership(false);
             }
-        }
+        }, 800); // Wait 800ms after user stops typing
+
+        // Cleanup
+        return () => {
+            if (membershipSearchTimerRef.current) {
+                clearTimeout(membershipSearchTimerRef.current);
+            }
+        };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [membershipSearch]);
 
@@ -469,6 +521,7 @@ const AdminRegistrationPage: React.FC = () => {
             showSnackbar('Failed to load new registrations', 'error');
         } finally {
             setLoadingNewReg(false);
+            setSearchingNewReg(false); // Clear searching indicator
         }
     };
 
@@ -493,6 +546,7 @@ const AdminRegistrationPage: React.FC = () => {
             showSnackbar('Failed to load memberships', 'error');
         } finally {
             setLoadingMembership(false);
+            setSearchingMembership(false); // Clear searching indicator
         }
     };
 
@@ -1628,6 +1682,11 @@ const AdminRegistrationPage: React.FC = () => {
                                     onChange={(e) => setNewRegSearch(e.target.value)}
                                     size="small"
                                     sx={{ width: 250 }}
+                                    InputProps={{
+                                        endAdornment: searchingNewReg && (
+                                            <CircularProgress size={20} sx={{ mr: 1 }} />
+                                        )
+                                    }}
                                 />
                                 <IconButton
                                     onClick={() => loadNewRegistrations()}
@@ -1708,6 +1767,11 @@ const AdminRegistrationPage: React.FC = () => {
                                     onChange={(e) => setMembershipSearch(e.target.value)}
                                     size="small"
                                     sx={{ width: 250 }}
+                                    InputProps={{
+                                        endAdornment: searchingMembership && (
+                                            <CircularProgress size={20} sx={{ mr: 1 }} />
+                                        )
+                                    }}
                                 />
                                 <IconButton
                                     onClick={() => loadMemberships()}
