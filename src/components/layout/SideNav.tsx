@@ -16,14 +16,7 @@ import {
 import { useSidebar } from '../../contexts/SidebarContext';
 import { usePermission } from '../../hooks/usePermission';
 import { Permission } from '../../constants/roles';
-
-interface NavItem {
-    key: string;
-    title: string;
-    href: string;
-    icon: React.ElementType;
-    requiredPermission?: Permission; // ← Thêm field này
-}
+import type { NavItem } from '../../commonType';
 
 const navItems: NavItem[] = [
     {
