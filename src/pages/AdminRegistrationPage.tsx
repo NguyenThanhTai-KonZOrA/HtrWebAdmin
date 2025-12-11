@@ -178,6 +178,7 @@ const AdminRegistrationPage: React.FC = () => {
 
     // Income document states
     const [incomeDocument, setIncomeDocument] = useState('');
+    const [incomeDocumentError, setIncomeDocumentError] = useState('');
     const [expireDate, setExpireDate] = useState('');
     const [approvingIncome, setApprovingIncome] = useState(false);
     const [incomeApproved, setIncomeApproved] = useState(false);
@@ -569,6 +570,17 @@ const AdminRegistrationPage: React.FC = () => {
     };
 
     // Handle file view - support images, PDF, DOCX, Excel
+    // const handleFileView = (fileUrl: string, fileName?: string) => {
+    //     // For income documents, download the file
+    //     const link = document.createElement('a');
+    //     link.href = fileUrl;
+    //     link.download = fileName || 'download';
+    //     link.target = '_blank';
+    //     document.body.appendChild(link);
+    //     link.click();
+    //     document.body.removeChild(link);
+    // };
+
     const handleFileView = (fileUrl: string, _fileName?: string) => {
         setSelectedImage(fileUrl);
         setImageViewerOpen(true);
@@ -830,6 +842,7 @@ const AdminRegistrationPage: React.FC = () => {
 
             // Reset income document fields
             setIncomeDocument(patronDetail.incomeDocument || '');
+            setIncomeDocumentError('');
             setExpireDate(patronDetail.incomeExpiryDate || getTomorrowDate());
             setIncomeApproved(patronDetail.isValidIncomeDocument);
 
@@ -866,6 +879,151 @@ const AdminRegistrationPage: React.FC = () => {
             setDialogError('Failed to load patron details.');
             console.error('Error loading patron details:', err);
         }
+    };
+
+    // Validate individual field on blur
+    const validateField = (fieldName: string, value: any) => {
+        const errors = { ...validationErrors };
+
+        if (!editedPatron) return;
+
+        switch (fieldName) {
+            case 'lastName':
+                if (!value?.trim()) {
+                    errors.lastName = 'Middle & Last Name is required';
+                } else {
+                    delete errors.lastName;
+                }
+                break;
+            case 'firstName':
+                if (!value?.trim()) {
+                    errors.firstName = 'First Name is required';
+                } else {
+                    delete errors.firstName;
+                }
+                break;
+            case 'mobilePhone':
+                if (!value?.trim()) {
+                    errors.mobilePhone = 'Mobile Phone is required';
+                } else if (!validateVietnamesePhoneNumber(value)) {
+                    if (isVietnamese()) {
+                        errors.mobilePhone = 'Please enter a valid Vietnamese phone number';
+                    } else {
+                        delete errors.mobilePhone;
+                    }
+                } else {
+                    delete errors.mobilePhone;
+                }
+                break;
+            case 'jobTitle':
+                if (!value?.trim()) {
+                    errors.jobTitle = 'Occupation is required';
+                } else {
+                    delete errors.jobTitle;
+                }
+                break;
+            case 'position':
+                if (!value?.trim()) {
+                    errors.position = 'Position is required';
+                } else {
+                    delete errors.position;
+                }
+                break;
+            case 'specifyJobTitle':
+                if (!value?.trim()) {
+                    errors.specifyJobTitle = 'Specify Occupation is required';
+                } else {
+                    delete errors.specifyJobTitle;
+                }
+                break;
+            case 'specifyPosition':
+                if (!value?.trim()) {
+                    errors.specifyPosition = 'Specify Position is required';
+                } else {
+                    delete errors.specifyPosition;
+                }
+                break;
+            case 'identificationNumber':
+                if (!value?.trim()) {
+                    errors.identificationNumber = 'ID Number is required';
+                } else {
+                    delete errors.identificationNumber;
+                }
+                break;
+            case 'identificationCountry':
+                if (!value?.trim()) {
+                    errors.identificationCountry = 'Nationality is required';
+                } else {
+                    delete errors.identificationCountry;
+                }
+                break;
+            case 'identificationExpiration':
+                if (!value) {
+                    errors.identificationExpiration = 'Expiration Date is required';
+                } else if (new Date(value) <= new Date()) {
+                    errors.identificationExpiration = 'Expiration Date must be a future date';
+                } else {
+                    delete errors.identificationExpiration;
+                }
+                break;
+            case 'gender':
+                if (!value?.trim()) {
+                    errors.gender = 'Gender is required';
+                } else {
+                    delete errors.gender;
+                }
+                break;
+            case 'birthday':
+                if (!value) {
+                    errors.birthday = 'Birthday is required';
+                } else if (new Date(value) >= new Date()) {
+                    errors.birthday = 'Birthday must be a past date';
+                } else {
+                    const birthDate = new Date(value);
+                    const today = new Date();
+                    const age = today.getFullYear() - birthDate.getFullYear();
+                    const monthDiff = today.getMonth() - birthDate.getMonth();
+                    if (age < 18 || (age === 18 && monthDiff < 0) || (age === 18 && monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                        errors.birthday = 'Patron must be at least 18 years old';
+                    } else if (editedPatron.identificationCountry === String(VIETNAM_COUNTRY_ID)) {
+                        if (age < 21 || (age === 21 && monthDiff < 0) || (age === 21 && monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                            errors.birthday = 'Vietnamese nationals must be at least 21 years old';
+                        } else {
+                            delete errors.birthday;
+                        }
+                    } else {
+                        delete errors.birthday;
+                    }
+                }
+                break;
+            case 'address':
+                if (!value?.trim()) {
+                    errors.address = 'Main Address is required';
+                } else {
+                    delete errors.address;
+                }
+                break;
+            case 'addressInVietNam':
+                if (editedPatron.identificationCountry !== String(VIETNAM_COUNTRY_ID)) {
+                    if (!value?.trim()) {
+                        errors.addressInVietNam = 'Address in Vietnam is required for non-Vietnamese nationals';
+                    } else {
+                        delete errors.addressInVietNam;
+                    }
+                } else {
+                    delete errors.addressInVietNam;
+                }
+                break;
+            case 'country':
+                if (!value?.trim()) {
+                    errors.country = 'Country is required';
+                } else {
+                    delete errors.country;
+                }
+                break;
+        }
+
+        setValidationErrors(errors);
     };
 
     // Validate form
@@ -1085,7 +1243,9 @@ const AdminRegistrationPage: React.FC = () => {
             confirmButtonColor: '#d33',
             cancelButtonColor: '#3085d6',
             confirmButtonText: 'Yes, delete it!',
-            cancelButtonText: 'Cancel'
+            cancelButtonText: 'Cancel',
+            allowEscapeKey: true,
+            allowOutsideClick: false
         });
 
         if (!result.isConfirmed) {
@@ -1840,7 +2000,13 @@ const AdminRegistrationPage: React.FC = () => {
                 {/* Patron Detail Dialog */}
                 <Dialog
                     open={dialogOpen}
-                    onClose={() => setDialogOpen(false)}
+                    onClose={(_event, reason) => {
+                        // Only allow closing via button clicks, not backdrop or escape key
+                        if (reason === 'backdropClick' || reason === 'escapeKeyDown') {
+                            return;
+                        }
+                        setDialogOpen(false);
+                    }}
                     maxWidth="lg"
                     fullWidth
                 >
@@ -1982,7 +2148,9 @@ const AdminRegistrationPage: React.FC = () => {
                                                 <TextField
                                                     label="Middle & Last Name *"
                                                     value={editedPatron.lastName || ''}
+                                                    required
                                                     onChange={(e) => setEditedPatron({ ...editedPatron, lastName: e.target.value.toUpperCase() })}
+                                                    onBlur={(e) => validateField('lastName', e.target.value)}
                                                     disabled={!isEditing}
                                                     fullWidth
                                                     size="small"
@@ -1991,9 +2159,11 @@ const AdminRegistrationPage: React.FC = () => {
                                                 />
                                                 {/* auto upper case first name */}
                                                 <TextField
-                                                    label="First Name *"
+                                                    label="First Name"
                                                     value={editedPatron.firstName || ''}
+                                                    required
                                                     onChange={(e) => setEditedPatron({ ...editedPatron, firstName: e.target.value.toUpperCase() })}
+                                                    onBlur={(e) => validateField('firstName', e.target.value)}
                                                     disabled={!isEditing}
                                                     fullWidth
                                                     size="small"
@@ -2004,7 +2174,8 @@ const AdminRegistrationPage: React.FC = () => {
 
                                             <TextField
                                                 type='number'
-                                                label="Mobile Phone *"
+                                                label="Mobile Phone"
+                                                required
                                                 value={editedPatron.mobilePhone || ''}
                                                 onChange={(e) => {
                                                     const newPhone = e.target.value;
@@ -2016,6 +2187,7 @@ const AdminRegistrationPage: React.FC = () => {
                                                         checkPhoneNumber(newPhone);
                                                     }
                                                 }}
+                                                onBlur={(e) => validateField('mobilePhone', e.target.value)}
                                                 disabled={!isEditing}
                                                 fullWidth
                                                 size="small"
@@ -2046,7 +2218,7 @@ const AdminRegistrationPage: React.FC = () => {
                                                         // }
                                                         value={editedPatron.jobTitle || ''}
                                                         onChange={(e) => setEditedPatron({ ...editedPatron, jobTitle: e.target.value })}
-                                                        label="Occupation *"
+                                                        label="Occupation"
                                                         required
                                                     >
                                                         {JOB_TITLE_OPTIONS.map((option) => (
@@ -2069,7 +2241,7 @@ const AdminRegistrationPage: React.FC = () => {
                                                         // }
                                                         value={editedPatron.position || ''}
                                                         onChange={(e) => setEditedPatron({ ...editedPatron, position: e.target.value })}
-                                                        label="Position *"
+                                                        label="Position"
                                                         required
                                                     >
                                                         {POSITION_OPTIONS.map((option) => (
@@ -2086,8 +2258,10 @@ const AdminRegistrationPage: React.FC = () => {
                                                 <Stack direction="row" spacing={2}>
                                                     {editedPatron.jobTitle === 'Other' && (
                                                         <TextField
-                                                            label="Specify Occupation *"
+                                                            label="Specify Occupation"
                                                             value={specifyJobTitle}
+                                                            required
+                                                            onBlur={(e) => validateField('specifyJobTitle', e.target.value)}
                                                             onChange={(e) => setSpecifyJobTitle(e.target.value)}
                                                             disabled={!isEditing}
                                                             fullWidth
@@ -2098,8 +2272,10 @@ const AdminRegistrationPage: React.FC = () => {
                                                     )}
                                                     {editedPatron.position === 'Other' && (
                                                         <TextField
-                                                            label="Specify Position *"
+                                                            label="Specify Position"
                                                             value={specifyPosition}
+                                                            required
+                                                            onBlur={(e) => validateField('specifyPosition', e.target.value)}
                                                             onChange={(e) => setSpecifyPosition(e.target.value)}
                                                             disabled={!isEditing}
                                                             fullWidth
@@ -2132,6 +2308,7 @@ const AdminRegistrationPage: React.FC = () => {
                                                                 ? editedPatron.identificationTypeId
                                                                 : ''
                                                         }
+                                                        required
                                                         onChange={(e) => {
                                                             const newIdType = Number(e.target.value);
                                                             setEditedPatron({ ...editedPatron, identificationTypeId: newIdType });
@@ -2142,7 +2319,7 @@ const AdminRegistrationPage: React.FC = () => {
                                                                 checkIdNumber(newIdType, editedPatron.identificationNumber);
                                                             }
                                                         }}
-                                                        label="ID Type *"
+                                                        label="ID Type"
                                                     >
                                                         {ID_TYPE_OPTIONS.map((option) => (
                                                             <MenuItem key={option.value} value={option.value}>
@@ -2152,13 +2329,14 @@ const AdminRegistrationPage: React.FC = () => {
                                                     </Select>
                                                     {validationErrors.identificationTypeId && <FormHelperText>{validationErrors.identificationTypeId}</FormHelperText>}
                                                 </FormControl>
-
                                                 <TextField
-                                                    label="ID Number *"
+                                                    label="ID Number"
                                                     value={editedPatron.identificationNumber || ''}
+                                                    onBlur={(e) => validateField('identificationNumber', e.target.value)}
                                                     onChange={(e) => {
                                                         const newIdNumber = e.target.value;
                                                         setEditedPatron({ ...editedPatron, identificationNumber: newIdNumber });
+
                                                         // Clear previous warning
                                                         setIdNumberWarning('');
                                                         // Check ID number
@@ -2166,6 +2344,7 @@ const AdminRegistrationPage: React.FC = () => {
                                                             checkIdNumber(editedPatron.identificationTypeId, newIdNumber);
                                                         }
                                                     }}
+                                                    required
                                                     disabled={!isEditing}
                                                     fullWidth
                                                     size="small"
@@ -2193,8 +2372,9 @@ const AdminRegistrationPage: React.FC = () => {
                                                                 ? editedPatron.identificationCountry
                                                                 : ''
                                                         }
+                                                        required
                                                         onChange={(e) => setEditedPatron({ ...editedPatron, identificationCountry: String(e.target.value) })}
-                                                        label="Nationality *"
+                                                        label="Nationality"
                                                     >
                                                         {countries.map((country) => (
                                                             <MenuItem key={country.countryID} value={String(country.countryID)}>
@@ -2206,11 +2386,12 @@ const AdminRegistrationPage: React.FC = () => {
                                                 </FormControl>
 
                                                 <TextField
-                                                    label="Expiration Date *"
+                                                    label="Expiration Date"
                                                     type="date"
                                                     value={editedPatron.identificationExpiration?.split('T')[0] || ''}
                                                     onChange={(e) => setEditedPatron({ ...editedPatron, identificationExpiration: e.target.value })}
                                                     disabled={!isEditing}
+                                                    required
                                                     InputLabelProps={{ shrink: true }}
                                                     fullWidth
                                                     size="small"
@@ -2266,6 +2447,7 @@ const AdminRegistrationPage: React.FC = () => {
                                                     label="Main Address *"
                                                     value={editedPatron.address || ''}
                                                     onChange={(e) => setEditedPatron({ ...editedPatron, address: e.target.value })}
+                                                    onBlur={(e) => validateField('address', e.target.value)}
                                                     disabled={!isEditing}
                                                     fullWidth
                                                     multiline
@@ -2276,9 +2458,10 @@ const AdminRegistrationPage: React.FC = () => {
                                                 />
 
                                                 <TextField
-                                                    label="Address in Viet Nam"
+                                                    label={`Address in Viet Nam${editedPatron.identificationCountry !== String(VIETNAM_COUNTRY_ID) ? ' *' : ''}`}
                                                     value={editedPatron.addressInVietNam || ''}
                                                     onChange={(e) => setEditedPatron({ ...editedPatron, addressInVietNam: e.target.value })}
+                                                    onBlur={(e) => validateField('addressInVietNam', e.target.value)}
                                                     disabled={!isEditing}
                                                     fullWidth
                                                     multiline
@@ -2671,17 +2854,34 @@ const AdminRegistrationPage: React.FC = () => {
                                                 <Stack spacing={2}>
                                                     <Stack direction="row" spacing={2}>
                                                         <TextField
-                                                            label="Document Reference No"
+                                                            label="Document Reference No *"
+                                                            required
                                                             value={incomeDocument}
-                                                            onChange={(e) => setIncomeDocument(e.target.value)}
+                                                            onChange={(e) => {
+                                                                setIncomeDocument(e.target.value);
+                                                                // Clear error when user types
+                                                                if (e.target.value.trim()) {
+                                                                    setIncomeDocumentError('');
+                                                                }
+                                                            }}
+                                                            onBlur={(e) => {
+                                                                if (!e.target.value.trim()) {
+                                                                    setIncomeDocumentError('Document Reference No is required');
+                                                                } else {
+                                                                    setIncomeDocumentError('');
+                                                                }
+                                                            }}
                                                             disabled={incomeApproved}
                                                             fullWidth
                                                             size="small"
+                                                            error={!!incomeDocumentError}
+                                                            helperText={incomeDocumentError}
                                                         />
 
                                                         <TextField
                                                             label="Expire Date"
                                                             type="date"
+                                                            required
                                                             value={expireDate?.split('T')[0] || ''}
                                                             onChange={(e) => setExpireDate(e.target.value)}
                                                             InputLabelProps={{ shrink: true }}
@@ -2821,7 +3021,13 @@ const AdminRegistrationPage: React.FC = () => {
                 {/* Enroll Player Confirmation Dialog */}
                 <Dialog
                     open={enrollDialogOpen}
-                    onClose={() => setEnrollDialogOpen(false)}
+                    onClose={(_event, reason) => {
+                        // Only allow closing via button clicks, not backdrop or escape key
+                        if (reason === 'backdropClick' || reason === 'escapeKeyDown') {
+                            return;
+                        }
+                        setEnrollDialogOpen(false);
+                    }}
                 >
                     <DialogTitle>Confirm Enrollment</DialogTitle>
                     <DialogContent>
