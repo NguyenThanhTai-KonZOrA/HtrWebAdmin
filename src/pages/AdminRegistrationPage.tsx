@@ -77,6 +77,7 @@ import { useAppData } from '../contexts/AppDataContext';
 import { useSignalR } from '../hooks/useSignalR';
 import Swal from 'sweetalert2';
 import { FormatUtcTime } from '../utils/formatUtcTime';
+import { ID_TYPE_OPTIONS, JOB_TITLE_OPTIONS, POSITION_OPTIONS } from '../commonType';
 
 function formatDate(dateString: string): string {
     dateString = FormatUtcTime.formatDateTime(dateString);
@@ -98,36 +99,6 @@ function getTomorrowDate(): string {
     tomorrow.setDate(tomorrow.getDate() + 1);
     return tomorrow.toISOString().split('T')[0];
 }
-
-// Job Title options
-const JOB_TITLE_OPTIONS = [
-    { value: 'Employed', label: 'Employed' },
-    { value: 'Self-employed', label: 'Self-employed' },
-    { value: 'Unemployed', label: 'Unemployed' },
-    { value: 'Other', label: 'Other' }
-];
-
-// Position options
-const POSITION_OPTIONS = [
-    { value: 'Owner / Executive Director', label: 'Owner / Executive Director' },
-    { value: 'Manager', label: 'Manager' },
-    { value: 'Staff', label: 'Staff' },
-    { value: 'Professional', label: 'Professional' },
-    { value: 'Other', label: 'Other' }
-];
-
-// ID Type options
-const ID_TYPE_OPTIONS = [
-    { value: 1, label: 'ID Card' },
-    { value: 0, label: 'Passport' }
-];
-
-// Gender options
-const GENDER_OPTIONS = [
-    { value: 'Male', label: 'Male' },
-    { value: 'Female', label: 'Female' },
-    { value: 'Other', label: 'Other' }
-];
 
 const Api_URL = (window as any)._env_?.API_BASE || '';
 const VIETNAM_COUNTRY_ID = 704;
@@ -584,6 +555,59 @@ const AdminRegistrationPage: React.FC = () => {
     const handleFileView = (fileUrl: string, _fileName?: string) => {
         setSelectedImage(fileUrl);
         setImageViewerOpen(true);
+    };
+
+    // Handle download income file directly
+    const handleDownloadIncomeFile = async (fileUrl: string, fileName?: string) => {
+        try {
+            // Try to fetch with credentials to bypass CORS
+            const response = await fetch(fileUrl, {
+                method: 'GET',
+                credentials: 'include', // Include cookies
+                mode: 'cors',
+                headers: {
+                    'Accept': '*/*',
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch file');
+            }
+
+            // Get the blob
+            const blob = await response.blob();
+
+            // Create blob URL
+            const blobUrl = window.URL.createObjectURL(blob);
+
+            // Create temporary link
+            const link = document.createElement('a');
+            link.href = blobUrl;
+            link.download = fileName || fileUrl.split('/').pop() || 'download';
+            link.style.display = 'none';
+
+            // Trigger download
+            document.body.appendChild(link);
+            link.click();
+
+            // Cleanup
+            document.body.removeChild(link);
+            setTimeout(() => window.URL.revokeObjectURL(blobUrl), 100);
+
+            setDialogSuccess('Download started!');
+        } catch (error) {
+            console.error('Error downloading file:', error);
+
+            // Fallback: Try to open in new window with download intent
+            const link = document.createElement('a');
+            link.href = fileUrl;
+            link.download = fileName || fileUrl.split('/').pop() || 'download';
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer';
+            link.click();
+
+            setDialogError('Could not force download. File may open in a new tab. Please use browser "Save As" to download.');
+        }
     };
 
     // Get file type from filename
@@ -2146,7 +2170,7 @@ const AdminRegistrationPage: React.FC = () => {
                                             <Stack direction="row" spacing={2}>
                                                 {/* auto upper case last name */}
                                                 <TextField
-                                                    label="Middle & Last Name *"
+                                                    label="Middle & Last Name"
                                                     value={editedPatron.lastName || ''}
                                                     required
                                                     onChange={(e) => setEditedPatron({ ...editedPatron, lastName: e.target.value.toUpperCase() })}
@@ -2854,7 +2878,7 @@ const AdminRegistrationPage: React.FC = () => {
                                                 <Stack spacing={2}>
                                                     <Stack direction="row" spacing={2}>
                                                         <TextField
-                                                            label="Document Reference No *"
+                                                            label="Document Reference No"
                                                             required
                                                             value={incomeDocument}
                                                             onChange={(e) => {
@@ -3150,9 +3174,11 @@ const AdminRegistrationPage: React.FC = () => {
                                             </Typography>
                                             <Button
                                                 variant="contained"
-                                                href={selectedImage}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
+                                                onClick={() => {
+                                                    const urlParts = selectedImage.split('/');
+                                                    const fileName = urlParts[urlParts.length - 1];
+                                                    handleDownloadIncomeFile(selectedImage, fileName);
+                                                }}
                                             >
                                                 Download File
                                             </Button>
@@ -3169,9 +3195,11 @@ const AdminRegistrationPage: React.FC = () => {
                                             </Typography>
                                             <Button
                                                 variant="contained"
-                                                href={selectedImage}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
+                                                onClick={() => {
+                                                    const urlParts = selectedImage.split('/');
+                                                    const fileName = urlParts[urlParts.length - 1];
+                                                    handleDownloadIncomeFile(selectedImage, fileName);
+                                                }}
                                             >
                                                 Download File
                                             </Button>
@@ -3200,9 +3228,7 @@ const AdminRegistrationPage: React.FC = () => {
                             return showDownload ? (
                                 <Button
                                     variant="outlined"
-                                    href={selectedImage}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
+                                    onClick={async () => await handleDownloadIncomeFile(selectedImage, fileName)}
                                     sx={{ mr: 'auto' }}
                                 >
                                     Download
