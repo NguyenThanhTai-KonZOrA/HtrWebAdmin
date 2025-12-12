@@ -1,6 +1,7 @@
 import axios from "axios";
 import { showSessionExpiredNotification } from '../utils/sessionExpiredNotification';
-import type { CheckPatronIdentificationRequest, CheckValidIncomeRequest, CheckValidIncomeResponse, CountryResponse, CreateMappingRequest, CreateMappingResponse, CurrentHostNameResponse, CurrentStaffDeviceResponse, GetAllMappingsResponse, GetMappingByStaffDeviceResponse, IncomeFileResponse, MappingDataResponse, OnlineStaffDevicesResponse, PatronImagesResponse, PatronRegisterMembershipRequest, PatronRegisterMembershipResponse, PatronResponse, RenderDocumentResponse, StaffAndPatronDevicesResponse, StaffSignatureRequest, UpdateMappingRequest, UpdateMappingResponse } from "../registrationType";
+import type { CheckPatronIdentificationRequest, CheckValidIncomeRequest, CheckValidIncomeResponse, CountryResponse, CreateMappingRequest, CreateMappingResponse, CurrentHostNameResponse, CurrentStaffDeviceResponse, GetAllMappingsResponse, GetMappingByStaffDeviceResponse, IncomeFileResponse, MappingDataResponse, OnlineStaffDevicesResponse, PatronImagesResponse, PatronPagingRequest, PatronPagingResponse, PatronRegisterMembershipRequest, PatronRegisterMembershipResponse, PatronResponse, RenderDocumentResponse, StaffAndPatronDevicesResponse, StaffSignatureRequest, UpdateMappingRequest, UpdateMappingResponse } from "../registrationType";
+import type { SettingsResponse, CreateSettingsRequest, SettingsInfoResponse, ClearCacheSettingResponse, UpdateSettingsRequest, UpdateSettingsResponse, EmployeePerformanceRequest, EmployeePerformanceResponse } from "../type";
 
 const API_BASE = (window as any)._env_?.API_BASE;
 const api = axios.create({
@@ -93,6 +94,36 @@ export const patronService = {
             params: { isMembership }
         });
         return unwrapApiEnvelope(response);
+    },
+
+    getAllPatronsWithPagination: async (request: PatronPagingRequest): Promise<PatronPagingResponse> => {
+        const response = await api.post<ApiEnvelope<PatronPagingResponse>>("/api/RegistrationAdmin/patron/all/paginate", request);
+        const result = unwrapApiEnvelope(response) as any;
+
+        // If the API returns an object with pagination info
+        if (result && typeof result === 'object' && !Array.isArray(result)) {
+            return {
+                data: result.data || result.list || [],
+                totalRecords: result.totalRecords || result.total || 0,
+                page: result.page || 1,
+                pageSize: result.pageSize || request.Take || 10,
+                totalPages: result.totalPages || Math.ceil((result.totalRecords || result.total || 0) / (request.Take || 10)),
+                hasPrevious: result.hasPrevious || false,
+                hasNext: result.hasNext || false
+            } as PatronPagingResponse;
+        }
+
+        // If the API returns an array directly (legacy), wrap it in pagination structure
+        const dataArray = Array.isArray(result) ? result : [];
+        return {
+            data: dataArray,
+            totalRecords: dataArray.length,
+            page: 1,
+            pageSize: dataArray.length,
+            totalPages: 1,
+            hasPrevious: false,
+            hasNext: false
+        } as PatronPagingResponse;
     },
 
     getPatronDetail: async (patronId: number): Promise<PatronResponse> => {
@@ -241,6 +272,79 @@ export const mappingDeviceService = {
     }
 };
 
+export const settingsService = {
+    getAllSettings: async (): Promise<SettingsResponse[]> => {
+        const res = await api.get("/api/settings/all");
+        return unwrapApiEnvelope(res);
+    },
+
+    createSettings: async (data: CreateSettingsRequest): Promise<boolean> => {
+        const res = await api.post("/api/settings/create", data);
+        return unwrapApiEnvelope(res);
+    },
+
+    getSettingsInfor: async (): Promise<SettingsInfoResponse> => {
+        const res = await api.get("/api/settings/info");
+        return unwrapApiEnvelope(res);
+    },
+
+    clearCacheSetting: async (key: string): Promise<ClearCacheSettingResponse> => {
+        const res = await api.post(`/api/settings/clear-cache/${key}`);
+        return unwrapApiEnvelope(res);
+    },
+
+    getSettingDetail: async (key: string): Promise<SettingsResponse> => {
+        const res = await api.get(`/api/settings/${key}`);
+        return unwrapApiEnvelope(res);
+    },
+
+    updateSetting: async (key: string, data: UpdateSettingsRequest): Promise<UpdateSettingsResponse> => {
+        const res = await api.post(`/api/settings/${key}`, data);
+        return unwrapApiEnvelope(res);
+    }
+};
+
+export const employeeService = {
+    getEmployeePerformance: async (data: EmployeePerformanceRequest): Promise<EmployeePerformanceResponse> => {
+        const res = await api.post(`/api/Employee/performance-report`, data);
+        return unwrapApiEnvelope(res);
+    },
+
+    exportEmployeePerformanceExcel: async (data: EmployeePerformanceRequest): Promise<void> => {
+        try {
+            const response = await api.post(`/api/Employee/performance-report/excel`, data, {
+                responseType: 'blob'
+            });
+            const blob = response.data;
+            const cd = response.headers['content-disposition'] || '';
+            const match = /filename\*?=(?:UTF-8''|")?([^\";]+)/i.exec(cd);
+            const serverFileName = "employee_performance_report.xlsx";
+
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = serverFileName;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (error: any) {
+            if (error.response?.data instanceof Blob) {
+                // If error response is JSON wrapped in Blob
+                const text = await error.response.data.text();
+                try {
+                    const envelope = JSON.parse(text) as ApiEnvelope<unknown>;
+                    throw new Error(getErrorMessage(envelope.data, `HTTP ${error.response.status}`));
+                } catch {
+                    throw new Error(`HTTP ${error.response?.status || 'Unknown error'}`);
+                }
+            }
+            throw error;
+        }
+    }
+};
+
+
 // Auth service for token validation
 export const authService = {
     // Validate token by making a lightweight API call
@@ -250,8 +354,7 @@ export const authService = {
 
             // Use a lightweight endpoint to check if token is valid
             // Add special header to prevent auto-redirect on 401
-            await api.get('/api/RegistrationAdmin/patron/all', {
-                params: { isMembership: false },
+            await api.get('/api/RegistrationAdmin/ping', {
                 headers: {
                     'X-Token-Validation': 'true'
                 }

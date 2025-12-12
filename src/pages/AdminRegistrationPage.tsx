@@ -77,6 +77,7 @@ import { useAppData } from '../contexts/AppDataContext';
 import { useSignalR } from '../hooks/useSignalR';
 import Swal from 'sweetalert2';
 import { FormatUtcTime } from '../utils/formatUtcTime';
+import { ID_TYPE_OPTIONS, JOB_TITLE_OPTIONS, POSITION_OPTIONS } from '../commonType';
 
 function formatDate(dateString: string): string {
     dateString = FormatUtcTime.formatDateTime(dateString);
@@ -98,36 +99,6 @@ function getTomorrowDate(): string {
     tomorrow.setDate(tomorrow.getDate() + 1);
     return tomorrow.toISOString().split('T')[0];
 }
-
-// Job Title options
-const JOB_TITLE_OPTIONS = [
-    { value: 'Employed', label: 'Employed' },
-    { value: 'Self-employed', label: 'Self-employed' },
-    { value: 'Unemployed', label: 'Unemployed' },
-    { value: 'Other', label: 'Other' }
-];
-
-// Position options
-const POSITION_OPTIONS = [
-    { value: 'Owner / Executive Director', label: 'Owner / Executive Director' },
-    { value: 'Manager', label: 'Manager' },
-    { value: 'Staff', label: 'Staff' },
-    { value: 'Professional', label: 'Professional' },
-    { value: 'Other', label: 'Other' }
-];
-
-// ID Type options
-const ID_TYPE_OPTIONS = [
-    { value: 1, label: 'ID Card' },
-    { value: 0, label: 'Passport' }
-];
-
-// Gender options
-const GENDER_OPTIONS = [
-    { value: 'Male', label: 'Male' },
-    { value: 'Female', label: 'Female' },
-    { value: 'Other', label: 'Other' }
-];
 
 const Api_URL = (window as any)._env_?.API_BASE || '';
 const VIETNAM_COUNTRY_ID = 704;
@@ -155,6 +126,16 @@ const AdminRegistrationPage: React.FC = () => {
     const [membershipPage, setMembershipPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(10);
 
+    // Server-side pagination states
+    const [newRegTotalRecords, setNewRegTotalRecords] = useState(0);
+    const [membershipTotalRecords, setMembershipTotalRecords] = useState(0);
+    const [newRegServerSearch, setNewRegServerSearch] = useState('');
+    const [membershipServerSearch, setMembershipServerSearch] = useState('');
+
+    // Search debounce loading states
+    const [searchingNewReg, setSearchingNewReg] = useState(false);
+    const [searchingMembership, setSearchingMembership] = useState(false);
+
     // Dialog states
     const [dialogOpen, setDialogOpen] = useState(false);
     const [selectedPatron, setSelectedPatron] = useState<PatronResponse | null>(null);
@@ -168,6 +149,7 @@ const AdminRegistrationPage: React.FC = () => {
 
     // Income document states
     const [incomeDocument, setIncomeDocument] = useState('');
+    const [incomeDocumentError, setIncomeDocumentError] = useState('');
     const [expireDate, setExpireDate] = useState('');
     const [approvingIncome, setApprovingIncome] = useState(false);
     const [incomeApproved, setIncomeApproved] = useState(false);
@@ -229,6 +211,8 @@ const AdminRegistrationPage: React.FC = () => {
     // Debounce timer refs
     const phoneCheckTimerRef = React.useRef<number | null>(null);
     const idCheckTimerRef = React.useRef<number | null>(null);
+    const newRegSearchTimerRef = React.useRef<number | null>(null);
+    const membershipSearchTimerRef = React.useRef<number | null>(null);
 
     // Load initial data
     useEffect(() => {
@@ -242,6 +226,12 @@ const AdminRegistrationPage: React.FC = () => {
             }
             if (idCheckTimerRef.current) {
                 clearTimeout(idCheckTimerRef.current);
+            }
+            if (newRegSearchTimerRef.current) {
+                clearTimeout(newRegSearchTimerRef.current);
+            }
+            if (membershipSearchTimerRef.current) {
+                clearTimeout(membershipSearchTimerRef.current);
             }
         };
     }, []);
@@ -372,36 +362,163 @@ const AdminRegistrationPage: React.FC = () => {
 
     // Reset page to 0 when search changes
     useEffect(() => {
+        // Clear previous timer
+        if (newRegSearchTimerRef.current) {
+            clearTimeout(newRegSearchTimerRef.current);
+        }
+
         setNewRegPage(0);
+
+        // If search is empty, clear server search immediately
+        if (newRegSearch.trim() === '') {
+            setSearchingNewReg(false);
+            if (newRegServerSearch !== '') {
+                setNewRegServerSearch('');
+                loadNewRegistrations('', 0, rowsPerPage);
+            }
+            return;
+        }
+
+        // Show searching indicator
+        setSearchingNewReg(true);
+
+        // Debounce: Wait 800ms after user stops typing before processing search
+        newRegSearchTimerRef.current = window.setTimeout(() => {
+            // Try client-side filter first
+            const clientFiltered = newRegistrations.filter(patron =>
+                patron.firstName?.toLowerCase().includes(newRegSearch.toLowerCase()) ||
+                patron.lastName?.toLowerCase().includes(newRegSearch.toLowerCase()) ||
+                patron.gender?.toLowerCase().includes(newRegSearch.toLowerCase()) ||
+                patron.mobilePhone?.includes(newRegSearch) ||
+                patron.identificationNumber?.includes(newRegSearch) ||
+                patron.identificationCountry?.includes(newRegSearch.toLowerCase())
+            );
+
+            // If no client-side results and search term exists, fetch from server
+            if (clientFiltered.length === 0) {
+                setNewRegServerSearch(newRegSearch);
+                loadNewRegistrations(newRegSearch, 0, rowsPerPage);
+            } else {
+                // Clear server search if we found results client-side
+                if (newRegServerSearch !== '') {
+                    setNewRegServerSearch('');
+                }
+                setSearchingNewReg(false);
+            }
+        }, 800); // Wait 800ms after user stops typing
+
+        // Cleanup
+        return () => {
+            if (newRegSearchTimerRef.current) {
+                clearTimeout(newRegSearchTimerRef.current);
+            }
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [newRegSearch]);
 
     useEffect(() => {
+        // Clear previous timer
+        if (membershipSearchTimerRef.current) {
+            clearTimeout(membershipSearchTimerRef.current);
+        }
+
         setMembershipPage(0);
+
+        // If search is empty, clear server search immediately
+        if (membershipSearch.trim() === '') {
+            setSearchingMembership(false);
+            if (membershipServerSearch !== '') {
+                setMembershipServerSearch('');
+                loadMemberships('', 0, rowsPerPage);
+            }
+            return;
+        }
+
+        // Show searching indicator
+        setSearchingMembership(true);
+
+        // Debounce: Wait 800ms after user stops typing before processing search
+        membershipSearchTimerRef.current = window.setTimeout(() => {
+            // Try client-side filter first
+            const clientFiltered = memberships.filter(patron =>
+                patron.firstName?.toLowerCase().includes(membershipSearch.toLowerCase()) ||
+                patron.lastName?.toLowerCase().includes(membershipSearch.toLowerCase()) ||
+                patron.gender?.toLowerCase().includes(membershipSearch.toLowerCase()) ||
+                patron.mobilePhone?.includes(membershipSearch) ||
+                patron.identificationNumber?.includes(membershipSearch) ||
+                patron.identificationCountry?.includes(membershipSearch.toLowerCase()) ||
+                patron.playerId?.toString().includes(membershipSearch)
+            );
+
+            // If no client-side results and search term exists, fetch from server
+            if (clientFiltered.length === 0) {
+                setMembershipServerSearch(membershipSearch);
+                loadMemberships(membershipSearch, 0, rowsPerPage);
+            } else {
+                // Clear server search if we found results client-side
+                if (membershipServerSearch !== '') {
+                    setMembershipServerSearch('');
+                }
+                setSearchingMembership(false);
+            }
+        }, 800); // Wait 800ms after user stops typing
+
+        // Cleanup
+        return () => {
+            if (membershipSearchTimerRef.current) {
+                clearTimeout(membershipSearchTimerRef.current);
+            }
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [membershipSearch]);
 
-    const loadNewRegistrations = async () => {
+    const loadNewRegistrations = async (searchTerm?: string, page?: number, pageSize?: number) => {
         try {
             setLoadingNewReg(true);
-            const data = await patronService.getAllPatrons(false);
-            setNewRegistrations(data);
+
+            const currentSearchTerm = searchTerm !== undefined ? searchTerm : newRegServerSearch;
+
+            const request = {
+                IsMembership: false,
+                Page: (page ?? newRegPage) + 1, // Server expects 1-based page index
+                PageSize: pageSize ?? rowsPerPage,
+                SearchTerm: currentSearchTerm || undefined // Only send SearchTerm if it has value
+            };
+
+            const response = await patronService.getAllPatronsWithPagination(request);
+            setNewRegistrations(response.data);
+            setNewRegTotalRecords(response.totalRecords);
         } catch (err) {
             console.error('Error loading new registrations:', err);
             showSnackbar('Failed to load new registrations', 'error');
         } finally {
             setLoadingNewReg(false);
+            setSearchingNewReg(false); // Clear searching indicator
         }
     };
 
-    const loadMemberships = async () => {
+    const loadMemberships = async (searchTerm?: string, page?: number, pageSize?: number) => {
         try {
             setLoadingMembership(true);
-            const data = await patronService.getAllPatrons(true);
-            setMemberships(data);
+
+            const currentSearchTerm = searchTerm !== undefined ? searchTerm : membershipServerSearch;
+
+            const request = {
+                IsMembership: true,
+                Page: (page ?? membershipPage) + 1, // Server expects 1-based page index
+                PageSize: pageSize ?? rowsPerPage,
+                SearchTerm: currentSearchTerm || undefined // Only send SearchTerm if it has value
+            };
+
+            const response = await patronService.getAllPatronsWithPagination(request);
+            setMemberships(response.data);
+            setMembershipTotalRecords(response.totalRecords);
         } catch (err) {
             console.error('Error loading memberships:', err);
             showSnackbar('Failed to load memberships', 'error');
         } finally {
             setLoadingMembership(false);
+            setSearchingMembership(false); // Clear searching indicator
         }
     };
 
@@ -424,9 +541,73 @@ const AdminRegistrationPage: React.FC = () => {
     };
 
     // Handle file view - support images, PDF, DOCX, Excel
+    // const handleFileView = (fileUrl: string, fileName?: string) => {
+    //     // For income documents, download the file
+    //     const link = document.createElement('a');
+    //     link.href = fileUrl;
+    //     link.download = fileName || 'download';
+    //     link.target = '_blank';
+    //     document.body.appendChild(link);
+    //     link.click();
+    //     document.body.removeChild(link);
+    // };
+
     const handleFileView = (fileUrl: string, _fileName?: string) => {
         setSelectedImage(fileUrl);
         setImageViewerOpen(true);
+    };
+
+    // Handle download income file directly
+    const handleDownloadIncomeFile = async (fileUrl: string, fileName?: string) => {
+        try {
+            // Try to fetch with credentials to bypass CORS
+            const response = await fetch(fileUrl, {
+                method: 'GET',
+                credentials: 'include', // Include cookies
+                mode: 'cors',
+                headers: {
+                    'Accept': '*/*',
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch file');
+            }
+
+            // Get the blob
+            const blob = await response.blob();
+
+            // Create blob URL
+            const blobUrl = window.URL.createObjectURL(blob);
+
+            // Create temporary link
+            const link = document.createElement('a');
+            link.href = blobUrl;
+            link.download = fileName || fileUrl.split('/').pop() || 'download';
+            link.style.display = 'none';
+
+            // Trigger download
+            document.body.appendChild(link);
+            link.click();
+
+            // Cleanup
+            document.body.removeChild(link);
+            setTimeout(() => window.URL.revokeObjectURL(blobUrl), 100);
+
+            setDialogSuccess('Download started!');
+        } catch (error) {
+            console.error('Error downloading file:', error);
+
+            // Fallback: Try to open in new window with download intent
+            const link = document.createElement('a');
+            link.href = fileUrl;
+            link.download = fileName || fileUrl.split('/').pop() || 'download';
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer';
+            link.click();
+
+            setDialogError('Could not force download. File may open in a new tab. Please use browser "Save As" to download.');
+        }
     };
 
     // Get file type from filename
@@ -568,37 +749,61 @@ const AdminRegistrationPage: React.FC = () => {
 
     // Filter and paginate data
     const filteredNewRegistrations = useMemo(() => {
-        return newRegistrations.filter(patron =>
-            patron.firstName?.toLowerCase().includes(newRegSearch.toLowerCase()) ||
-            patron.lastName?.toLowerCase().includes(newRegSearch.toLowerCase()) ||
-            patron.gender?.toLowerCase().includes(newRegSearch.toLowerCase()) ||
-            patron.mobilePhone?.includes(newRegSearch) ||
-            patron.identificationNumber?.includes(newRegSearch) ||
-            patron.identificationCountry?.includes(newRegSearch.toLowerCase())
-        );
-    }, [newRegistrations, newRegSearch]);
+        // Client-side filter only for search
+        if (newRegSearch.trim() && !newRegServerSearch) {
+            return newRegistrations.filter(patron =>
+                patron.firstName?.toLowerCase().includes(newRegSearch.toLowerCase()) ||
+                patron.lastName?.toLowerCase().includes(newRegSearch.toLowerCase()) ||
+                patron.gender?.toLowerCase().includes(newRegSearch.toLowerCase()) ||
+                patron.mobilePhone?.includes(newRegSearch) ||
+                patron.identificationNumber?.includes(newRegSearch) ||
+                patron.identificationCountry?.includes(newRegSearch.toLowerCase())
+            );
+        }
+
+        // Return all for server-side pagination or server search
+        return newRegistrations;
+    }, [newRegistrations, newRegSearch, newRegServerSearch]);
 
     const filteredMemberships = useMemo(() => {
-        return memberships.filter(patron =>
-            patron.firstName?.toLowerCase().includes(membershipSearch.toLowerCase()) ||
-            patron.lastName?.toLowerCase().includes(membershipSearch.toLowerCase()) ||
-            patron.gender?.toLowerCase().includes(membershipSearch.toLowerCase()) ||
-            patron.mobilePhone?.includes(membershipSearch) ||
-            patron.identificationNumber?.includes(membershipSearch) ||
-            patron.identificationCountry?.includes(membershipSearch.toLowerCase()) ||
-            patron.playerId?.toString().includes(membershipSearch)
-        );
-    }, [memberships, membershipSearch]);
+        // Client-side filter only for search
+        if (membershipSearch.trim() && !membershipServerSearch) {
+            return memberships.filter(patron =>
+                patron.firstName?.toLowerCase().includes(membershipSearch.toLowerCase()) ||
+                patron.lastName?.toLowerCase().includes(membershipSearch.toLowerCase()) ||
+                patron.gender?.toLowerCase().includes(membershipSearch.toLowerCase()) ||
+                patron.mobilePhone?.includes(membershipSearch) ||
+                patron.identificationNumber?.includes(membershipSearch) ||
+                patron.identificationCountry?.includes(membershipSearch.toLowerCase()) ||
+                patron.playerId?.toString().includes(membershipSearch)
+            );
+        }
+
+        // Return all for server-side pagination or server search
+        return memberships;
+    }, [memberships, membershipSearch, membershipServerSearch]);
 
     const paginatedNewRegistrations = useMemo(() => {
-        const startIndex = newRegPage * rowsPerPage;
-        return filteredNewRegistrations.slice(startIndex, startIndex + rowsPerPage);
-    }, [filteredNewRegistrations, newRegPage, rowsPerPage]);
+        // Use client-side pagination only when searching client-side
+        if (newRegSearch.trim() && !newRegServerSearch) {
+            const startIndex = newRegPage * rowsPerPage;
+            return filteredNewRegistrations.slice(startIndex, startIndex + rowsPerPage);
+        }
+
+        // Server already paginated
+        return newRegistrations;
+    }, [filteredNewRegistrations, newRegPage, rowsPerPage, newRegSearch, newRegServerSearch, newRegistrations]);
 
     const paginatedMemberships = useMemo(() => {
-        const startIndex = membershipPage * rowsPerPage;
-        return filteredMemberships.slice(startIndex, startIndex + rowsPerPage);
-    }, [filteredMemberships, membershipPage, rowsPerPage]);
+        // Use client-side pagination only when searching client-side
+        if (membershipSearch.trim() && !membershipServerSearch) {
+            const startIndex = membershipPage * rowsPerPage;
+            return filteredMemberships.slice(startIndex, startIndex + rowsPerPage);
+        }
+
+        // Server already paginated
+        return memberships;
+    }, [filteredMemberships, membershipPage, rowsPerPage, membershipSearch, membershipServerSearch, memberships]);
 
     // Handle patron detail view/edit
     const handlePatronAction = async (patron: PatronResponse) => {
@@ -661,6 +866,7 @@ const AdminRegistrationPage: React.FC = () => {
 
             // Reset income document fields
             setIncomeDocument(patronDetail.incomeDocument || '');
+            setIncomeDocumentError('');
             setExpireDate(patronDetail.incomeExpiryDate || getTomorrowDate());
             setIncomeApproved(patronDetail.isValidIncomeDocument);
 
@@ -697,6 +903,151 @@ const AdminRegistrationPage: React.FC = () => {
             setDialogError('Failed to load patron details.');
             console.error('Error loading patron details:', err);
         }
+    };
+
+    // Validate individual field on blur
+    const validateField = (fieldName: string, value: any) => {
+        const errors = { ...validationErrors };
+
+        if (!editedPatron) return;
+
+        switch (fieldName) {
+            case 'lastName':
+                if (!value?.trim()) {
+                    errors.lastName = 'Middle & Last Name is required';
+                } else {
+                    delete errors.lastName;
+                }
+                break;
+            case 'firstName':
+                if (!value?.trim()) {
+                    errors.firstName = 'First Name is required';
+                } else {
+                    delete errors.firstName;
+                }
+                break;
+            case 'mobilePhone':
+                if (!value?.trim()) {
+                    errors.mobilePhone = 'Mobile Phone is required';
+                } else if (!validateVietnamesePhoneNumber(value)) {
+                    if (isVietnamese()) {
+                        errors.mobilePhone = 'Please enter a valid Vietnamese phone number';
+                    } else {
+                        delete errors.mobilePhone;
+                    }
+                } else {
+                    delete errors.mobilePhone;
+                }
+                break;
+            case 'jobTitle':
+                if (!value?.trim()) {
+                    errors.jobTitle = 'Occupation is required';
+                } else {
+                    delete errors.jobTitle;
+                }
+                break;
+            case 'position':
+                if (!value?.trim()) {
+                    errors.position = 'Position is required';
+                } else {
+                    delete errors.position;
+                }
+                break;
+            case 'specifyJobTitle':
+                if (!value?.trim()) {
+                    errors.specifyJobTitle = 'Specify Occupation is required';
+                } else {
+                    delete errors.specifyJobTitle;
+                }
+                break;
+            case 'specifyPosition':
+                if (!value?.trim()) {
+                    errors.specifyPosition = 'Specify Position is required';
+                } else {
+                    delete errors.specifyPosition;
+                }
+                break;
+            case 'identificationNumber':
+                if (!value?.trim()) {
+                    errors.identificationNumber = 'ID Number is required';
+                } else {
+                    delete errors.identificationNumber;
+                }
+                break;
+            case 'identificationCountry':
+                if (!value?.trim()) {
+                    errors.identificationCountry = 'Nationality is required';
+                } else {
+                    delete errors.identificationCountry;
+                }
+                break;
+            case 'identificationExpiration':
+                if (!value) {
+                    errors.identificationExpiration = 'Expiration Date is required';
+                } else if (new Date(value) <= new Date()) {
+                    errors.identificationExpiration = 'Expiration Date must be a future date';
+                } else {
+                    delete errors.identificationExpiration;
+                }
+                break;
+            case 'gender':
+                if (!value?.trim()) {
+                    errors.gender = 'Gender is required';
+                } else {
+                    delete errors.gender;
+                }
+                break;
+            case 'birthday':
+                if (!value) {
+                    errors.birthday = 'Birthday is required';
+                } else if (new Date(value) >= new Date()) {
+                    errors.birthday = 'Birthday must be a past date';
+                } else {
+                    const birthDate = new Date(value);
+                    const today = new Date();
+                    const age = today.getFullYear() - birthDate.getFullYear();
+                    const monthDiff = today.getMonth() - birthDate.getMonth();
+                    if (age < 18 || (age === 18 && monthDiff < 0) || (age === 18 && monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                        errors.birthday = 'Patron must be at least 18 years old';
+                    } else if (editedPatron.identificationCountry === String(VIETNAM_COUNTRY_ID)) {
+                        if (age < 21 || (age === 21 && monthDiff < 0) || (age === 21 && monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                            errors.birthday = 'Vietnamese nationals must be at least 21 years old';
+                        } else {
+                            delete errors.birthday;
+                        }
+                    } else {
+                        delete errors.birthday;
+                    }
+                }
+                break;
+            case 'address':
+                if (!value?.trim()) {
+                    errors.address = 'Main Address is required';
+                } else {
+                    delete errors.address;
+                }
+                break;
+            case 'addressInVietNam':
+                if (editedPatron.identificationCountry !== String(VIETNAM_COUNTRY_ID)) {
+                    if (!value?.trim()) {
+                        errors.addressInVietNam = 'Address in Vietnam is required for non-Vietnamese nationals';
+                    } else {
+                        delete errors.addressInVietNam;
+                    }
+                } else {
+                    delete errors.addressInVietNam;
+                }
+                break;
+            case 'country':
+                if (!value?.trim()) {
+                    errors.country = 'Country is required';
+                } else {
+                    delete errors.country;
+                }
+                break;
+        }
+
+        setValidationErrors(errors);
     };
 
     // Validate form
@@ -916,7 +1267,9 @@ const AdminRegistrationPage: React.FC = () => {
             confirmButtonColor: '#d33',
             cancelButtonColor: '#3085d6',
             confirmButtonText: 'Yes, delete it!',
-            cancelButtonText: 'Cancel'
+            cancelButtonText: 'Cancel',
+            allowEscapeKey: true,
+            allowOutsideClick: false
         });
 
         if (!result.isConfirmed) {
@@ -1392,7 +1745,7 @@ const AdminRegistrationPage: React.FC = () => {
                         <TableCell sx={{ minWidth: 120 }}>Nationality</TableCell>
                         <TableCell sx={{ minWidth: 250 }}>Address</TableCell>
                         <TableCell sx={{ minWidth: 200 }}>Address in Vietnam</TableCell>
-                        <TableCell sx={{ minWidth: 120 }}>Country</TableCell>
+                        <TableCell sx={{ minWidth: 180 }}>Country</TableCell>
                         <TableCell>Status</TableCell>
                         <TableCell sx={{ minWidth: 160 }}>Submit Date</TableCell>
                     </TableRow>
@@ -1503,7 +1856,7 @@ const AdminRegistrationPage: React.FC = () => {
                     <CardContent>
                         <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
                             <Typography variant="h6">
-                                New Registration ({filteredNewRegistrations.length})
+                                New Registration ({newRegSearch.trim() && !newRegServerSearch ? filteredNewRegistrations.length : newRegTotalRecords})
                             </Typography>
                             <Box display="flex" gap={1} alignItems="center">
                                 <TextField
@@ -1513,9 +1866,14 @@ const AdminRegistrationPage: React.FC = () => {
                                     onChange={(e) => setNewRegSearch(e.target.value)}
                                     size="small"
                                     sx={{ width: 250 }}
+                                    InputProps={{
+                                        endAdornment: searchingNewReg && (
+                                            <CircularProgress size={20} sx={{ mr: 1 }} />
+                                        )
+                                    }}
                                 />
                                 <IconButton
-                                    onClick={loadNewRegistrations}
+                                    onClick={() => loadNewRegistrations()}
                                     disabled={loadingNewReg}
                                     color="primary"
                                 >
@@ -1524,26 +1882,57 @@ const AdminRegistrationPage: React.FC = () => {
                             </Box>
                         </Box>
 
-                        {loadingNewReg ? (
-                            <Box display="flex" justifyContent="center" py={4}>
-                                <CircularProgress size={40} />
-                            </Box>
-                        ) : (
-                            <>
+                        <Box position="relative">
+                            {/* Loading overlay */}
+                            {loadingNewReg && (
+                                <Box
+                                    position="absolute"
+                                    top={0}
+                                    left={0}
+                                    right={0}
+                                    bottom={0}
+                                    display="flex"
+                                    alignItems="center"
+                                    justifyContent="center"
+                                    bgcolor="rgba(255, 255, 255, 0.7)"
+                                    zIndex={10}
+                                    sx={{
+                                        backdropFilter: 'blur(2px)'
+                                    }}
+                                >
+                                    <CircularProgress size={40} />
+                                </Box>
+                            )}
+
+                            {/* Table - always rendered */}
+                            <Box sx={{
+                                opacity: loadingNewReg ? 0.5 : 1,
+                                transition: 'opacity 0.2s ease-in-out',
+                                pointerEvents: loadingNewReg ? 'none' : 'auto'
+                            }}>
                                 {renderTable(paginatedNewRegistrations)}
                                 <TablePagination
                                     component="div"
-                                    count={filteredNewRegistrations.length}
+                                    count={newRegSearch.trim() && !newRegServerSearch ? filteredNewRegistrations.length : newRegTotalRecords}
                                     page={newRegPage}
-                                    onPageChange={(_, newPage) => setNewRegPage(newPage)}
+                                    onPageChange={(_, newPage) => {
+                                        setNewRegPage(newPage);
+                                        // Only load from server if not doing client-side search
+                                        if (!newRegSearch.trim() || newRegServerSearch) {
+                                            loadNewRegistrations(newRegServerSearch, newPage, rowsPerPage);
+                                        }
+                                    }}
                                     rowsPerPage={rowsPerPage}
                                     onRowsPerPageChange={(e) => {
-                                        setRowsPerPage(parseInt(e.target.value, 10));
+                                        const newRowsPerPage = parseInt(e.target.value, 10);
+                                        setRowsPerPage(newRowsPerPage);
                                         setNewRegPage(0);
+                                        // Always reload when changing rows per page
+                                        loadNewRegistrations(newRegServerSearch, 0, newRowsPerPage);
                                     }}
                                 />
-                            </>
-                        )}
+                            </Box>
+                        </Box>
                     </CardContent>
                 </Card>
 
@@ -1552,7 +1941,7 @@ const AdminRegistrationPage: React.FC = () => {
                     <CardContent>
                         <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
                             <Typography variant="h6">
-                                Membership ({filteredMemberships.length})
+                                Membership ({membershipSearch.trim() && !membershipServerSearch ? filteredMemberships.length : membershipTotalRecords})
                             </Typography>
                             <Box display="flex" gap={1} alignItems="center">
                                 <TextField
@@ -1562,9 +1951,14 @@ const AdminRegistrationPage: React.FC = () => {
                                     onChange={(e) => setMembershipSearch(e.target.value)}
                                     size="small"
                                     sx={{ width: 250 }}
+                                    InputProps={{
+                                        endAdornment: searchingMembership && (
+                                            <CircularProgress size={20} sx={{ mr: 1 }} />
+                                        )
+                                    }}
                                 />
                                 <IconButton
-                                    onClick={loadMemberships}
+                                    onClick={() => loadMemberships()}
                                     disabled={loadingMembership}
                                     color="primary"
                                 >
@@ -1573,33 +1967,70 @@ const AdminRegistrationPage: React.FC = () => {
                             </Box>
                         </Box>
 
-                        {loadingMembership ? (
-                            <Box display="flex" justifyContent="center" py={4}>
-                                <CircularProgress size={40} />
-                            </Box>
-                        ) : (
-                            <>
+                        <Box position="relative">
+                            {/* Loading overlay */}
+                            {loadingMembership && (
+                                <Box
+                                    position="absolute"
+                                    top={0}
+                                    left={0}
+                                    right={0}
+                                    bottom={0}
+                                    display="flex"
+                                    alignItems="center"
+                                    justifyContent="center"
+                                    bgcolor="rgba(255, 255, 255, 0.7)"
+                                    zIndex={10}
+                                    sx={{
+                                        backdropFilter: 'blur(2px)'
+                                    }}
+                                >
+                                    <CircularProgress size={40} />
+                                </Box>
+                            )}
+
+                            {/* Table - always rendered */}
+                            <Box sx={{
+                                opacity: loadingMembership ? 0.5 : 1,
+                                transition: 'opacity 0.2s ease-in-out',
+                                pointerEvents: loadingMembership ? 'none' : 'auto'
+                            }}>
                                 {renderTable(paginatedMemberships)}
                                 <TablePagination
                                     component="div"
-                                    count={filteredMemberships.length}
+                                    count={membershipSearch.trim() && !membershipServerSearch ? filteredMemberships.length : membershipTotalRecords}
                                     page={membershipPage}
-                                    onPageChange={(_, newPage) => setMembershipPage(newPage)}
+                                    onPageChange={(_, newPage) => {
+                                        setMembershipPage(newPage);
+                                        // Only load from server if not doing client-side search
+                                        if (!membershipSearch.trim() || membershipServerSearch) {
+                                            loadMemberships(membershipServerSearch, newPage, rowsPerPage);
+                                        }
+                                    }}
                                     rowsPerPage={rowsPerPage}
                                     onRowsPerPageChange={(e) => {
-                                        setRowsPerPage(parseInt(e.target.value, 10));
+                                        const newRowsPerPage = parseInt(e.target.value, 10);
+                                        setRowsPerPage(newRowsPerPage);
                                         setMembershipPage(0);
+                                        // Always reload when changing rows per page
+                                        loadMemberships(membershipServerSearch, 0, newRowsPerPage);
                                     }}
                                 />
-                            </>
-                        )}
+                            </Box>
+                        </Box>
                     </CardContent>
                 </Card>
 
                 {/* Patron Detail Dialog */}
                 <Dialog
                     open={dialogOpen}
-                    onClose={() => setDialogOpen(false)}
+                    onClose={(_event, reason) => {
+                        // Only allow closing via button clicks, not backdrop or escape key
+                        if (reason === 'backdropClick' || reason === 'escapeKeyDown') {
+                            return;
+                        }
+                        setDialogOpen(false);
+                    }}
                     maxWidth="lg"
                     fullWidth
                 >
@@ -1739,9 +2170,11 @@ const AdminRegistrationPage: React.FC = () => {
                                             <Stack direction="row" spacing={2}>
                                                 {/* auto upper case last name */}
                                                 <TextField
-                                                    label="Middle & Last Name *"
+                                                    label="Middle & Last Name"
                                                     value={editedPatron.lastName || ''}
+                                                    required
                                                     onChange={(e) => setEditedPatron({ ...editedPatron, lastName: e.target.value.toUpperCase() })}
+                                                    onBlur={(e) => validateField('lastName', e.target.value)}
                                                     disabled={!isEditing}
                                                     fullWidth
                                                     size="small"
@@ -1750,9 +2183,11 @@ const AdminRegistrationPage: React.FC = () => {
                                                 />
                                                 {/* auto upper case first name */}
                                                 <TextField
-                                                    label="First Name *"
+                                                    label="First Name"
                                                     value={editedPatron.firstName || ''}
+                                                    required
                                                     onChange={(e) => setEditedPatron({ ...editedPatron, firstName: e.target.value.toUpperCase() })}
+                                                    onBlur={(e) => validateField('firstName', e.target.value)}
                                                     disabled={!isEditing}
                                                     fullWidth
                                                     size="small"
@@ -1763,7 +2198,8 @@ const AdminRegistrationPage: React.FC = () => {
 
                                             <TextField
                                                 type='number'
-                                                label="Mobile Phone *"
+                                                label="Mobile Phone"
+                                                required
                                                 value={editedPatron.mobilePhone || ''}
                                                 onChange={(e) => {
                                                     const newPhone = e.target.value;
@@ -1775,6 +2211,7 @@ const AdminRegistrationPage: React.FC = () => {
                                                         checkPhoneNumber(newPhone);
                                                     }
                                                 }}
+                                                onBlur={(e) => validateField('mobilePhone', e.target.value)}
                                                 disabled={!isEditing}
                                                 fullWidth
                                                 size="small"
@@ -1805,7 +2242,7 @@ const AdminRegistrationPage: React.FC = () => {
                                                         // }
                                                         value={editedPatron.jobTitle || ''}
                                                         onChange={(e) => setEditedPatron({ ...editedPatron, jobTitle: e.target.value })}
-                                                        label="Occupation *"
+                                                        label="Occupation"
                                                         required
                                                     >
                                                         {JOB_TITLE_OPTIONS.map((option) => (
@@ -1828,7 +2265,7 @@ const AdminRegistrationPage: React.FC = () => {
                                                         // }
                                                         value={editedPatron.position || ''}
                                                         onChange={(e) => setEditedPatron({ ...editedPatron, position: e.target.value })}
-                                                        label="Position *"
+                                                        label="Position"
                                                         required
                                                     >
                                                         {POSITION_OPTIONS.map((option) => (
@@ -1845,8 +2282,10 @@ const AdminRegistrationPage: React.FC = () => {
                                                 <Stack direction="row" spacing={2}>
                                                     {editedPatron.jobTitle === 'Other' && (
                                                         <TextField
-                                                            label="Specify Occupation *"
+                                                            label="Specify Occupation"
                                                             value={specifyJobTitle}
+                                                            required
+                                                            onBlur={(e) => validateField('specifyJobTitle', e.target.value)}
                                                             onChange={(e) => setSpecifyJobTitle(e.target.value)}
                                                             disabled={!isEditing}
                                                             fullWidth
@@ -1857,8 +2296,10 @@ const AdminRegistrationPage: React.FC = () => {
                                                     )}
                                                     {editedPatron.position === 'Other' && (
                                                         <TextField
-                                                            label="Specify Position *"
+                                                            label="Specify Position"
                                                             value={specifyPosition}
+                                                            required
+                                                            onBlur={(e) => validateField('specifyPosition', e.target.value)}
                                                             onChange={(e) => setSpecifyPosition(e.target.value)}
                                                             disabled={!isEditing}
                                                             fullWidth
@@ -1891,6 +2332,7 @@ const AdminRegistrationPage: React.FC = () => {
                                                                 ? editedPatron.identificationTypeId
                                                                 : ''
                                                         }
+                                                        required
                                                         onChange={(e) => {
                                                             const newIdType = Number(e.target.value);
                                                             setEditedPatron({ ...editedPatron, identificationTypeId: newIdType });
@@ -1901,7 +2343,7 @@ const AdminRegistrationPage: React.FC = () => {
                                                                 checkIdNumber(newIdType, editedPatron.identificationNumber);
                                                             }
                                                         }}
-                                                        label="ID Type *"
+                                                        label="ID Type"
                                                     >
                                                         {ID_TYPE_OPTIONS.map((option) => (
                                                             <MenuItem key={option.value} value={option.value}>
@@ -1911,13 +2353,14 @@ const AdminRegistrationPage: React.FC = () => {
                                                     </Select>
                                                     {validationErrors.identificationTypeId && <FormHelperText>{validationErrors.identificationTypeId}</FormHelperText>}
                                                 </FormControl>
-
                                                 <TextField
-                                                    label="ID Number *"
+                                                    label="ID Number"
                                                     value={editedPatron.identificationNumber || ''}
+                                                    onBlur={(e) => validateField('identificationNumber', e.target.value)}
                                                     onChange={(e) => {
                                                         const newIdNumber = e.target.value;
                                                         setEditedPatron({ ...editedPatron, identificationNumber: newIdNumber });
+
                                                         // Clear previous warning
                                                         setIdNumberWarning('');
                                                         // Check ID number
@@ -1925,6 +2368,7 @@ const AdminRegistrationPage: React.FC = () => {
                                                             checkIdNumber(editedPatron.identificationTypeId, newIdNumber);
                                                         }
                                                     }}
+                                                    required
                                                     disabled={!isEditing}
                                                     fullWidth
                                                     size="small"
@@ -1952,8 +2396,9 @@ const AdminRegistrationPage: React.FC = () => {
                                                                 ? editedPatron.identificationCountry
                                                                 : ''
                                                         }
+                                                        required
                                                         onChange={(e) => setEditedPatron({ ...editedPatron, identificationCountry: String(e.target.value) })}
-                                                        label="Nationality *"
+                                                        label="Nationality"
                                                     >
                                                         {countries.map((country) => (
                                                             <MenuItem key={country.countryID} value={String(country.countryID)}>
@@ -1965,11 +2410,12 @@ const AdminRegistrationPage: React.FC = () => {
                                                 </FormControl>
 
                                                 <TextField
-                                                    label="Expiration Date *"
+                                                    label="Expiration Date"
                                                     type="date"
                                                     value={editedPatron.identificationExpiration?.split('T')[0] || ''}
                                                     onChange={(e) => setEditedPatron({ ...editedPatron, identificationExpiration: e.target.value })}
                                                     disabled={!isEditing}
+                                                    required
                                                     InputLabelProps={{ shrink: true }}
                                                     fullWidth
                                                     size="small"
@@ -2025,6 +2471,7 @@ const AdminRegistrationPage: React.FC = () => {
                                                     label="Main Address *"
                                                     value={editedPatron.address || ''}
                                                     onChange={(e) => setEditedPatron({ ...editedPatron, address: e.target.value })}
+                                                    onBlur={(e) => validateField('address', e.target.value)}
                                                     disabled={!isEditing}
                                                     fullWidth
                                                     multiline
@@ -2035,9 +2482,10 @@ const AdminRegistrationPage: React.FC = () => {
                                                 />
 
                                                 <TextField
-                                                    label="Address in Viet Nam"
+                                                    label={`Address in Viet Nam${editedPatron.identificationCountry !== String(VIETNAM_COUNTRY_ID) ? ' *' : ''}`}
                                                     value={editedPatron.addressInVietNam || ''}
                                                     onChange={(e) => setEditedPatron({ ...editedPatron, addressInVietNam: e.target.value })}
+                                                    onBlur={(e) => validateField('addressInVietNam', e.target.value)}
                                                     disabled={!isEditing}
                                                     fullWidth
                                                     multiline
@@ -2431,16 +2879,33 @@ const AdminRegistrationPage: React.FC = () => {
                                                     <Stack direction="row" spacing={2}>
                                                         <TextField
                                                             label="Document Reference No"
+                                                            required
                                                             value={incomeDocument}
-                                                            onChange={(e) => setIncomeDocument(e.target.value)}
+                                                            onChange={(e) => {
+                                                                setIncomeDocument(e.target.value);
+                                                                // Clear error when user types
+                                                                if (e.target.value.trim()) {
+                                                                    setIncomeDocumentError('');
+                                                                }
+                                                            }}
+                                                            onBlur={(e) => {
+                                                                if (!e.target.value.trim()) {
+                                                                    setIncomeDocumentError('Document Reference No is required');
+                                                                } else {
+                                                                    setIncomeDocumentError('');
+                                                                }
+                                                            }}
                                                             disabled={incomeApproved}
                                                             fullWidth
                                                             size="small"
+                                                            error={!!incomeDocumentError}
+                                                            helperText={incomeDocumentError}
                                                         />
 
                                                         <TextField
                                                             label="Expire Date"
                                                             type="date"
+                                                            required
                                                             value={expireDate?.split('T')[0] || ''}
                                                             onChange={(e) => setExpireDate(e.target.value)}
                                                             InputLabelProps={{ shrink: true }}
@@ -2580,7 +3045,13 @@ const AdminRegistrationPage: React.FC = () => {
                 {/* Enroll Player Confirmation Dialog */}
                 <Dialog
                     open={enrollDialogOpen}
-                    onClose={() => setEnrollDialogOpen(false)}
+                    onClose={(_event, reason) => {
+                        // Only allow closing via button clicks, not backdrop or escape key
+                        if (reason === 'backdropClick' || reason === 'escapeKeyDown') {
+                            return;
+                        }
+                        setEnrollDialogOpen(false);
+                    }}
                 >
                     <DialogTitle>Confirm Enrollment</DialogTitle>
                     <DialogContent>
@@ -2703,9 +3174,11 @@ const AdminRegistrationPage: React.FC = () => {
                                             </Typography>
                                             <Button
                                                 variant="contained"
-                                                href={selectedImage}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
+                                                onClick={() => {
+                                                    const urlParts = selectedImage.split('/');
+                                                    const fileName = urlParts[urlParts.length - 1];
+                                                    handleDownloadIncomeFile(selectedImage, fileName);
+                                                }}
                                             >
                                                 Download File
                                             </Button>
@@ -2722,9 +3195,11 @@ const AdminRegistrationPage: React.FC = () => {
                                             </Typography>
                                             <Button
                                                 variant="contained"
-                                                href={selectedImage}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
+                                                onClick={() => {
+                                                    const urlParts = selectedImage.split('/');
+                                                    const fileName = urlParts[urlParts.length - 1];
+                                                    handleDownloadIncomeFile(selectedImage, fileName);
+                                                }}
                                             >
                                                 Download File
                                             </Button>
@@ -2753,9 +3228,7 @@ const AdminRegistrationPage: React.FC = () => {
                             return showDownload ? (
                                 <Button
                                     variant="outlined"
-                                    href={selectedImage}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
+                                    onClick={async () => await handleDownloadIncomeFile(selectedImage, fileName)}
                                     sx={{ mr: 'auto' }}
                                 >
                                     Download

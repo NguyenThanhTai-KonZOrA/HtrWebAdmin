@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 
-// Auto logout after 30 minutes of inactivity
-const IDLE_TIMEOUT = 30 * 60 * 1000; // 30 minutes
+// Auto logout after 300 minutes of inactivity
+const IDLE_TIMEOUT = 300 * 60 * 1000; // 300 minutes
 
 /**
  * Hook auto logout user after a period of inactivity
@@ -26,9 +26,9 @@ export const useAutoLogout = () => {
     }
 
     // Set new timeout
-    timeoutRef.current = setTimeout(() => {
-      console.log('🕒 Auto logout due to inactivity (30 minutes)');
-      logout();
+    timeoutRef.current = setTimeout(async () => {
+      console.log('🕒 Auto logout due to inactivity (300 minutes)');
+      await logout();
     }, IDLE_TIMEOUT);
   }, [logout, token]);
 

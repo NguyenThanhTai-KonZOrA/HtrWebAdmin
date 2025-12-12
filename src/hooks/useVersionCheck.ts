@@ -48,7 +48,7 @@ export const useVersionCheck = () => {
       // Clear version to force check again
       localStorage.removeItem('app-version');
 
-      // Logout user
+      await logout();
       logout();
     }
   };

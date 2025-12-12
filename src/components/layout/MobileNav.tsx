@@ -14,21 +14,26 @@ import {
     Settings as SettingsIcon,
     PersonAdd as PersonAddIcon
 } from '@mui/icons-material';
+import type { NavItem } from '../../commonType';
+import { Permission } from '../../constants/roles';
+import { usePermission } from '../../hooks/usePermission';
 
-const navItems = [
+const navItems: NavItem[] = [
     {
         key: 'admin-registration',
         title: 'Registration Management',
         href: '/admin-registration',
-        icon: PersonAddIcon
+        icon: PersonAddIcon,
+        requiredPermission: Permission.VIEW_ADMIN_REGISTRATION,
     },
     {
         key: 'admin-device-mapping',
         title: 'Device Mapping Settings',
         href: '/admin-device-mapping',
-        icon: SettingsIcon
+        icon: SettingsIcon,
+        requiredPermission: Permission.VIEW_DEVICE_MAPPING,
     },
-    //{
+    // {
     //     key: 'admin-settings',
     //     title: 'System Settings',
     //     href: '/admin-settings',
@@ -44,6 +49,18 @@ interface MobileNavProps {
 
 export function MobileNav({ onClose, open }: MobileNavProps): React.JSX.Element {
     const location = useLocation();
+
+    const { can } = usePermission();
+
+    // Filter nav items base on permissions
+    const filteredNavItems = navItems.filter((item) => {
+        // If item does not require permission, always show
+        if (!item.requiredPermission) {
+            return true;
+        }
+        // Only show if user has permission
+        return can(item.requiredPermission);
+    });
 
     return (
         <Drawer
@@ -83,7 +100,7 @@ export function MobileNav({ onClose, open }: MobileNavProps): React.JSX.Element 
                 }}
             >
                 <List sx={{ p: 1 }}>
-                    {navItems.map((item) => {
+                    {filteredNavItems.map((item) => {
                         const Icon = item.icon;
                         const isActive = location.pathname === item.href;
 

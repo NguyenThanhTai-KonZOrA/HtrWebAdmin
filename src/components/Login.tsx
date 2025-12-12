@@ -14,7 +14,7 @@ import {
     IconButton,
 } from "@mui/material";
 import { useNavigate, useLocation } from "react-router-dom";
-import { queueAdminService as loginApi } from "../services/queueService";
+import { authAdminService as loginApi } from "../services/authService";
 import { useAuth } from "../contexts/AuthContext";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
@@ -54,8 +54,8 @@ const Login: React.FC = () => {
             const response = await loginApi.login({ userName: username, password });
 
             // Only proceed with login if we got a valid response
-            if (response && response.token) {
-                login(response.userName, response.token);
+            if (response && response.token && response.refreshToken && response.tokenExpiration) {
+                login(response.userName, response.token, response.refreshToken, response.tokenExpiration);
                 // Set loading to false so useEffect can navigate
                 setLoading(false);
             } else {

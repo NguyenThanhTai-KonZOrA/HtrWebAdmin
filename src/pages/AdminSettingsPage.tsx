@@ -41,16 +41,17 @@ import {
 import { useState, useEffect } from "react";
 
 import AdminLayout from "../components/layout/AdminLayout";
-import { settingsService } from "../services/queueService";
-import type { 
-    SettingsResponse, 
-    CreateSettingsRequest, 
+
+import type {
+    SettingsResponse,
+    CreateSettingsRequest,
     UpdateSettingsRequest,
     SettingsInfoResponse,
     CategoriesofSettingsResponse
 } from "../type";
 import { PAGE_TITLES } from "../constants/pageTitles";
 import { useSetPageTitle } from "../hooks/useSetPageTitle";
+import { settingsService } from "../services/registrationService";
 
 interface SettingsFormData {
     key: string;
@@ -75,7 +76,7 @@ export default function AdminSettingsPage() {
     const [settingsInfo, setSettingsInfo] = useState<SettingsInfoResponse | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    
+
     // Dialog states
     const [dialogOpen, setDialogOpen] = useState(false);
     const [dialogMode, setDialogMode] = useState<'create' | 'edit'>('create');
@@ -88,11 +89,11 @@ export default function AdminSettingsPage() {
         dataType: 'string'
     });
     const [formLoading, setFormLoading] = useState(false);
-    
+
     // Snackbar states
-    const [snackbar, setSnackbar] = useState({ 
-        open: false, 
-        message: "", 
+    const [snackbar, setSnackbar] = useState({
+        open: false,
+        message: "",
         severity: "success" as "success" | "error" | "warning" | "info"
     });
 
@@ -113,12 +114,12 @@ export default function AdminSettingsPage() {
         try {
             setLoading(true);
             setError(null);
-            
+
             const [settingsData, infoData] = await Promise.all([
                 settingsService.getAllSettings(),
                 settingsService.getSettingsInfor()
             ]);
-            
+
             setSettings(settingsData);
             setSettingsInfo(infoData);
         } catch (error) {
@@ -148,7 +149,7 @@ export default function AdminSettingsPage() {
         try {
             setFormLoading(true);
             const detailData = await settingsService.getSettingDetail(setting.key);
-            
+
             setDialogMode('edit');
             setSelectedSetting(setting);
             setFormData({
@@ -182,7 +183,7 @@ export default function AdminSettingsPage() {
     const handleFormSubmit = async () => {
         try {
             setFormLoading(true);
-            
+
             if (dialogMode === 'create') {
                 const createData: CreateSettingsRequest = {
                     key: formData.key,
@@ -191,7 +192,7 @@ export default function AdminSettingsPage() {
                     category: formData.category,
                     dataType: formData.dataType
                 };
-                
+
                 await settingsService.createSettings(createData);
                 showSnackbar("Setting created successfully", "success");
             } else {
@@ -199,16 +200,16 @@ export default function AdminSettingsPage() {
                     key: formData.key,
                     value: formData.value
                 };
-                
+
                 const result = await settingsService.updateSetting(selectedSetting!.key, updateData);
-                
+
                 if (result.requiresRestart) {
                     showSnackbar(`Setting updated. ${result.warning || 'Restart may be required.'}`, "warning");
                 } else {
                     showSnackbar("Setting updated successfully", "success");
                 }
             }
-            
+
             setDialogOpen(false);
             loadData(); // Reload data
         } catch (error) {
@@ -308,7 +309,7 @@ export default function AdminSettingsPage() {
                     >
                         Create New Setting
                     </Button>
-                    
+
                     <Button
                         variant="outlined"
                         startIcon={<RefreshIcon />}
@@ -358,7 +359,7 @@ export default function AdminSettingsPage() {
                                         ))
                                     ) : settings.length > 0 ? (
                                         settings.map((setting) => (
-                                            <TableRow 
+                                            <TableRow
                                                 key={setting.id}
                                                 sx={{ '&:nth-of-type(even)': { bgcolor: 'grey.25' } }}
                                             >
@@ -376,16 +377,16 @@ export default function AdminSettingsPage() {
                                                     </Box>
                                                 </TableCell>
                                                 <TableCell>
-                                                    <Chip 
-                                                        label={setting.category} 
+                                                    <Chip
+                                                        label={setting.category}
                                                         size="small"
                                                         color={getCategoryColor(setting.category) as any}
                                                         variant="outlined"
                                                     />
                                                 </TableCell>
                                                 <TableCell>
-                                                    <Chip 
-                                                        label={setting.isActive ? "Active" : "Inactive"} 
+                                                    <Chip
+                                                        label={setting.isActive ? "Active" : "Inactive"}
                                                         size="small"
                                                         color={setting.isActive ? "success" : "default"}
                                                         variant="filled"
@@ -403,8 +404,8 @@ export default function AdminSettingsPage() {
                                                 <TableCell>
                                                     <Stack direction="row" spacing={1} justifyContent="center">
                                                         <Tooltip title="Update Setting">
-                                                            <IconButton 
-                                                                size="small" 
+                                                            <IconButton
+                                                                size="small"
                                                                 onClick={() => handleUpdateClick(setting)}
                                                                 disabled={formLoading}
                                                             >
@@ -412,8 +413,8 @@ export default function AdminSettingsPage() {
                                                             </IconButton>
                                                         </Tooltip>
                                                         <Tooltip title={`Clear Cache: AppSetting_${setting.key}`}>
-                                                            <IconButton 
-                                                                size="small" 
+                                                            <IconButton
+                                                                size="small"
                                                                 onClick={() => handleClearCache(setting.key)}
                                                                 color="warning"
                                                             >
@@ -441,8 +442,8 @@ export default function AdminSettingsPage() {
             </Box>
 
             {/* Create/Update Dialog */}
-            <Dialog 
-                open={dialogOpen} 
+            <Dialog
+                open={dialogOpen}
                 onClose={() => setDialogOpen(false)}
                 maxWidth="sm"
                 fullWidth
@@ -463,7 +464,7 @@ export default function AdminSettingsPage() {
                             required
                             fullWidth
                         />
-                        
+
                         <TextField
                             label="Value"
                             value={formData.value}
@@ -474,7 +475,7 @@ export default function AdminSettingsPage() {
                             multiline
                             rows={3}
                         />
-                        
+
                         <TextField
                             label="Description"
                             value={formData.description}
@@ -484,7 +485,7 @@ export default function AdminSettingsPage() {
                             multiline
                             rows={2}
                         />
-                        
+
                         <FormControl fullWidth disabled={dialogMode === 'edit' || formLoading}>
                             <InputLabel>Category</InputLabel>
                             <Select
@@ -522,9 +523,9 @@ export default function AdminSettingsPage() {
                     <Button onClick={() => setDialogOpen(false)} disabled={formLoading}>
                         Cancel
                     </Button>
-                    <Button 
-                        onClick={handleFormSubmit} 
-                        variant="contained" 
+                    <Button
+                        onClick={handleFormSubmit}
+                        variant="contained"
                         disabled={formLoading || !formData.key || !formData.value}
                     >
                         {formLoading ? 'Saving...' : (dialogMode === 'create' ? 'Create' : 'Update')}

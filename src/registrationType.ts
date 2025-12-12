@@ -18,6 +18,20 @@ export interface FileDataRequest {
     savedAs: string;
 }
 
+export interface PatronPagingRequest {
+    IsMembership: boolean;
+    Page: number;
+    PageSize: number;
+    Take?: number;
+    Skip?: number;
+    SearchTerm?: string;
+}
+
+export interface PatronPagingResponse {
+    totalRecords: number;
+    data: PatronResponse[];
+}
+
 export interface PatronResponse {
     pid: number;
     playerId: number;
