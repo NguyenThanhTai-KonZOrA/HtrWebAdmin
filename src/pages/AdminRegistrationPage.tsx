@@ -1022,7 +1022,7 @@ const AdminRegistrationPage: React.FC = () => {
                 break;
             case 'address':
                 if (!value?.trim()) {
-                    errors.address = 'Main Address is required';
+                    errors.address = 'Main Address in Vietnam is required';
                 } else {
                     delete errors.address;
                 }
@@ -1030,7 +1030,7 @@ const AdminRegistrationPage: React.FC = () => {
             case 'addressInVietNam':
                 if (editedPatron.identificationCountry !== String(VIETNAM_COUNTRY_ID)) {
                     if (!value?.trim()) {
-                        errors.addressInVietNam = 'Address in Vietnam is required for non-Vietnamese nationals';
+                        errors.addressInVietNam = 'Other Address is required for non-Vietnamese nationals';
                     } else {
                         delete errors.addressInVietNam;
                     }
@@ -1126,7 +1126,7 @@ const AdminRegistrationPage: React.FC = () => {
 
         // Address validation
         if (!editedPatron.address?.trim()) {
-            errors.address = 'Main Address is required';
+            errors.address = 'Main Address in Vietnam is required';
         }
 
         if (editedPatron.identificationCountry !== String(VIETNAM_COUNTRY_ID)) {
@@ -2468,7 +2468,7 @@ const AdminRegistrationPage: React.FC = () => {
                                             </Typography>
                                             <Stack spacing={2}>
                                                 <TextField
-                                                    label="Main Address *"
+                                                    label="Main Address in Viet Nam *"
                                                     value={editedPatron.address || ''}
                                                     onChange={(e) => setEditedPatron({ ...editedPatron, address: e.target.value })}
                                                     onBlur={(e) => validateField('address', e.target.value)}
@@ -2482,7 +2482,7 @@ const AdminRegistrationPage: React.FC = () => {
                                                 />
 
                                                 <TextField
-                                                    label={`Address in Viet Nam${editedPatron.identificationCountry !== String(VIETNAM_COUNTRY_ID) ? ' *' : ''}`}
+                                                    label={`Other Address${editedPatron.identificationCountry !== String(VIETNAM_COUNTRY_ID) ? ' *' : ''}`}
                                                     value={editedPatron.addressInVietNam || ''}
                                                     onChange={(e) => setEditedPatron({ ...editedPatron, addressInVietNam: e.target.value })}
                                                     onBlur={(e) => validateField('addressInVietNam', e.target.value)}
