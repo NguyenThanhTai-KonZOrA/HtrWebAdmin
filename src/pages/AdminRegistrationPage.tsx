@@ -151,6 +151,7 @@ const AdminRegistrationPage: React.FC = () => {
     const [incomeDocument, setIncomeDocument] = useState('');
     const [incomeDocumentError, setIncomeDocumentError] = useState('');
     const [expireDate, setExpireDate] = useState('');
+    const [expireDateError, setExpireDateError] = useState('');
     const [approvingIncome, setApprovingIncome] = useState(false);
     const [incomeApproved, setIncomeApproved] = useState(false);
 
@@ -867,7 +868,8 @@ const AdminRegistrationPage: React.FC = () => {
             // Reset income document fields
             setIncomeDocument(patronDetail.incomeDocument || '');
             setIncomeDocumentError('');
-            setExpireDate(patronDetail.incomeExpiryDate || getTomorrowDate());
+            setExpireDate(patronDetail.incomeExpiryDate || '');
+            setExpireDateError('');
             setIncomeApproved(patronDetail.isValidIncomeDocument);
 
             // Reset document HTML
@@ -2907,12 +2909,26 @@ const AdminRegistrationPage: React.FC = () => {
                                                             type="date"
                                                             required
                                                             value={expireDate?.split('T')[0] || ''}
-                                                            onChange={(e) => setExpireDate(e.target.value)}
+                                                            onChange={(e) => {
+                                                                setExpireDate(e.target.value);
+                                                                if (e.target.value.trim()) {
+                                                                    setExpireDateError('');
+                                                                }
+                                                            }}
+                                                            onBlur={(e) => {
+                                                                if (!e.target.value.trim()) {
+                                                                    setExpireDateError('Expire Date is required');
+                                                                } else {
+                                                                    setExpireDateError('');
+                                                                }
+                                                            }}
                                                             InputLabelProps={{ shrink: true }}
                                                             inputProps={{ min: getTomorrowDate() }}
                                                             disabled={incomeApproved}
                                                             fullWidth
                                                             size="small"
+                                                            error={!!expireDateError}
+                                                            helperText={expireDateError}
                                                         />
                                                     </Stack>
                                                 </Stack>
