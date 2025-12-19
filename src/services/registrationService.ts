@@ -1,6 +1,6 @@
 import axios from "axios";
 import { showSessionExpiredNotification } from '../utils/sessionExpiredNotification';
-import type { CheckPatronIdentificationRequest, CheckValidIncomeRequest, CheckValidIncomeResponse, CountryResponse, CreateMappingRequest, CreateMappingResponse, CurrentHostNameResponse, CurrentStaffDeviceResponse, GetAllMappingsResponse, GetMappingByStaffDeviceResponse, IncomeFileResponse, MappingDataResponse, OnlineStaffDevicesResponse, PatronImagesResponse, PatronPagingRequest, PatronPagingResponse, PatronRegisterMembershipRequest, PatronRegisterMembershipResponse, PatronResponse, RenderDocumentResponse, StaffAndPatronDevicesResponse, StaffSignatureRequest, UpdateMappingRequest, UpdateMappingResponse } from "../registrationType";
+import type { AuditLogPaginationRequest, AuditLogPaginationResponse, AuditLogResponse, CheckPatronIdentificationRequest, CheckValidIncomeRequest, CheckValidIncomeResponse, CountryResponse, CreateMappingRequest, CreateMappingResponse, CurrentHostNameResponse, CurrentStaffDeviceResponse, GetAllMappingsResponse, GetMappingByStaffDeviceResponse, IncomeFileResponse, MappingDataResponse, OnlineStaffDevicesResponse, PatronImagesResponse, PatronPagingRequest, PatronPagingResponse, PatronRegisterMembershipRequest, PatronRegisterMembershipResponse, PatronResponse, RenderDocumentResponse, StaffAndPatronDevicesResponse, StaffSignatureRequest, SyncPatronImagesRequest, UpdateMappingRequest, UpdateMappingResponse } from "../registrationType";
 import type { SettingsResponse, CreateSettingsRequest, SettingsInfoResponse, ClearCacheSettingResponse, UpdateSettingsRequest, UpdateSettingsResponse, EmployeePerformanceRequest, EmployeePerformanceResponse } from "../type";
 
 const API_BASE = (window as any)._env_?.API_BASE;
@@ -148,6 +148,11 @@ export const patronService = {
 
     deletePatron: async (patronId: number): Promise<void> => {
         const response = await api.post<ApiEnvelope<void>>(`/api/RegistrationAdmin/patron/delete/${patronId}`);
+        return unwrapApiEnvelope(response);
+    },
+
+    syncPatronImages: async (request: SyncPatronImagesRequest): Promise<void> => {
+        const response = await api.post<ApiEnvelope<void>>(`/api/RegistrationAdmin/patron/sync-images`, request);
         return unwrapApiEnvelope(response);
     }
 };
@@ -341,6 +346,18 @@ export const employeeService = {
             }
             throw error;
         }
+    }
+};
+
+export const auditLogService = {
+    getAuditLogsFilterOptions: async (request: AuditLogPaginationRequest): Promise<AuditLogPaginationResponse> => {
+        const response = await api.post<ApiEnvelope<AuditLogPaginationResponse>>("/api/AuditLog/paginate", request);
+        return unwrapApiEnvelope(response);
+    },
+
+    getAuditLogById: async (auditLogId: number): Promise<AuditLogResponse> => {
+        const response = await api.get<ApiEnvelope<AuditLogResponse>>(`/api/AuditLog/${auditLogId}`);
+        return unwrapApiEnvelope(response);
     }
 };
 

@@ -53,7 +53,8 @@ import {
     Image as ImageIcon,
     InsertDriveFile as FileIcon,
     DeleteForever as DeleteForeverIcon,
-    DeleteSweep as DeleteSweepIcon
+    DeleteSweep as DeleteSweepIcon,
+    CloudSync as CloudSyncIcon
 } from '@mui/icons-material';
 import {
     patronService,
@@ -68,7 +69,8 @@ import type {
     CheckValidIncomeRequest,
     PatronRegisterMembershipRequest,
     StaffSignatureRequest,
-    IncomeFileResponse
+    IncomeFileResponse,
+    SyncPatronImagesRequest
 } from '../registrationType';
 import AdminLayout from '../components/layout/AdminLayout';
 import { useSetPageTitle } from '../hooks/useSetPageTitle';
@@ -1713,6 +1715,24 @@ const AdminRegistrationPage: React.FC = () => {
         return '✅ Ready to enroll player!';
     };
 
+    // Handle sync images
+    const handleSyncImages = async () => {
+        if (!selectedPatron) return;
+
+        const request: SyncPatronImagesRequest = {
+            PatronId: selectedPatron.pid,
+            PlayerId: selectedPatron.playerId,
+            Reason: 'Sync images for patron'
+        };
+
+        try {
+            await patronService.syncPatronImages(request);
+            showSnackbar('Images synced successfully!', 'success');
+        } catch (error) {
+            console.error('❌ Failed to sync images:', error);
+        }
+    };
+
     // Get country name by ID
     const getCountryName = (countryId: string): string => {
         const country = countries.find(c => String(c.countryID) === countryId);
@@ -2076,9 +2096,20 @@ const AdminRegistrationPage: React.FC = () => {
                                 {/* Patron Images Section */}
                                 <Card variant="outlined">
                                     <CardContent>
-                                        <Typography variant="h6" gutterBottom sx={{ mb: 2, color: 'primary.main' }}>
-                                            Personal Identification Images
-                                        </Typography>
+                                        <Box flexDirection={{ xs: 'column', sm: 'row' }} display="flex" justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }} mb={2}>
+                                            <Typography variant="h6" gutterBottom sx={{ mb: 2, color: 'primary.main' }}>
+                                                Personal Identification Images
+                                            </Typography>
+
+                                            {selectedPatron.isHaveMembership ? (
+                                                <Button onClick={handleSyncImages} variant="contained">
+                                                    <CloudSyncIcon sx={{ mr: 1 }} /> Sync Images
+                                                </Button>
+                                            ) : (
+                                                <Typography variant="body2" color="text.secondary">
+                                                </Typography>
+                                            )}
+                                        </Box>
                                         {patronImages ? (
                                             <Stack direction="row" spacing={3} justifyContent="center">
                                                 <Box textAlign="center">

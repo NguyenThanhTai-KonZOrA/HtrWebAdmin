@@ -98,7 +98,6 @@ export const authAdminService = {
 
 
 function getErrorMessage(data: unknown, fallback: string) {
-  debugger
   if (typeof data === "string" && data.length <= 200) {
     return data || fallback;
   } else if (data && typeof data === "object") {

@@ -14,10 +14,11 @@ import AdminRegistrationPage from './pages/AdminRegistrationPage'
 import DeviceMappingSettingsPage from './pages/DeviceMappingSettingsPage'
 import { Permission } from './constants/roles'
 import AdminSettingsPage from './pages/AdminSettingsPage'
+import AdminAuditLogsPage from './pages/AdminAuditLogsPage'
 
 function AppContent() {
   const networkStatus = useNetworkStatus();
-  
+
   // Validate token periodically
   useTokenValidator();
 
@@ -53,6 +54,18 @@ function AppContent() {
               showAccessDenied={true}
             >
               <DeviceMappingSettingsPage />
+            </RoleBasedRoute>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/admin-audit-logs" element={
+          <ProtectedRoute>
+            <RoleBasedRoute
+              requiredPermission={Permission.VIEW_DEVICE_MAPPING}
+              fallbackPath="/admin-audit-logs"
+              showAccessDenied={true}
+            >
+              <AdminAuditLogsPage />
             </RoleBasedRoute>
           </ProtectedRoute>
         } />

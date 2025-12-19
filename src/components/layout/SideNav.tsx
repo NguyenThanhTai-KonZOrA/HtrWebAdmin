@@ -11,7 +11,8 @@ import {
 } from '@mui/material';
 import {
     Settings as SettingsIcon,
-    PersonAdd as PersonAddIcon
+    PersonAdd as PersonAddIcon,
+    ManageHistory as ManageHistoryIcon
 } from '@mui/icons-material';
 import { useSidebar } from '../../contexts/SidebarContext';
 import { usePermission } from '../../hooks/usePermission';
@@ -31,6 +32,13 @@ const navItems: NavItem[] = [
         title: 'Device Mapping Settings',
         href: '/admin-device-mapping',
         icon: SettingsIcon,
+        requiredPermission: Permission.VIEW_DEVICE_MAPPING,
+    },
+    {
+        key: 'admin-audit-logs',
+        title: 'Audit Logs',
+        href: '/admin-audit-logs',
+        icon: ManageHistoryIcon,
         requiredPermission: Permission.VIEW_DEVICE_MAPPING,
     },
     // {
