@@ -423,15 +423,15 @@ const AdminAuditLogsPage: React.FC = () => {
                                 <Table stickyHeader size="small">
                                     <TableHead>
                                         <TableRow>
-                                            <TableCell sx={{ fontWeight: 'bold', minWidth: 120 }}>User</TableCell>
-                                            <TableCell sx={{ fontWeight: 'bold', minWidth: 150 }}>Action</TableCell>
-                                            <TableCell sx={{ fontWeight: 'bold', minWidth: 120 }}>Entity Type</TableCell>
-                                            <TableCell sx={{ fontWeight: 'bold', minWidth: 100 }}>Method</TableCell>
-                                            <TableCell sx={{ fontWeight: 'bold', minWidth: 200 }}>Request Path</TableCell>
-                                            <TableCell sx={{ fontWeight: 'bold', minWidth: 100 }}>Status</TableCell>
+                                            <TableCell sx={{ border: '1px solid #e0e0e0', fontWeight: 'bold', minWidth: 120 }}>User</TableCell>
+                                            <TableCell sx={{ border: '1px solid #e0e0e0', fontWeight: 'bold', minWidth: 150 }}>Action</TableCell>
+                                            <TableCell sx={{ border: '1px solid #e0e0e0', fontWeight: 'bold', minWidth: 100 }} align='center'>Entity Type</TableCell>
+                                            <TableCell sx={{ border: '1px solid #e0e0e0', fontWeight: 'bold', minWidth: 100 }} align='center'>Method</TableCell>
+                                            <TableCell sx={{ border: '1px solid #e0e0e0', fontWeight: 'bold', minWidth: 200 }}>Request Path</TableCell>
+                                            <TableCell sx={{ border: '1px solid #e0e0e0', fontWeight: 'bold', minWidth: 100 }} align='center'>Status</TableCell>
                                             {/* <TableCell sx={{ fontWeight: 'bold', minWidth: 150 }}>IP Address</TableCell> */}
-                                            <TableCell sx={{ fontWeight: 'bold', minWidth: 180 }}>Created At</TableCell>
-                                            <TableCell sx={{ fontWeight: 'bold', minWidth: 100 }}>Actions</TableCell>
+                                            <TableCell sx={{ border: '1px solid #e0e0e0', fontWeight: 'bold', minWidth: 150 }}>Created At</TableCell>
+                                            <TableCell sx={{ border: '1px solid #e0e0e0', fontWeight: 'bold', minWidth: 60 }} align='center'>Actions</TableCell>
                                         </TableRow>
                                     </TableHead>
                                     <TableBody>
@@ -456,39 +456,39 @@ const AdminAuditLogsPage: React.FC = () => {
                                                         }
                                                     }}
                                                 >
-                                                    <TableCell>{log.userName || '-'}</TableCell>
-                                                    <TableCell>
+                                                    <TableCell sx={{ borderRight: '1px solid #e0e0e0', fontWeight: 400 }}>{log.userName || '-'}</TableCell>
+                                                    <TableCell sx={{ borderRight: '1px solid #e0e0e0', fontWeight: 400 }}>
                                                         <Typography variant="body2" fontWeight="medium">
                                                             {log.action || '-'}
                                                         </Typography>
                                                     </TableCell>
-                                                    <TableCell>
+                                                    <TableCell sx={{ borderRight: '1px solid #e0e0e0', fontWeight: 400 }} align='center'>
                                                         <Chip
                                                             label={log.entityType || '-'}
                                                             size="small"
                                                             color="default"
                                                         />
                                                     </TableCell>
-                                                    <TableCell>
+                                                    <TableCell sx={{ borderRight: '1px solid #e0e0e0', fontWeight: 400 }} align='center'>
                                                         <Chip
                                                             label={log.httpMethod}
                                                             size="small"
                                                             color={getHttpMethodColor(log.httpMethod)}
                                                         />
                                                     </TableCell>
-                                                    <TableCell>
+                                                    <TableCell sx={{ borderRight: '1px solid #e0e0e0', fontWeight: 400 }}>
                                                         <Typography variant="body2" noWrap title={log.requestPath}>
                                                             {log.requestPath}
                                                         </Typography>
                                                     </TableCell>
-                                                    <TableCell>{getStatusChip(log.isSuccess)}</TableCell>
+                                                    <TableCell sx={{ borderRight: '1px solid #e0e0e0', fontWeight: 400 }} align='center'>{getStatusChip(log.isSuccess)}</TableCell>
                                                     {/* <TableCell>{log.ipAddress || '-'}</TableCell> */}
-                                                    <TableCell>
+                                                    <TableCell sx={{ borderRight: '1px solid #e0e0e0', fontWeight: 400 }}>
                                                         <Typography variant="body2">
                                                             {FormatUtcTime.formatDateTime(log.createdAt)}
                                                         </Typography>
                                                     </TableCell>
-                                                    <TableCell>
+                                                    <TableCell sx={{ borderRight: '1px solid #e0e0e0', fontWeight: 400 }} align='center'>
                                                         <Tooltip title="View Details">
                                                             <IconButton
                                                                 size="small"
