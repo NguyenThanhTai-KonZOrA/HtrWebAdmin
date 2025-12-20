@@ -1488,6 +1488,28 @@ const AdminRegistrationPage: React.FC = () => {
 
     // Handle delete income file
     const handleDeleteFile = async (batchId: string, saveAs: string) => {
+
+        // Confirm before delete
+        const result = await Swal.fire({
+            title: 'Delete File?',
+            html: `
+                <p>Are you sure you want to delete this file?</p>
+                <p class="text-danger"><strong>This action cannot be undone!</strong></p>
+            `,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, delete it!',
+            cancelButtonText: 'Cancel',
+            allowEscapeKey: true,
+            allowOutsideClick: false
+        });
+
+        if (!result.isConfirmed) {
+            return;
+        }
+
         try {
             setDialogError(null);
 
@@ -1590,6 +1612,7 @@ const AdminRegistrationPage: React.FC = () => {
     // Check if signature request should be shown
     const canShowSignatureRequest = (): boolean => {
         if (!selectedPatron) return false;
+        if (selectedPatron.isHaveMembership) return false;
         //if (!editedPatron) return false;
         //if (!selectedPatron.isValidIncomeDocument) return false;
 
@@ -1612,6 +1635,10 @@ const AdminRegistrationPage: React.FC = () => {
             if (!incomeApproved && !selectedPatron.isValidIncomeDocument) {
                 return false;
             }
+        }
+
+        if (selectedPatron.isHaveMembership) {
+            return false;
         }
 
         // If already signed, no need to request again
@@ -2058,9 +2085,16 @@ const AdminRegistrationPage: React.FC = () => {
                 >
                     <DialogTitle>
                         <Box display="flex" justifyContent="space-between" alignItems="center">
-                            <Typography variant="h6">
-                                Edit & Update Information {isVietnamese() ? '(Vietnamese)' : '(Foreigner)'}
-                            </Typography>
+
+                            {selectedPatron && !selectedPatron.isHaveMembership ? (
+                                <Typography variant="h6">
+                                    Edit & Update Information {isVietnamese() ? '(Vietnamese)' : '(Foreigner)'}
+                                </Typography>
+                            ) : (
+                                <Typography variant="h6">
+                                    View Information (Membership - Player ID: {selectedPatron?.playerId})
+                                </Typography>
+                            )}
                             <IconButton onClick={() => setDialogOpen(false)}>
                                 <CloseIcon />
                             </IconButton>
@@ -3286,7 +3320,7 @@ const AdminRegistrationPage: React.FC = () => {
                     </DialogActions>
                 </Dialog>
             </Box>
-        </AdminLayout>
+        </AdminLayout >
     );
 };
 
