@@ -41,6 +41,13 @@ const navItems: NavItem[] = [
         icon: ManageHistoryIcon,
         requiredPermission: Permission.VIEW_DEVICE_MAPPING,
     },
+    {
+        key: 'admin-member-audit-logs',
+        title: 'Membership Audit Logs',
+        href: '/admin-member-audit-logs',
+        icon: ManageHistoryIcon,
+        requiredPermission: Permission.VIEW_DEVICE_MAPPING,
+    },
     // {
     //     key: 'admin-settings',
     //     title: 'System Settings',

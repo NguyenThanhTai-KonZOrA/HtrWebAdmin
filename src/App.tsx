@@ -15,6 +15,7 @@ import DeviceMappingSettingsPage from './pages/DeviceMappingSettingsPage'
 import { Permission } from './constants/roles'
 import AdminSettingsPage from './pages/AdminSettingsPage'
 import AdminAuditLogsPage from './pages/AdminAuditLogsPage'
+import AdminMembershipLogsPage from './pages/AdminMembershipLogsPage'
 
 function AppContent() {
   const networkStatus = useNetworkStatus();
@@ -78,6 +79,18 @@ function AppContent() {
               showAccessDenied={true}
             >
               <AdminSettingsPage />
+            </RoleBasedRoute>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/admin-member-audit-logs" element={
+          <ProtectedRoute>
+            <RoleBasedRoute
+              requiredPermission={Permission.VIEW_DEVICE_MAPPING}
+              fallbackPath="/admin-member-audit-logs"
+              showAccessDenied={true}
+            >
+              <AdminMembershipLogsPage />
             </RoleBasedRoute>
           </ProtectedRoute>
         } />

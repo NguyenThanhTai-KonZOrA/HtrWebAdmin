@@ -1,6 +1,6 @@
 import axios from "axios";
 import { showSessionExpiredNotification } from '../utils/sessionExpiredNotification';
-import type { AuditLogPaginationRequest, AuditLogPaginationResponse, AuditLogResponse, CheckPatronIdentificationRequest, CheckValidIncomeRequest, CheckValidIncomeResponse, CountryResponse, CreateMappingRequest, CreateMappingResponse, CurrentHostNameResponse, CurrentStaffDeviceResponse, GetAllMappingsResponse, GetMappingByStaffDeviceResponse, IncomeFileResponse, MappingDataResponse, OnlineStaffDevicesResponse, PatronImagesResponse, PatronPagingRequest, PatronPagingResponse, PatronRegisterMembershipRequest, PatronRegisterMembershipResponse, PatronResponse, RenderDocumentResponse, StaffAndPatronDevicesResponse, StaffSignatureRequest, SyncPatronImagesRequest, UpdateMappingRequest, UpdateMappingResponse } from "../registrationType";
+import type { AuditLogPaginationRequest, AuditLogPaginationResponse, AuditLogResponse, AuditLogsRegisterMembershipPaginationResponse, AuditLogsRegisterMembershipRequest, CheckPatronIdentificationRequest, CheckValidIncomeRequest, CheckValidIncomeResponse, CountryResponse, CreateMappingRequest, CreateMappingResponse, CurrentHostNameResponse, CurrentStaffDeviceResponse, GetAllMappingsResponse, GetMappingByStaffDeviceResponse, IncomeFileResponse, MappingDataResponse, OnlineStaffDevicesResponse, PatronImagesResponse, PatronPagingRequest, PatronPagingResponse, PatronRegisterMembershipRequest, PatronRegisterMembershipResponse, PatronResponse, RenderDocumentResponse, StaffAndPatronDevicesResponse, StaffSignatureRequest, SyncPatronImagesRequest, UpdateMappingRequest, UpdateMappingResponse } from "../registrationType";
 import type { SettingsResponse, CreateSettingsRequest, SettingsInfoResponse, ClearCacheSettingResponse, UpdateSettingsRequest, UpdateSettingsResponse, EmployeePerformanceRequest, EmployeePerformanceResponse } from "../type";
 
 const API_BASE = (window as any)._env_?.API_BASE;
@@ -357,6 +357,11 @@ export const auditLogService = {
 
     getAuditLogById: async (auditLogId: number): Promise<AuditLogResponse> => {
         const response = await api.get<ApiEnvelope<AuditLogResponse>>(`/api/AuditLog/${auditLogId}`);
+        return unwrapApiEnvelope(response);
+    },
+
+    getRegisteredLogs: async (request: AuditLogsRegisterMembershipRequest): Promise<AuditLogsRegisterMembershipPaginationResponse> => {
+        const response = await api.post<ApiEnvelope<AuditLogsRegisterMembershipPaginationResponse>>("/api/AuditLog/audit-logs-membership/paginate", request);
         return unwrapApiEnvelope(response);
     }
 };

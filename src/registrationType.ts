@@ -297,3 +297,37 @@ export interface AuditLogResponse {
     entityId: string;
     timestamp: string;
 }
+
+export interface AuditLogsRegisterMembershipRequest {
+    PlayerId: number;
+    ActionType: string;
+    MembershipStatus: string;
+    FromDate: string;
+    ToDate: string;
+    UserName?: string;
+    Page: number;
+    PageSize: number;
+    Take?: number;
+    Skip?: number;
+}
+
+export interface AuditLogsRegisterMembershipPaginationResponse {
+    totalRecords: number;
+    page: number;
+    pageSize: number;
+    logs: AuditLogsRegisterMembershipResponse[];
+}
+
+export interface AuditLogsRegisterMembershipResponse {
+    id: number;
+    actionType: string;
+    employeeId: number;
+    employeeName: string;
+    employeeCode: string;
+    actionDate: string;
+    playerId: number;
+    membershipStatus: string;
+    isSuccess: boolean;
+    errorMessage: string;
+    details: string;
+}

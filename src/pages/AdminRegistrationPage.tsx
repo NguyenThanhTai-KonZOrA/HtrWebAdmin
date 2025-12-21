@@ -1503,7 +1503,10 @@ const AdminRegistrationPage: React.FC = () => {
             confirmButtonText: 'Yes, delete it!',
             cancelButtonText: 'Cancel',
             allowEscapeKey: true,
-            allowOutsideClick: false
+            allowOutsideClick: false,
+            customClass: {
+                container: 'swal-high-zindex'
+            }
         });
 
         if (!result.isConfirmed) {
