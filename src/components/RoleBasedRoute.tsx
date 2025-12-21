@@ -11,13 +11,13 @@ interface RoleBasedRouteProps {
     children: React.ReactNode;
     requiredPermission?: Permission;
     requiredPermissions?: Permission[];
-    requireAll?: boolean; // true = Need all permissions, false = only need 1 of them
-    fallbackPath?: string; // Redirect path if no permission
-    showAccessDenied?: boolean; // Show Access Denied page instead of redirect
+    requireAll?: boolean; // true = cần tất cả permissions, false = chỉ cần 1 trong số đó
+    fallbackPath?: string; // Redirect path nếu không có quyền
+    showAccessDenied?: boolean; // Hiển thị trang Access Denied thay vì redirect
 }
 
 /**
- * Component to protect route based on permissions
+ * Component bảo vệ route dựa trên permissions
  * 
  * Usage examples:
  * 
@@ -51,7 +51,7 @@ const RoleBasedRoute: React.FC<RoleBasedRouteProps> = ({
     const { can, canAny, canAll } = usePermission();
     const location = useLocation();
 
-    // If not logged in, redirect to login
+    // Nếu chưa login, redirect về login
     if (!token) {
         return <Navigate to="/login" state={{ from: location }} replace />;
     }
@@ -67,17 +67,17 @@ const RoleBasedRoute: React.FC<RoleBasedRouteProps> = ({
             : canAny(requiredPermissions);
     }
 
-    // If has access, render children
+    // Nếu có quyền, render children
     if (hasAccess) {
         return <>{children}</>;
     }
 
-    // If no access and showAccessDenied = true, show Access Denied page
+    // Nếu không có quyền và showAccessDenied = true, hiển thị trang Access Denied
     if (showAccessDenied) {
         return <AccessDeniedPage fallbackPath={fallbackPath} />;
     }
 
-    // If not, redirect to fallback path
+    // Nếu không, redirect về fallback path
     return <Navigate to={fallbackPath} replace />;
 };
 

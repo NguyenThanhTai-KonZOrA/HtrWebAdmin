@@ -66,7 +66,7 @@ const MEMBERSHIP_STATUS = [
 ];
 
 const AdminMembershipLogsPage: React.FC = () => {
-    useSetPageTitle('Membership Logs');
+    useSetPageTitle(PAGE_TITLES.ENROLL_MEMBERSHIP_LOGS);
 
     // States
     const [loading, setLoading] = useState(true);
@@ -80,8 +80,9 @@ const AdminMembershipLogsPage: React.FC = () => {
     const [actionType, setActionType] = useState<string>('All');
     const [membershipStatus, setMembershipStatus] = useState<string>('All');
     const [userName, setUserName] = useState<string>('');
-    const [fromDate, setFromDate] = useState<string>('');
-    const [toDate, setToDate] = useState<string>('');
+    // - 1 day 
+    const [fromDate, setFromDate] = useState<string>(new Date(new Date().getTime() - 24 * 60 * 60 * 1000).toISOString().slice(0, 16)); // Default to 1 day ago
+    const [toDate, setToDate] = useState<string>(new Date().toISOString().slice(0, 16)); // Default to current date
 
     // Detail dialog states
     const [detailDialogOpen, setDetailDialogOpen] = useState(false);
@@ -105,7 +106,6 @@ const AdminMembershipLogsPage: React.FC = () => {
             };
 
             const response = await auditLogService.getRegisteredLogs(request);
-            debugger
             setLogs(response?.logs || []);
             setTotalRecords(response?.totalRecords || 0);
         } catch (error) {
@@ -206,17 +206,10 @@ const AdminMembershipLogsPage: React.FC = () => {
             <Box sx={{ p: 3 }}>
                 {/* Header */}
                 <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
-                    <Typography variant="h4" component="h1">
+                    {/* <Typography variant="h4" component="h1">
                         Membership Logs
-                    </Typography>
-                    <Button
-                        variant="outlined"
-                        startIcon={<RefreshIcon />}
-                        onClick={loadMembershipLogs}
-                        disabled={loading}
-                    >
-                        Refresh
-                    </Button>
+                    </Typography> */}
+
                 </Box>
 
                 {/* Filters */}
@@ -343,6 +336,14 @@ const AdminMembershipLogsPage: React.FC = () => {
                             <Typography variant="h6">
                                 Membership Logs ({totalRecords} records)
                             </Typography>
+                            <Button
+                                variant="outlined"
+                                startIcon={<RefreshIcon />}
+                                onClick={loadMembershipLogs}
+                                disabled={loading}
+                            >
+                                Refresh
+                            </Button>
                         </Box>
 
                         {loading ? (
@@ -365,16 +366,17 @@ const AdminMembershipLogsPage: React.FC = () => {
                                                         zIndex: 3,
                                                         boxShadow: '2px 0 5px rgba(0,0,0,0.1)'
                                                     }}>
-                                                    Actions
+                                                    Details
                                                 </TableCell>
-                                                <TableCell>ID</TableCell>
-                                                <TableCell>Action Type</TableCell>
-                                                <TableCell>Employee Name</TableCell>
+                                                {/* <TableCell>ID</TableCell> */}
+                                                {/* <TableCell>Action Type</TableCell> */}
                                                 <TableCell>Employee Code</TableCell>
+                                                <TableCell>Employee Name</TableCell>
                                                 <TableCell>Player ID</TableCell>
+                                                <TableCell>Player Name</TableCell>
                                                 <TableCell>Status</TableCell>
-                                                <TableCell sx={{ minWidth: 150 }}>Timestamp</TableCell>
-                                                <TableCell sx={{ minWidth: 200 }}>Details</TableCell>
+                                                <TableCell sx={{ minWidth: 150 }}>Enroll Date</TableCell>
+                                                {/* <TableCell sx={{ minWidth: 200 }}>Details</TableCell> */}
                                             </TableRow>
                                         </TableHead>
                                         <TableBody>
@@ -404,17 +406,18 @@ const AdminMembershipLogsPage: React.FC = () => {
                                                             </IconButton>
                                                         </Tooltip>
                                                     </TableCell>
-                                                    <TableCell>{log.id}</TableCell>
-                                                    <TableCell>
+                                                    {/* <TableCell>{log.id}</TableCell> */}
+                                                    {/* <TableCell>
                                                         <Chip
                                                             label={log.actionType}
                                                             color={getActionColor(log.actionType)}
                                                             size="small"
                                                         />
-                                                    </TableCell>
-                                                    <TableCell>{log.employeeName || '-'}</TableCell>
+                                                    </TableCell> */}
                                                     <TableCell>{log.employeeCode || '-'}</TableCell>
+                                                    <TableCell>{log.employeeName || '-'}</TableCell>
                                                     <TableCell>{log.playerId || '-'}</TableCell>
+                                                    <TableCell>{log.playerName || '-'}</TableCell>
                                                     <TableCell>
                                                         {log.isSuccess !== undefined ? (
                                                             <Chip
@@ -425,7 +428,7 @@ const AdminMembershipLogsPage: React.FC = () => {
                                                         ) : '-'}
                                                     </TableCell>
                                                     <TableCell>{formatDate(log.actionDate)}</TableCell>
-                                                    <TableCell>
+                                                    {/* <TableCell>
                                                         <Typography
                                                             variant="body2"
                                                             sx={{
@@ -437,7 +440,7 @@ const AdminMembershipLogsPage: React.FC = () => {
                                                         >
                                                             {log.details || '-'}
                                                         </Typography>
-                                                    </TableCell>
+                                                    </TableCell> */}
                                                 </TableRow>
                                             ))}
                                         </TableBody>

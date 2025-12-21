@@ -16,6 +16,9 @@ import { Permission } from './constants/roles'
 import AdminSettingsPage from './pages/AdminSettingsPage'
 import AdminAuditLogsPage from './pages/AdminAuditLogsPage'
 import AdminMembershipLogsPage from './pages/AdminMembershipLogsPage'
+import AdminEmployeePage from './pages/AdminEmployeePage'
+import AdminPermissionPage from './pages/AdminPermissionPage'
+import AdminRolePage from './pages/AdminRolePage'
 
 function AppContent() {
   const networkStatus = useNetworkStatus();
@@ -91,6 +94,42 @@ function AppContent() {
               showAccessDenied={true}
             >
               <AdminMembershipLogsPage />
+            </RoleBasedRoute>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/admin-roles" element={
+          <ProtectedRoute>
+            <RoleBasedRoute
+              requiredPermission={Permission.VIEW_ROLE_MANAGEMENT}
+              fallbackPath="/admin-roles"
+              showAccessDenied={true}
+            >
+              <AdminRolePage />
+            </RoleBasedRoute>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/admin-permissions" element={
+          <ProtectedRoute>
+            <RoleBasedRoute
+              requiredPermission={Permission.VIEW_ROLE_MANAGEMENT}
+              fallbackPath="/admin-permissions"
+              showAccessDenied={true}
+            >
+              <AdminPermissionPage />
+            </RoleBasedRoute>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/admin-employees" element={
+          <ProtectedRoute>
+            <RoleBasedRoute
+              requiredPermission={Permission.VIEW_EMPLOYEE_MANAGEMENT}
+              fallbackPath="/admin-employees"
+              showAccessDenied={true}
+            >
+              <AdminEmployeePage />
             </RoleBasedRoute>
           </ProtectedRoute>
         } />

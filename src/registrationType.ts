@@ -330,4 +330,5 @@ export interface AuditLogsRegisterMembershipResponse {
     isSuccess: boolean;
     errorMessage: string;
     details: string;
+    playerName: string;
 }

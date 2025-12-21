@@ -12,7 +12,10 @@ import {
 import {
     Settings as SettingsIcon,
     PersonAdd as PersonAddIcon,
-    ManageHistory as ManageHistoryIcon
+    ManageHistory as ManageHistoryIcon,
+    AssignmentInd as RoleManagementIcon,
+    VerifiedUser as PermissionManagementIcon,
+    People as PeopleIcon,
 } from '@mui/icons-material';
 import { useSidebar } from '../../contexts/SidebarContext';
 import { usePermission } from '../../hooks/usePermission';
@@ -43,10 +46,31 @@ const navItems: NavItem[] = [
     },
     {
         key: 'admin-member-audit-logs',
-        title: 'Membership Audit Logs',
+        title: 'Enrollment Player Logs',
         href: '/admin-member-audit-logs',
         icon: ManageHistoryIcon,
         requiredPermission: Permission.VIEW_DEVICE_MAPPING,
+    },
+    {
+        key: 'admin-roles',
+        title: 'Role Management',
+        href: '/admin-roles',
+        icon: RoleManagementIcon,
+        requiredPermission: Permission.VIEW_ROLE_MANAGEMENT
+    },
+    {
+        key: 'admin-permissions',
+        title: 'Permission Management',
+        href: '/admin-permissions',
+        icon: PermissionManagementIcon,
+        requiredPermission: Permission.VIEW_ROLE_MANAGEMENT
+    },
+    {
+        key: 'admin-employees',
+        title: 'Employee Management',
+        href: '/admin-employees',
+        icon: PeopleIcon,
+        requiredPermission: Permission.VIEW_EMPLOYEE_MANAGEMENT
     },
     // {
     //     key: 'admin-settings',

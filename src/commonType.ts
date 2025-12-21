@@ -8,6 +8,12 @@ export interface NavItem {
     requiredPermission?: Permission;
 }
 
+export type ApiEnvelope<T> = {
+    status: number;
+    data: T;
+    success: boolean;
+};
+
 // Job Title options
 export const JOB_TITLE_OPTIONS = [
     { value: 'Employed', label: 'Employed' },

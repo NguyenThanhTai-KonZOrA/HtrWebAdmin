@@ -51,7 +51,7 @@ const PermissionGuard: React.FC<PermissionGuardProps> = ({
   if (requiredPermission) {
     hasAccess = can(requiredPermission);
   } else if (requiredPermissions && requiredPermissions.length > 0) {
-    hasAccess = requireAll
+    hasAccess = requireAll 
       ? canAll(requiredPermissions)
       : canAny(requiredPermissions);
   }
