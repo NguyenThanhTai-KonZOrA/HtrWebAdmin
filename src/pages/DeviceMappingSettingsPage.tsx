@@ -74,11 +74,11 @@ const DeviceMappingSettingsPage: React.FC = () => {
     const [hostnameLoading, setHostnameLoading] = useState(false);
     const [hostnameData, setHostnameData] = useState<CurrentHostNameResponse | null>(null);
     const [hostnameDialogOpen, setHostnameDialogOpen] = useState(false);
-    
+
     // Pagination states
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(10);
-    
+
     // Search state
     const [searchQuery, setSearchQuery] = useState('');
     // Form states for Create
@@ -133,7 +133,7 @@ const DeviceMappingSettingsPage: React.FC = () => {
         }
 
         const query = searchQuery.toLowerCase();
-        const filtered = mappings.filter(mapping => 
+        const filtered = mappings.filter(mapping =>
             mapping.staffDeviceName.toLowerCase().includes(query) ||
             mapping.patronDeviceName.toLowerCase().includes(query) ||
             mapping.location.toLowerCase().includes(query) ||
@@ -433,6 +433,7 @@ const DeviceMappingSettingsPage: React.FC = () => {
                             placeholder="Search by ID, Staff Device, Patron Device, Location, or Notes..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
+                            size='small'
                             sx={{ mb: 2 }}
                             InputProps={{
                                 startAdornment: (
@@ -480,83 +481,83 @@ const DeviceMappingSettingsPage: React.FC = () => {
                                         </TableHead>
                                         <TableBody>
                                             {paginatedMappings.map((mapping) => (
-                                            <TableRow key={mapping.id} hover>
-                                                <TableCell
-                                                    sx={{
-                                                        position: 'sticky',
-                                                        left: 0,
-                                                        backgroundColor: 'background.paper',
-                                                        zIndex: 1,
-                                                        boxShadow: '2px 0 5px rgba(0,0,0,0.1)'
-                                                    }}>
-                                                    <Stack direction="row" spacing={1} justifyContent="center">
-                                                        <Tooltip title="Edit">
-                                                            <IconButton
-                                                                size="small"
-                                                                color="primary"
-                                                                onClick={() => handleOpenUpdateDialog(mapping)}
-                                                            >
-                                                                <EditIcon />
-                                                            </IconButton>
-                                                        </Tooltip>
-                                                        <Tooltip title="Delete">
-                                                            <IconButton
-                                                                size="small"
-                                                                color="error"
-                                                                onClick={() => handleDeleteMapping(mapping)}
-                                                            >
-                                                                <DeleteIcon />
-                                                            </IconButton>
-                                                        </Tooltip>
-                                                    </Stack>
-                                                </TableCell>
-                                                <TableCell>{mapping.id}</TableCell>
-                                                <TableCell>{mapping.staffDeviceName}</TableCell>
-                                                <TableCell>{mapping.staffIp || '-'}</TableCell>
-                                                <TableCell>
-                                                    <Chip
-                                                        label={mapping.staffDeviceIsOnline ? 'Online' : 'Offline'}
-                                                        color={mapping.staffDeviceIsOnline ? 'success' : 'error'}
-                                                        size="small"
-                                                    />
-                                                </TableCell>
-                                                <TableCell>{mapping.patronDeviceName}</TableCell>
-                                                <TableCell>{mapping.patronIp || '-'}</TableCell>
-                                                <TableCell>
-                                                    <Chip
-                                                        label={mapping.patronIsOnline ? 'Online' : 'Offline'}
-                                                        color={mapping.patronIsOnline ? 'success' : 'error'}
-                                                        size="small"
-                                                    />
-                                                </TableCell>
-                                                <TableCell>{mapping.location}</TableCell>
-                                                <TableCell>{mapping.notes || '-'}</TableCell>
+                                                <TableRow key={mapping.id} hover>
+                                                    <TableCell
+                                                        sx={{
+                                                            position: 'sticky',
+                                                            left: 0,
+                                                            backgroundColor: 'background.paper',
+                                                            zIndex: 1,
+                                                            boxShadow: '2px 0 5px rgba(0,0,0,0.1)'
+                                                        }}>
+                                                        <Stack direction="row" spacing={1} justifyContent="center">
+                                                            <Tooltip title="Edit">
+                                                                <IconButton
+                                                                    size="small"
+                                                                    color="primary"
+                                                                    onClick={() => handleOpenUpdateDialog(mapping)}
+                                                                >
+                                                                    <EditIcon />
+                                                                </IconButton>
+                                                            </Tooltip>
+                                                            <Tooltip title="Delete">
+                                                                <IconButton
+                                                                    size="small"
+                                                                    color="error"
+                                                                    onClick={() => handleDeleteMapping(mapping)}
+                                                                >
+                                                                    <DeleteIcon />
+                                                                </IconButton>
+                                                            </Tooltip>
+                                                        </Stack>
+                                                    </TableCell>
+                                                    <TableCell>{mapping.id}</TableCell>
+                                                    <TableCell>{mapping.staffDeviceName}</TableCell>
+                                                    <TableCell>{mapping.staffIp || '-'}</TableCell>
+                                                    <TableCell>
+                                                        <Chip
+                                                            label={mapping.staffDeviceIsOnline ? 'Online' : 'Offline'}
+                                                            color={mapping.staffDeviceIsOnline ? 'success' : 'error'}
+                                                            size="small"
+                                                        />
+                                                    </TableCell>
+                                                    <TableCell>{mapping.patronDeviceName}</TableCell>
+                                                    <TableCell>{mapping.patronIp || '-'}</TableCell>
+                                                    <TableCell>
+                                                        <Chip
+                                                            label={mapping.patronIsOnline ? 'Online' : 'Offline'}
+                                                            color={mapping.patronIsOnline ? 'success' : 'error'}
+                                                            size="small"
+                                                        />
+                                                    </TableCell>
+                                                    <TableCell>{mapping.location}</TableCell>
+                                                    <TableCell>{mapping.notes || '-'}</TableCell>
 
 
-                                                <TableCell>{FormatUtcTime.formatDateTime(mapping.lastVerified)}</TableCell>
-                                                <TableCell>
-                                                    <Chip
-                                                        label={mapping.isActive ? 'Active' : 'Inactive'}
-                                                        color={mapping.isActive ? 'success' : 'default'}
-                                                        size="small"
-                                                    />
-                                                </TableCell>
-                                                <TableCell>{FormatUtcTime.formatDateTime(mapping.createdAt)}</TableCell>
+                                                    <TableCell>{FormatUtcTime.formatDateTime(mapping.lastVerified)}</TableCell>
+                                                    <TableCell>
+                                                        <Chip
+                                                            label={mapping.isActive ? 'Active' : 'Inactive'}
+                                                            color={mapping.isActive ? 'success' : 'default'}
+                                                            size="small"
+                                                        />
+                                                    </TableCell>
+                                                    <TableCell>{FormatUtcTime.formatDateTime(mapping.createdAt)}</TableCell>
 
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                            </TableContainer>
-                            <TablePagination
-                                component="div"
-                                count={filteredMappings.length}
-                                page={page}
-                                onPageChange={handlePageChange}
-                                rowsPerPage={rowsPerPage}
-                                onRowsPerPageChange={handleRowsPerPageChange}
-                                rowsPerPageOptions={[5, 10, 25, 50, 100]}
-                            />
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </TableContainer>
+                                <TablePagination
+                                    component="div"
+                                    count={filteredMappings.length}
+                                    page={page}
+                                    onPageChange={handlePageChange}
+                                    rowsPerPage={rowsPerPage}
+                                    onRowsPerPageChange={handleRowsPerPageChange}
+                                    rowsPerPageOptions={[5, 10, 25, 50, 100]}
+                                />
                             </>
                         )}
                     </CardContent>

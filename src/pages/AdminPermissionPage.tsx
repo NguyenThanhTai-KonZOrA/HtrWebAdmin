@@ -412,7 +412,7 @@ export default function AdminPermissionPage() {
                                 </Button>
                             </Grid>
 
-                            <Grid size={{ xs: 12, md: 3 }}>
+                            <Grid size={{ xs: 12, sm: 6, md: 2 }}>
                                 <Button
                                     variant="contained"
                                     color="success"

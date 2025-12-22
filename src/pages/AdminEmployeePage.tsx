@@ -278,163 +278,104 @@ export default function AdminEmployeePage() {
     }, [employeeDetails]);
 
     return (
-        <AdminLayout>
-            <Box>
-                {/* Header */}
-                <Box sx={{ mb: 3 }}>
-                    <Typography variant="body1" color="text.secondary">
-                        Manage employees, assign roles, and view employee permissions
-                    </Typography>
-                </Box>
-
-                {/* Search and Actions */}
-                <Card sx={{ mb: 3 }}>
-                    <CardContent>
-                        <Grid container spacing={3} alignItems="center">
-                            <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                                <TextField
-                                    fullWidth
-                                    size="small"
-                                    label="Search employees..."
-                                    value={searchTerm}
-                                    onChange={handleSearchChange}
-                                    InputProps={{
-                                        startAdornment: <SearchIcon sx={{ color: 'text.secondary', mr: 1 }} />
-                                    }}
-                                    placeholder="Name, Code, Email, Department, Position..."
-                                />
-                            </Grid>
-
-                            <Grid size={{ xs: 12, sm: 6, md: 2 }}>
-                                <FormControl fullWidth size="small">
-                                    <InputLabel>Items per page</InputLabel>
-                                    <Select
-                                        value={itemsPerPage}
-                                        label="Items per page"
-                                        onChange={handleItemsPerPageChange}
-                                    >
-                                        <MenuItem value={5}>5</MenuItem>
-                                        <MenuItem value={10}>10</MenuItem>
-                                        <MenuItem value={20}>20</MenuItem>
-                                        <MenuItem value={50}>50</MenuItem>
-                                    </Select>
-                                </FormControl>
-                            </Grid>
-
-                            <Grid size={{ xs: 12, sm: 6, md: 2 }}>
-                                <Button
-                                    variant="contained"
-                                    fullWidth
-                                    startIcon={<RefreshIcon />}
-                                    onClick={loadEmployees}
-                                    disabled={loading}
-                                >
-                                    Refresh
-                                </Button>
-                            </Grid>
-
-                            <Grid size={{ xs: 12, md: 4 }}>
-                                <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
-                                    Total: {filteredEmployees.length} employees
-                                    {searchTerm && ` (filtered from ${employees.length})`}
-                                </Typography>
-                                <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1, mt: 1 }}>
-                                    <Chip
-                                        label={`Active: ${employees.filter(e => e.isActive).length}`}
-                                        color="success"
-                                        size="small"
-                                        variant="outlined"
-                                    />
-                                    <Chip
-                                        label={`Inactive: ${employees.filter(e => !e.isActive).length}`}
-                                        color="error"
-                                        size="small"
-                                        variant="outlined"
-                                    />
-                                </Box>
-                            </Grid>
-                        </Grid>
-                    </CardContent>
-                </Card>
-
-                {loading && <LinearProgress sx={{ mb: 2 }} />}
-
-                {error && (
-                    <Alert severity="error" sx={{ mb: 2 }} action={
-                        <IconButton size="small" onClick={loadEmployees}>
-                            <RefreshIcon />
-                        </IconButton>
-                    }>
-                        {error}
-                    </Alert>
-                )}
-
-                {/* Employees Table */}
+        <AdminLayout> {/* Header */}
+            <Box sx={{ mb: 3 }}>
+                <Typography variant="body1" color="text.secondary">
+                    Manage employees, assign roles, and view employee permissions
+                </Typography>
+            </Box>
+            <Box sx={{ p: 3 }}>
                 <Card>
-                    <CardContent sx={{ p: 0 }}>
-                        <TableContainer component={Paper} variant="outlined">
-                            <Table>
-                                <TableHead>
-                                    <TableRow sx={{ bgcolor: 'grey.50' }}>
-                                        <TableCell sx={{
-                                            fontWeight: 600,
-                                            textAlign: 'center',
-                                            position: 'sticky',
-                                            left: 0,
-                                            backgroundColor: 'background.paper',
-                                            zIndex: 3,
-                                            boxShadow: '2px 0 5px rgba(0,0,0,0.1)',
-                                            borderRight: '1px solid #e0e0e0'
-                                        }}>
-                                            Actions
-                                        </TableCell>
-                                        <TableCell sx={{ fontWeight: 600, borderRight: '1px solid #e0e0e0', minWidth: 80 }} align="center">
-                                            ID
-                                        </TableCell>
-                                        <TableCell sx={{ fontWeight: 600, borderRight: '1px solid #e0e0e0', minWidth: 80 }} align="center">
-                                            Code
-                                        </TableCell>
-                                        <TableCell sx={{ fontWeight: 600, borderRight: '1px solid #e0e0e0', minWidth: 200 }}>
-                                            Full Name
-                                        </TableCell>
-                                        <TableCell sx={{ fontWeight: 600, borderRight: '1px solid #e0e0e0', minWidth: 200 }}>
-                                            Email
-                                        </TableCell>
-                                        <TableCell sx={{ fontWeight: 600, borderRight: '1px solid #e0e0e0', minWidth: 150 }}>
-                                            Department
-                                        </TableCell>
-                                        <TableCell sx={{ fontWeight: 600, borderRight: '1px solid #e0e0e0', minWidth: 150 }}>
-                                            Position
-                                        </TableCell>
-                                        <TableCell align="center" sx={{ fontWeight: 600, borderRight: '1px solid #e0e0e0', minWidth: 100 }}>
-                                            Status
-                                        </TableCell>
-                                    </TableRow>
-                                </TableHead>
-                                <TableBody>
-                                    {loading ? (
-                                        // Loading skeleton rows
-                                        Array.from({ length: itemsPerPage }).map((_, index) => (
-                                            <TableRow key={index}>
-                                                <TableCell align="center"><Skeleton width="150px" /></TableCell>
-                                                <TableCell><Skeleton width="40px" /></TableCell>
-                                                <TableCell><Skeleton width="80px" /></TableCell>
-                                                <TableCell><Skeleton width="150px" /></TableCell>
-                                                <TableCell><Skeleton width="180px" /></TableCell>
-                                                <TableCell><Skeleton width="120px" /></TableCell>
-                                                <TableCell><Skeleton width="120px" /></TableCell>
-                                                <TableCell align="center"><Skeleton width="80px" /></TableCell>
-                                            </TableRow>
-                                        ))
-                                    ) : currentPageData.length > 0 ? (
-                                        currentPageData.map((employee) => (
-                                            <TableRow
-                                                key={employee.id}
-                                                sx={{
-                                                    '&:nth-of-type(even)': { bgcolor: '#f8f9fa' },
-                                                    '&:hover': { bgcolor: '#e3f2fd' }
-                                                }}
+                    <CardContent>
+                        {/* Search and Actions */}
+                        <Card sx={{ mb: 3 }}>
+                            <CardContent>
+                                <Grid container spacing={3} alignItems="center">
+                                    <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+                                        <TextField
+                                            fullWidth
+                                            size="small"
+                                            label="Search employees..."
+                                            value={searchTerm}
+                                            onChange={handleSearchChange}
+                                            InputProps={{
+                                                startAdornment: <SearchIcon sx={{ color: 'text.secondary', mr: 1 }} />
+                                            }}
+                                            placeholder="Name, Code, Email, Department, Position..."
+                                        />
+                                    </Grid>
+
+                                    <Grid size={{ xs: 12, sm: 6, md: 2 }}>
+                                        <FormControl fullWidth size="small">
+                                            <InputLabel>Items per page</InputLabel>
+                                            <Select
+                                                value={itemsPerPage}
+                                                label="Items per page"
+                                                onChange={handleItemsPerPageChange}
                                             >
+                                                <MenuItem value={5}>5</MenuItem>
+                                                <MenuItem value={10}>10</MenuItem>
+                                                <MenuItem value={20}>20</MenuItem>
+                                                <MenuItem value={50}>50</MenuItem>
+                                            </Select>
+                                        </FormControl>
+                                    </Grid>
+
+                                    <Grid size={{ xs: 12, sm: 6, md: 2 }}>
+                                        <Button
+                                            variant="contained"
+                                            fullWidth
+                                            startIcon={<RefreshIcon />}
+                                            onClick={loadEmployees}
+                                            disabled={loading}
+                                        >
+                                            Refresh
+                                        </Button>
+                                    </Grid>
+
+                                    <Grid size={{ xs: 12, md: 4 }}>
+                                        <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
+                                            Total: {filteredEmployees.length} employees
+                                            {searchTerm && ` (filtered from ${employees.length})`}
+                                        </Typography>
+                                        <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1, mt: 1 }}>
+                                            <Chip
+                                                label={`Active: ${employees.filter(e => e.isActive).length}`}
+                                                color="success"
+                                                size="small"
+                                                variant="outlined"
+                                            />
+                                            <Chip
+                                                label={`Inactive: ${employees.filter(e => !e.isActive).length}`}
+                                                color="error"
+                                                size="small"
+                                                variant="outlined"
+                                            />
+                                        </Box>
+                                    </Grid>
+                                </Grid>
+                            </CardContent>
+                        </Card>
+
+                        {loading && <LinearProgress sx={{ mb: 2 }} />}
+
+                        {error && (
+                            <Alert severity="error" sx={{ mb: 2 }} action={
+                                <IconButton size="small" onClick={loadEmployees}>
+                                    <RefreshIcon />
+                                </IconButton>
+                            }>
+                                {error}
+                            </Alert>
+                        )}
+
+                        {/* Employees Table */}
+                        <Card>
+                            <CardContent sx={{ p: 0 }}>
+                                <TableContainer component={Paper} variant="outlined">
+                                    <Table>
+                                        <TableHead>
+                                            <TableRow sx={{ bgcolor: 'grey.50' }}>
                                                 <TableCell sx={{
                                                     fontWeight: 600,
                                                     textAlign: 'center',
@@ -445,89 +386,150 @@ export default function AdminEmployeePage() {
                                                     boxShadow: '2px 0 5px rgba(0,0,0,0.1)',
                                                     borderRight: '1px solid #e0e0e0'
                                                 }}>
-                                                    <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
-                                                        <Tooltip title="Assign Roles">
-                                                            <IconButton
-                                                                size="small"
-                                                                color="primary"
-                                                                onClick={() => handleOpenAssignDialog(employee)}
-                                                            >
-                                                                <AssignIcon />
-                                                            </IconButton>
-                                                        </Tooltip>
-                                                        <Tooltip title="View Details">
-                                                            <IconButton
-                                                                size="small"
-                                                                color="info"
-                                                                onClick={() => handleOpenDetailDialog(employee)}
-                                                            >
-                                                                <ViewIcon />
-                                                            </IconButton>
-                                                        </Tooltip>
-                                                    </Box>
+                                                    Actions
                                                 </TableCell>
-                                                <TableCell sx={{ borderRight: '1px solid #e0e0e0', fontWeight: 500 }} align="center">
-                                                    {employee.id}
+                                                <TableCell sx={{ fontWeight: 600, borderRight: '1px solid #e0e0e0', minWidth: 80 }} align="center">
+                                                    ID
                                                 </TableCell>
-                                                <TableCell sx={{ borderRight: '1px solid #e0e0e0' }} align="center">
-                                                    <Chip
-                                                        label={employee.employeeCode}
-                                                        size="small"
-                                                        variant="outlined"
-                                                        color="primary"
-                                                    />
+                                                <TableCell sx={{ fontWeight: 600, borderRight: '1px solid #e0e0e0', minWidth: 80 }} align="center">
+                                                    Code
                                                 </TableCell>
-                                                <TableCell sx={{ borderRight: '1px solid #e0e0e0', fontWeight: 500 }}>
-                                                    {employee.fullName}
+                                                <TableCell sx={{ fontWeight: 600, borderRight: '1px solid #e0e0e0', minWidth: 200 }}>
+                                                    Full Name
                                                 </TableCell>
-                                                <TableCell sx={{ borderRight: '1px solid #e0e0e0' }}>
-                                                    {employee.email || '-'}
+                                                <TableCell sx={{ fontWeight: 600, borderRight: '1px solid #e0e0e0', minWidth: 200 }}>
+                                                    Email
                                                 </TableCell>
-                                                <TableCell sx={{ borderRight: '1px solid #e0e0e0' }}>
-                                                    {employee.department || '-'}
+                                                <TableCell sx={{ fontWeight: 600, borderRight: '1px solid #e0e0e0', minWidth: 150 }}>
+                                                    Department
                                                 </TableCell>
-                                                <TableCell sx={{ borderRight: '1px solid #e0e0e0' }}>
-                                                    {employee.position || '-'}
+                                                <TableCell sx={{ fontWeight: 600, borderRight: '1px solid #e0e0e0', minWidth: 150 }}>
+                                                    Position
                                                 </TableCell>
-                                                <TableCell align="center" sx={{ borderRight: '1px solid #e0e0e0' }}>
-                                                    <Chip
-                                                        label={employee.isActive ? "Active" : "Inactive"}
-                                                        color={employee.isActive ? "success" : "error"}
-                                                        size="small"
-                                                    />
+                                                <TableCell align="center" sx={{ fontWeight: 600, borderRight: '1px solid #e0e0e0', minWidth: 100 }}>
+                                                    Status
                                                 </TableCell>
                                             </TableRow>
-                                        ))
-                                    ) : (
-                                        <TableRow>
-                                            <TableCell colSpan={8} sx={{ textAlign: 'center', py: 4 }}>
-                                                <Typography color="text.secondary">
-                                                    {searchTerm ? `No employees found matching "${searchTerm}"` : "No employees available"}
-                                                </Typography>
-                                            </TableCell>
-                                        </TableRow>
-                                    )}
-                                </TableBody>
-                            </Table>
-                        </TableContainer>
+                                        </TableHead>
+                                        <TableBody>
+                                            {loading ? (
+                                                // Loading skeleton rows
+                                                Array.from({ length: itemsPerPage }).map((_, index) => (
+                                                    <TableRow key={index}>
+                                                        <TableCell align="center"><Skeleton width="150px" /></TableCell>
+                                                        <TableCell><Skeleton width="40px" /></TableCell>
+                                                        <TableCell><Skeleton width="80px" /></TableCell>
+                                                        <TableCell><Skeleton width="150px" /></TableCell>
+                                                        <TableCell><Skeleton width="180px" /></TableCell>
+                                                        <TableCell><Skeleton width="120px" /></TableCell>
+                                                        <TableCell><Skeleton width="120px" /></TableCell>
+                                                        <TableCell align="center"><Skeleton width="80px" /></TableCell>
+                                                    </TableRow>
+                                                ))
+                                            ) : currentPageData.length > 0 ? (
+                                                currentPageData.map((employee) => (
+                                                    <TableRow
+                                                        key={employee.id}
+                                                        sx={{
+                                                            '&:nth-of-type(even)': { bgcolor: '#f8f9fa' },
+                                                            '&:hover': { bgcolor: '#e3f2fd' }
+                                                        }}
+                                                    >
+                                                        <TableCell sx={{
+                                                            fontWeight: 600,
+                                                            textAlign: 'center',
+                                                            position: 'sticky',
+                                                            left: 0,
+                                                            backgroundColor: 'background.paper',
+                                                            zIndex: 3,
+                                                            boxShadow: '2px 0 5px rgba(0,0,0,0.1)',
+                                                            borderRight: '1px solid #e0e0e0'
+                                                        }}>
+                                                            <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
+                                                                <Tooltip title="Assign Roles">
+                                                                    <IconButton
+                                                                        size="small"
+                                                                        color="primary"
+                                                                        onClick={() => handleOpenAssignDialog(employee)}
+                                                                    >
+                                                                        <AssignIcon />
+                                                                    </IconButton>
+                                                                </Tooltip>
+                                                                <Tooltip title="View Details">
+                                                                    <IconButton
+                                                                        size="small"
+                                                                        color="info"
+                                                                        onClick={() => handleOpenDetailDialog(employee)}
+                                                                    >
+                                                                        <ViewIcon />
+                                                                    </IconButton>
+                                                                </Tooltip>
+                                                            </Box>
+                                                        </TableCell>
+                                                        <TableCell sx={{ borderRight: '1px solid #e0e0e0', fontWeight: 500 }} align="center">
+                                                            {employee.id}
+                                                        </TableCell>
+                                                        <TableCell sx={{ borderRight: '1px solid #e0e0e0' }} align="center">
+                                                            <Chip
+                                                                label={employee.employeeCode}
+                                                                size="small"
+                                                                variant="outlined"
+                                                                color="primary"
+                                                            />
+                                                        </TableCell>
+                                                        <TableCell sx={{ borderRight: '1px solid #e0e0e0', fontWeight: 500 }}>
+                                                            {employee.fullName}
+                                                        </TableCell>
+                                                        <TableCell sx={{ borderRight: '1px solid #e0e0e0' }}>
+                                                            {employee.email || '-'}
+                                                        </TableCell>
+                                                        <TableCell sx={{ borderRight: '1px solid #e0e0e0' }}>
+                                                            {employee.department || '-'}
+                                                        </TableCell>
+                                                        <TableCell sx={{ borderRight: '1px solid #e0e0e0' }}>
+                                                            {employee.position || '-'}
+                                                        </TableCell>
+                                                        <TableCell align="center" sx={{ borderRight: '1px solid #e0e0e0' }}>
+                                                            <Chip
+                                                                label={employee.isActive ? "Active" : "Inactive"}
+                                                                color={employee.isActive ? "success" : "error"}
+                                                                size="small"
+                                                            />
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))
+                                            ) : (
+                                                <TableRow>
+                                                    <TableCell colSpan={8} sx={{ textAlign: 'center', py: 4 }}>
+                                                        <Typography color="text.secondary">
+                                                            {searchTerm ? `No employees found matching "${searchTerm}"` : "No employees available"}
+                                                        </Typography>
+                                                    </TableCell>
+                                                </TableRow>
+                                            )}
+                                        </TableBody>
+                                    </Table>
+                                </TableContainer>
 
-                        {/* Pagination */}
-                        {filteredEmployees.length > 0 && (
-                            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mt: 2, mb: 2, gap: 2 }}>
-                                <Typography variant="body2" color="text.secondary">
-                                    Showing {filteredEmployees.length > 0 ? startIndex + 1 : 0}-{Math.min(endIndex, filteredEmployees.length)} of {filteredEmployees.length} items
-                                </Typography>
-                                {filteredEmployees.length > itemsPerPage && (
-                                    <Pagination
-                                        count={totalPages}
-                                        page={currentPage}
-                                        onChange={handlePageChange}
-                                        color="primary"
-                                        size="small"
-                                    />
+                                {/* Pagination */}
+                                {filteredEmployees.length > 0 && (
+                                    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mt: 2, mb: 2, gap: 2 }}>
+                                        <Typography variant="body2" color="text.secondary">
+                                            Showing {filteredEmployees.length > 0 ? startIndex + 1 : 0}-{Math.min(endIndex, filteredEmployees.length)} of {filteredEmployees.length} items
+                                        </Typography>
+                                        {filteredEmployees.length > itemsPerPage && (
+                                            <Pagination
+                                                count={totalPages}
+                                                page={currentPage}
+                                                onChange={handlePageChange}
+                                                color="primary"
+                                                size="small"
+                                            />
+                                        )}
+                                    </Box>
                                 )}
-                            </Box>
-                        )}
+                            </CardContent>
+                        </Card>
                     </CardContent>
                 </Card>
             </Box>

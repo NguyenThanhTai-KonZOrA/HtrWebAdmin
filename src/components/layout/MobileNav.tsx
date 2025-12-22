@@ -42,14 +42,21 @@ const navItems: NavItem[] = [
         title: 'Audit Logs',
         href: '/admin-audit-logs',
         icon: ManageHistoryIcon,
-        requiredPermission: Permission.VIEW_DEVICE_MAPPING,
+        requiredPermission: Permission.VIEW_AUDIT_LOGS,
     },
     {
         key: 'admin-member-audit-logs',
         title: 'Enrollment Player Logs',
         href: '/admin-member-audit-logs',
         icon: ManageHistoryIcon,
-        requiredPermission: Permission.VIEW_DEVICE_MAPPING,
+        requiredPermission: Permission.VIEW_REPORTS,
+    },
+    {
+        key: 'admin-employees',
+        title: 'Employee Management',
+        href: '/admin-employees',
+        icon: PeopleIcon,
+        requiredPermission: Permission.VIEW_ROLE_MANAGEMENT
     },
     {
         key: 'admin-roles',
@@ -64,13 +71,6 @@ const navItems: NavItem[] = [
         href: '/admin-permissions',
         icon: PermissionManagementIcon,
         requiredPermission: Permission.VIEW_ROLE_MANAGEMENT
-    },
-    {
-        key: 'admin-employees',
-        title: 'Employee Management',
-        href: '/admin-employees',
-        icon: PeopleIcon,
-        requiredPermission: Permission.VIEW_EMPLOYEE_MANAGEMENT
     },
     // {
     //     key: 'admin-settings',

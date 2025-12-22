@@ -65,7 +65,7 @@ function AppContent() {
         <Route path="/admin-audit-logs" element={
           <ProtectedRoute>
             <RoleBasedRoute
-              requiredPermission={Permission.VIEW_DEVICE_MAPPING}
+              requiredPermission={Permission.VIEW_AUDIT_LOGS}
               fallbackPath="/admin-audit-logs"
               showAccessDenied={true}
             >
@@ -89,7 +89,7 @@ function AppContent() {
         <Route path="/admin-member-audit-logs" element={
           <ProtectedRoute>
             <RoleBasedRoute
-              requiredPermission={Permission.VIEW_DEVICE_MAPPING}
+              requiredPermission={Permission.VIEW_REPORTS}
               fallbackPath="/admin-member-audit-logs"
               showAccessDenied={true}
             >
@@ -125,7 +125,7 @@ function AppContent() {
         <Route path="/admin-employees" element={
           <ProtectedRoute>
             <RoleBasedRoute
-              requiredPermission={Permission.VIEW_EMPLOYEE_MANAGEMENT}
+              requiredPermission={Permission.VIEW_ROLE_MANAGEMENT}
               fallbackPath="/admin-employees"
               showAccessDenied={true}
             >

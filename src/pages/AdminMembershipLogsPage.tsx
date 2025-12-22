@@ -27,7 +27,8 @@ import {
     Select,
     MenuItem,
     Tooltip,
-    Alert
+    Alert,
+    Snackbar
 } from '@mui/material';
 import {
     Refresh as RefreshIcon,
@@ -35,7 +36,8 @@ import {
     Visibility as VisibilityIcon,
     FilterList as FilterListIcon,
     Search as SearchIcon,
-    Clear as ClearIcon
+    CleaningServices as ClearIcon,
+    CloudDownload as ImportExportIcon
 } from '@mui/icons-material';
 import AdminLayout from '../components/layout/AdminLayout';
 import { useSetPageTitle } from '../hooks/useSetPageTitle';
@@ -88,6 +90,14 @@ const AdminMembershipLogsPage: React.FC = () => {
     const [detailDialogOpen, setDetailDialogOpen] = useState(false);
     const [selectedLog, setSelectedLog] = useState<AuditLogResponse | null>(null);
     const [loadingDetail, setLoadingDetail] = useState(false);
+    //  Show snackbar
+    const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" as "success" | "error" });
+    const showSnackbar = (message: string, severity: "success" | "error") => {
+        setSnackbar({ open: true, message, severity });
+    };
+    const handleCloseSnackbar = () => {
+        setSnackbar({ ...snackbar, open: false });
+    };
 
     // Load membership logs
     const loadMembershipLogs = async () => {
@@ -168,8 +178,9 @@ const AdminMembershipLogsPage: React.FC = () => {
         setActionType('All');
         setMembershipStatus('All');
         setUserName('');
-        setFromDate('');
-        setToDate('');
+        // - 1 day
+        setFromDate(new Date(new Date().getTime() - 24 * 60 * 60 * 1000).toISOString().slice(0, 16));
+        setToDate(new Date().toISOString().slice(0, 16));
         setPage(0);
     };
 
@@ -181,6 +192,32 @@ const AdminMembershipLogsPage: React.FC = () => {
             return dateString;
         }
     };
+
+    const handleExportExcel = async () => {
+        try {
+            setLoading(true);
+            // Build request with current filters
+            const request: AuditLogsRegisterMembershipRequest = {
+                PlayerId: playerId ? parseInt(playerId) : 0,
+                ActionType: actionType !== 'All' ? actionType : '',
+                MembershipStatus: membershipStatus !== 'All' ? membershipStatus : '',
+                FromDate: fromDate || '',
+                ToDate: toDate || '',
+                UserName: userName.trim() || undefined,
+                Page: 1, // Export all pages
+                PageSize: 999999 // Large number to get all records
+            };
+            // Call API to get Excel file
+            const response = await auditLogService.exportEnrolledEmployees(request);
+            showSnackbar('Excel file exported successfully', 'success');
+        } catch (error) {
+            console.error('Error exporting enrolled employees:', error);
+            showSnackbar('Failed to export Excel file. Please try again.', 'error');
+        } finally {
+            setLoading(false);
+        }
+    };
+
 
     // Get action chip color
     const getActionColor = (action: string): 'default' | 'primary' | 'success' | 'error' | 'warning' => {
@@ -211,29 +248,30 @@ const AdminMembershipLogsPage: React.FC = () => {
                     </Typography> */}
 
                 </Box>
-
-                {/* Filters */}
-                <Card sx={{ mb: 3 }}>
+                <Card>
                     <CardContent>
-                        <Box display="flex" alignItems="center" sx={{ mb: 2 }}>
-                            <FilterListIcon sx={{ mr: 1 }} />
-                            <Typography variant="h6">Filters</Typography>
-                        </Box>
+                        {/* Filters */}
+                        <Card sx={{ mb: 3 }}>
+                            <CardContent>
+                                <Box display="flex" alignItems="center" sx={{ mb: 2 }}>
+                                    <FilterListIcon sx={{ mr: 1 }} />
+                                    <Typography variant="h6">Filters</Typography>
+                                </Box>
 
-                        <Box display="flex" flexWrap="wrap" gap={2}>
-                            <Box sx={{ minWidth: 200, flex: '1 1 200px' }}>
-                                <TextField
-                                    fullWidth
-                                    label="Player ID"
-                                    type="number"
-                                    value={playerId}
-                                    onChange={(e) => setPlayerId(e.target.value)}
-                                    placeholder="Enter Player ID"
-                                    size="small"
-                                />
-                            </Box>
+                                <Box display="flex" flexWrap="wrap" gap={2}>
+                                    <Box sx={{ minWidth: 100, flex: '1 1 100px' }}>
+                                        <TextField
+                                            fullWidth
+                                            label="Player ID"
+                                            type="number"
+                                            value={playerId}
+                                            onChange={(e) => setPlayerId(e.target.value)}
+                                            placeholder="Enter Player ID"
+                                            size="small"
+                                        />
+                                    </Box>
 
-                            <Box sx={{ minWidth: 200, flex: '1 1 200px' }}>
+                                    {/* <Box sx={{ minWidth: 200, flex: '1 1 200px' }}>
                                 <FormControl fullWidth size="small">
                                     <InputLabel>Action Type</InputLabel>
                                     <Select
@@ -248,9 +286,9 @@ const AdminMembershipLogsPage: React.FC = () => {
                                         ))}
                                     </Select>
                                 </FormControl>
-                            </Box>
+                            </Box> */}
 
-                            <Box sx={{ minWidth: 200, flex: '1 1 200px' }}>
+                                    {/* <Box sx={{ minWidth: 200, flex: '1 1 200px' }}>
                                 <FormControl fullWidth size="small">
                                     <InputLabel>Membership Status</InputLabel>
                                     <Select
@@ -265,170 +303,185 @@ const AdminMembershipLogsPage: React.FC = () => {
                                         ))}
                                     </Select>
                                 </FormControl>
-                            </Box>
+                            </Box> */}
 
-                            <Box sx={{ minWidth: 200, flex: '1 1 200px' }}>
-                                <TextField
-                                    fullWidth
-                                    label="User Name"
-                                    value={userName}
-                                    onChange={(e) => setUserName(e.target.value)}
-                                    placeholder="Enter User Name"
-                                    size="small"
-                                />
-                            </Box>
+                                    <Box sx={{ minWidth: 100, flex: '1 1 100px' }}>
+                                        <TextField
+                                            fullWidth
+                                            label="User Name"
+                                            value={userName}
+                                            onChange={(e) => setUserName(e.target.value)}
+                                            placeholder="Enter User Name"
+                                            size="small"
+                                        />
+                                    </Box>
 
-                            <Box sx={{ minWidth: 200, flex: '1 1 200px' }}>
-                                <TextField
-                                    fullWidth
-                                    label="From Date"
-                                    type="datetime-local"
-                                    value={fromDate}
-                                    onChange={(e) => setFromDate(e.target.value)}
-                                    InputLabelProps={{ shrink: true }}
-                                    size="small"
-                                />
-                            </Box>
+                                    <Box sx={{ minWidth: 100, flex: '1 1 100px' }}>
+                                        <TextField
+                                            fullWidth
+                                            label="From Date"
+                                            type="datetime-local"
+                                            value={fromDate}
+                                            onChange={(e) => setFromDate(e.target.value)}
+                                            InputLabelProps={{ shrink: true }}
+                                            size="small"
+                                        />
+                                    </Box>
 
-                            <Box sx={{ minWidth: 200, flex: '1 1 200px' }}>
-                                <TextField
-                                    fullWidth
-                                    label="To Date"
-                                    type="datetime-local"
-                                    value={toDate}
-                                    onChange={(e) => setToDate(e.target.value)}
-                                    InputLabelProps={{ shrink: true }}
-                                    size="small"
-                                />
-                            </Box>
+                                    <Box sx={{ minWidth: 100, flex: '1 1 100px' }}>
+                                        <TextField
+                                            fullWidth
+                                            label="To Date"
+                                            type="datetime-local"
+                                            value={toDate}
+                                            onChange={(e) => setToDate(e.target.value)}
+                                            InputLabelProps={{ shrink: true }}
+                                            size="small"
+                                        />
+                                    </Box>
 
-                            <Box sx={{ minWidth: 200, flex: '1 1 200px' }}>
-                                <Button
-                                    fullWidth
-                                    variant="contained"
-                                    startIcon={<SearchIcon />}
-                                    onClick={handleSearch}
-                                    sx={{ height: '40px' }}
-                                >
-                                    Search
-                                </Button>
-                            </Box>
+                                    <Box >
+                                        <Button
+                                            fullWidth
+                                            variant="contained"
+                                            startIcon={<SearchIcon />}
+                                            onClick={handleSearch}
+                                            sx={{ height: '40px' }}
+                                        >
+                                            Search
+                                        </Button>
+                                    </Box>
 
-                            <Box sx={{ minWidth: 200, flex: '1 1 200px' }}>
-                                <Button
-                                    fullWidth
-                                    variant="outlined"
-                                    startIcon={<ClearIcon />}
-                                    onClick={handleResetFilters}
-                                    sx={{ height: '40px' }}
-                                >
-                                    Reset
-                                </Button>
-                            </Box>
-                        </Box>
-                    </CardContent>
-                </Card>
+                                    <Box >
+                                        <Button
+                                            fullWidth
+                                            variant="outlined"
+                                            startIcon={<ClearIcon />}
+                                            onClick={handleResetFilters}
+                                            sx={{ height: '40px' }}
+                                        >
+                                            Reset
+                                        </Button>
+                                    </Box>
+                                    <Box>
+                                        <Button
+                                            variant="outlined"
+                                            startIcon={<RefreshIcon />}
+                                            onClick={loadMembershipLogs}
+                                            disabled={loading}
+                                            sx={{ height: '40px' }}
+                                        >
+                                            Refresh
+                                        </Button>
+                                    </Box>
 
-                {/* Logs Table */}
-                <Card>
-                    <CardContent>
-                        <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-                            <Typography variant="h6">
-                                Membership Logs ({totalRecords} records)
-                            </Typography>
-                            <Button
-                                variant="outlined"
-                                startIcon={<RefreshIcon />}
-                                onClick={loadMembershipLogs}
-                                disabled={loading}
-                            >
-                                Refresh
-                            </Button>
-                        </Box>
+                                    <Box>
+                                        <Button
+                                            variant="outlined"
+                                            startIcon={<ImportExportIcon />}
+                                            onClick={handleExportExcel}
+                                            disabled={loading}
+                                            sx={{ height: '40px' }}
+                                        >
+                                            Export Excel
+                                        </Button>
+                                    </Box>
+                                </Box>
+                            </CardContent>
+                        </Card>
 
-                        {loading ? (
-                            <Box display="flex" justifyContent="center" py={4}>
-                                <CircularProgress />
-                            </Box>
-                        ) : (logs?.length ?? 0) === 0 ? (
-                            <Alert severity="info">No membership logs found</Alert>
-                        ) : (
-                            <>
-                                <TableContainer component={Paper} sx={{ maxHeight: 600 }}>
-                                    <Table stickyHeader>
-                                        <TableHead>
-                                            <TableRow>
-                                                <TableCell align="center"
-                                                    sx={{
-                                                        position: 'sticky',
-                                                        left: 0,
-                                                        backgroundColor: 'background.paper',
-                                                        zIndex: 3,
-                                                        boxShadow: '2px 0 5px rgba(0,0,0,0.1)'
-                                                    }}>
-                                                    Details
-                                                </TableCell>
-                                                {/* <TableCell>ID</TableCell> */}
-                                                {/* <TableCell>Action Type</TableCell> */}
-                                                <TableCell>Employee Code</TableCell>
-                                                <TableCell>Employee Name</TableCell>
-                                                <TableCell>Player ID</TableCell>
-                                                <TableCell>Player Name</TableCell>
-                                                <TableCell>Status</TableCell>
-                                                <TableCell sx={{ minWidth: 150 }}>Enroll Date</TableCell>
-                                                {/* <TableCell sx={{ minWidth: 200 }}>Details</TableCell> */}
-                                            </TableRow>
-                                        </TableHead>
-                                        <TableBody>
-                                            {logs?.map((log) => (
-                                                <TableRow
-                                                    key={log.id}
-                                                    hover
-                                                    sx={{ cursor: 'pointer' }}
-                                                    onDoubleClick={() => handleRowDoubleClick(log)}
-                                                >
-                                                    <TableCell
-                                                        align="center"
-                                                        sx={{
-                                                            position: 'sticky',
-                                                            left: 0,
-                                                            backgroundColor: 'background.paper',
-                                                            zIndex: 1,
-                                                            boxShadow: '2px 0 5px rgba(0,0,0,0.1)'
-                                                        }}>
-                                                        <Tooltip title="View Details">
-                                                            <IconButton
-                                                                size="small"
-                                                                color="primary"
-                                                                onClick={() => handleRowDoubleClick(log)}
-                                                            >
-                                                                <VisibilityIcon />
-                                                            </IconButton>
-                                                        </Tooltip>
-                                                    </TableCell>
-                                                    {/* <TableCell>{log.id}</TableCell> */}
-                                                    {/* <TableCell>
+                        {/* Logs Table */}
+                        <Card>
+                            <CardContent>
+                                <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+                                    <Typography variant="h6">
+                                        Enrollment Logs ({totalRecords} records)
+                                    </Typography>
+                                </Box>
+
+                                {loading ? (
+                                    <Box display="flex" justifyContent="center" py={4}>
+                                        <CircularProgress />
+                                    </Box>
+                                ) : (logs?.length ?? 0) === 0 ? (
+                                    <Alert severity="info">No Enrollment logs found</Alert>
+                                ) : (
+                                    <>
+                                        <TableContainer component={Paper} sx={{ maxHeight: 600 }}>
+                                            <Table stickyHeader>
+                                                <TableHead>
+                                                    <TableRow>
+                                                        <TableCell align="center"
+                                                            sx={{
+                                                                position: 'sticky',
+                                                                left: 0,
+                                                                backgroundColor: 'background.paper',
+                                                                zIndex: 3,
+                                                                boxShadow: '2px 0 5px rgba(0,0,0,0.1)'
+                                                            }}>
+                                                            Details
+                                                        </TableCell>
+                                                        {/* <TableCell>ID</TableCell> */}
+                                                        {/* <TableCell>Action Type</TableCell> */}
+                                                        <TableCell>Employee Code</TableCell>
+                                                        <TableCell>Employee Name</TableCell>
+                                                        <TableCell>Player ID</TableCell>
+                                                        {/* <TableCell>Player Name</TableCell> */}
+                                                        <TableCell>Status</TableCell>
+                                                        <TableCell sx={{ minWidth: 150 }}>Enrollment Date</TableCell>
+                                                        {/* <TableCell sx={{ minWidth: 200 }}>Details</TableCell> */}
+                                                    </TableRow>
+                                                </TableHead>
+                                                <TableBody>
+                                                    {logs?.map((log) => (
+                                                        <TableRow
+                                                            key={log.id}
+                                                            hover
+                                                            sx={{ cursor: 'pointer' }}
+                                                            onDoubleClick={() => handleRowDoubleClick(log)}
+                                                        >
+                                                            <TableCell
+                                                                align="center"
+                                                                sx={{
+                                                                    position: 'sticky',
+                                                                    left: 0,
+                                                                    backgroundColor: 'background.paper',
+                                                                    zIndex: 1,
+                                                                    boxShadow: '2px 0 5px rgba(0,0,0,0.1)'
+                                                                }}>
+                                                                <Tooltip title="View Details">
+                                                                    <IconButton
+                                                                        size="small"
+                                                                        color="primary"
+                                                                        onClick={() => handleRowDoubleClick(log)}
+                                                                    >
+                                                                        <VisibilityIcon />
+                                                                    </IconButton>
+                                                                </Tooltip>
+                                                            </TableCell>
+                                                            {/* <TableCell>{log.id}</TableCell> */}
+                                                            {/* <TableCell>
                                                         <Chip
                                                             label={log.actionType}
                                                             color={getActionColor(log.actionType)}
                                                             size="small"
                                                         />
                                                     </TableCell> */}
-                                                    <TableCell>{log.employeeCode || '-'}</TableCell>
-                                                    <TableCell>{log.employeeName || '-'}</TableCell>
-                                                    <TableCell>{log.playerId || '-'}</TableCell>
-                                                    <TableCell>{log.playerName || '-'}</TableCell>
-                                                    <TableCell>
-                                                        {log.isSuccess !== undefined ? (
-                                                            <Chip
-                                                                label={log.isSuccess ? 'Success' : 'Failed'}
-                                                                color={log.isSuccess ? 'success' : 'error'}
-                                                                size="small"
-                                                            />
-                                                        ) : '-'}
-                                                    </TableCell>
-                                                    <TableCell>{formatDate(log.actionDate)}</TableCell>
-                                                    {/* <TableCell>
+                                                            <TableCell>{log.employeeCode || '-'}</TableCell>
+                                                            <TableCell>{log.employeeName || '-'}</TableCell>
+                                                            <TableCell>{log.playerId || '-'}</TableCell>
+                                                            {/* <TableCell>{log.playerName || '-'}</TableCell> */}
+                                                            <TableCell>
+                                                                {log.isSuccess !== undefined ? (
+                                                                    <Chip
+                                                                        label={log.isSuccess ? 'Success' : 'Failed'}
+                                                                        color={log.isSuccess ? 'success' : 'error'}
+                                                                        size="small"
+                                                                    />
+                                                                ) : '-'}
+                                                            </TableCell>
+                                                            <TableCell>{formatDate(log.actionDate)}</TableCell>
+                                                            {/* <TableCell>
                                                         <Typography
                                                             variant="body2"
                                                             sx={{
@@ -441,25 +494,29 @@ const AdminMembershipLogsPage: React.FC = () => {
                                                             {log.details || '-'}
                                                         </Typography>
                                                     </TableCell> */}
-                                                </TableRow>
-                                            ))}
-                                        </TableBody>
-                                    </Table>
-                                </TableContainer>
+                                                        </TableRow>
+                                                    ))}
+                                                </TableBody>
+                                            </Table>
+                                        </TableContainer>
 
-                                <TablePagination
-                                    component="div"
-                                    count={totalRecords}
-                                    page={page}
-                                    onPageChange={handlePageChange}
-                                    rowsPerPage={rowsPerPage}
-                                    onRowsPerPageChange={handleRowsPerPageChange}
-                                    rowsPerPageOptions={[10, 25, 50, 100]}
-                                />
-                            </>
-                        )}
+                                        <TablePagination
+                                            component="div"
+                                            count={totalRecords}
+                                            page={page}
+                                            onPageChange={handlePageChange}
+                                            rowsPerPage={rowsPerPage}
+                                            onRowsPerPageChange={handleRowsPerPageChange}
+                                            rowsPerPageOptions={[10, 25, 50, 100]}
+                                        />
+                                    </>
+                                )}
+                            </CardContent>
+                        </Card>
                     </CardContent>
                 </Card>
+
+
 
                 {/* Detail Dialog */}
                 <Dialog
@@ -482,79 +539,88 @@ const AdminMembershipLogsPage: React.FC = () => {
                                 <CircularProgress />
                             </Box>
                         ) : selectedLog ? (
-                            <Stack spacing={2}>
-                                <Box>
-                                    <Typography variant="subtitle2" color="text.secondary">
-                                        Log ID
-                                    </Typography>
-                                    <Typography variant="body1">{selectedLog.id}</Typography>
-                                </Box>
-
-                                <Box>
-                                    <Typography variant="subtitle2" color="text.secondary">
-                                        Action Type
-                                    </Typography>
-                                    <Chip
-                                        label={selectedLog.action}
-                                        color={getActionColor(selectedLog.action)}
-                                        size="small"
-                                    />
-                                </Box>
-
-                                <Box>
-                                    <Typography variant="subtitle2" color="text.secondary">
-                                        User Name
-                                    </Typography>
-                                    <Typography variant="body1">{selectedLog.userName || '-'}</Typography>
-                                </Box>
-
-                                <Box>
-                                    <Typography variant="subtitle2" color="text.secondary">
-                                        Entity Type
-                                    </Typography>
-                                    <Typography variant="body1">{selectedLog.entityType || '-'}</Typography>
-                                </Box>
-
-                                <Box>
-                                    <Typography variant="subtitle2" color="text.secondary">
-                                        Entity ID
-                                    </Typography>
-                                    <Typography variant="body1">{selectedLog.entityId || '-'}</Typography>
-                                </Box>
-
-                                <Box>
-                                    <Typography variant="subtitle2" color="text.secondary">
-                                        Status
-                                    </Typography>
-                                    {selectedLog.isSuccess !== undefined ? (
+                            <Stack spacing={3}>
+                                {/* Row 1: Log ID - Action Type */}
+                                <Box display="flex" gap={3}>
+                                    <Box flex={1}>
+                                        <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                                            Log ID
+                                        </Typography>
+                                        <Typography variant="body1" fontWeight="medium">
+                                            {selectedLog.id}
+                                        </Typography>
+                                    </Box>
+                                    <Box flex={1}>
+                                        <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                                            Action Type
+                                        </Typography>
                                         <Chip
-                                            label={selectedLog.isSuccess ? 'Success' : 'Failed'}
-                                            color={selectedLog.isSuccess ? 'success' : 'error'}
+                                            label={selectedLog.action}
+                                            color={getActionColor(selectedLog.action)}
                                             size="small"
                                         />
-                                    ) : (
-                                        <Typography variant="body1">-</Typography>
-                                    )}
+                                    </Box>
                                 </Box>
 
-                                <Box>
-                                    <Typography variant="subtitle2" color="text.secondary">
-                                        Timestamp
-                                    </Typography>
-                                    <Typography variant="body1">{formatDate(selectedLog.timestamp)}</Typography>
+                                {/* Row 2: User Name - Entity Type */}
+                                <Box display="flex" gap={3}>
+                                    <Box flex={1}>
+                                        <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                                            User Name
+                                        </Typography>
+                                        <Typography variant="body1" fontWeight="medium">
+                                            {selectedLog.userName || '-'}
+                                        </Typography>
+                                    </Box>
+                                    <Box flex={1}>
+                                        <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                                            Entity Type
+                                        </Typography>
+                                        <Typography variant="body1" fontWeight="medium">
+                                            {selectedLog.entityType || '-'}
+                                        </Typography>
+                                    </Box>
                                 </Box>
 
+                                {/* Row 3: Player ID - Status */}
+                                <Box display="flex" gap={3}>
+                                    <Box flex={1}>
+                                        <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                                            Player ID
+                                        </Typography>
+                                        <Typography variant="body1" fontWeight="medium">
+                                            {selectedLog.entityId || '-'}
+                                        </Typography>
+                                    </Box>
+                                    <Box flex={1}>
+                                        <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                                            Status
+                                        </Typography>
+                                        {selectedLog.isSuccess !== undefined ? (
+                                            <Chip
+                                                label={selectedLog.isSuccess ? 'Success' : 'Failed'}
+                                                color={selectedLog.isSuccess ? 'success' : 'error'}
+                                                size="small"
+                                            />
+                                        ) : (
+                                            <Typography variant="body1">-</Typography>
+                                        )}
+                                    </Box>
+                                </Box>
+
+                                {/* Enrollment Date - Full Width */}
                                 <Box>
-                                    <Typography variant="subtitle2" color="text.secondary">
-                                        Created At
+                                    <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                                        Enrollment Date
                                     </Typography>
-                                    <Typography variant="body1">
+                                    <Typography variant="body1" fontWeight="medium">
                                         {selectedLog.createdAt ? formatDate(selectedLog.createdAt) : '-'}
                                     </Typography>
                                 </Box>
 
+                                {/* Details - Full Width */}
                                 <Box>
-                                    <Typography variant="subtitle2" color="text.secondary">
+                                    <Typography variant="subtitle2" color="text.secondary" gutterBottom>
                                         Details
                                     </Typography>
                                     <Paper
@@ -592,6 +658,17 @@ const AdminMembershipLogsPage: React.FC = () => {
                     </DialogActions>
                 </Dialog>
             </Box>
+            {/* Snackbar for notifications */}
+            <Snackbar
+                open={snackbar.open}
+                autoHideDuration={6000}
+                onClose={handleCloseSnackbar}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+            >
+                <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
+                    {snackbar.message}
+                </Alert>
+            </Snackbar>
         </AdminLayout>
     );
 };

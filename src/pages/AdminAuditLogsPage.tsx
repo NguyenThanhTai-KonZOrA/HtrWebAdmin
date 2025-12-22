@@ -37,7 +37,7 @@ import {
     Error as ErrorIcon,
     FilterList as FilterListIcon,
     Search as SearchIcon,
-    Clear as IconReset
+    CleaningServices as IconReset
 } from '@mui/icons-material';
 import AdminLayout from '../components/layout/AdminLayout';
 import { useSetPageTitle } from '../hooks/useSetPageTitle';
@@ -242,7 +242,7 @@ const AdminAuditLogsPage: React.FC = () => {
             <Box sx={{ p: 3 }}>
                 <Card>
                     <CardContent>
-                        <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
+                        <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
                             {/* <Typography variant="h5" fontWeight="bold">
                                 Audit Logs ({totalRecords})
                             </Typography> */}

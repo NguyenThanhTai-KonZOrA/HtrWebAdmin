@@ -14,16 +14,10 @@ export const Permission = {
 
     // Device Mapping permissions
     VIEW_DEVICE_MAPPING: 'view_device_mapping',
-    EDIT_DEVICE_MAPPING: 'edit_device_mapping',
     VIEW_REPORTS: 'view_reports',
     VIEW_ROLE_MANAGEMENT: 'view_role_management',
     VIEW_AUDIT_LOGS: 'view_audit_logs',
     VIEW_EMPLOYEE_MANAGEMENT: 'view_employee_management',
-
-    // Future permissions can be added here
-    // VIEW_REPORTS: 'view_reports',
-    // MANAGE_USERS: 'manage_users',
-    // etc.
 } as const;
 
 export type Permission = typeof Permission[keyof typeof Permission];
@@ -36,12 +30,10 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     [UserRole.ADMIN]: [
         Permission.VIEW_ADMIN_REGISTRATION,
         Permission.VIEW_DEVICE_MAPPING,
-        Permission.EDIT_DEVICE_MAPPING,
         Permission.VIEW_REPORTS,
         Permission.VIEW_ROLE_MANAGEMENT,
         Permission.VIEW_AUDIT_LOGS,
         Permission.VIEW_EMPLOYEE_MANAGEMENT,
-
     ],
     [UserRole.USER]: [
         Permission.VIEW_ADMIN_REGISTRATION,
@@ -49,10 +41,13 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     ],
     [UserRole.MANAGER]: [
         Permission.VIEW_ADMIN_REGISTRATION,
-        Permission.VIEW_DEVICE_MAPPING,
+        Permission.VIEW_REPORTS,
+        Permission.VIEW_AUDIT_LOGS,
+
     ],
     [UserRole.VIEWER]: [
         Permission.VIEW_ADMIN_REGISTRATION,
+        Permission.VIEW_REPORTS,
     ],
 };
 

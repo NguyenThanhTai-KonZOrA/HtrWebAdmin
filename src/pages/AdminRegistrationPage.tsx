@@ -174,6 +174,9 @@ const AdminRegistrationPage: React.FC = () => {
     const [checkingPhone, setCheckingPhone] = useState(false);
     const [checkingId, setCheckingId] = useState(false);
 
+    // Sync images state
+    const [syncingImages, setSyncingImages] = useState(false);
+
     // Error and success states (for page level - using Snackbar)
     const [snackbar, setSnackbar] = useState<{
         open: boolean;
@@ -1748,7 +1751,7 @@ const AdminRegistrationPage: React.FC = () => {
     // Handle sync images
     const handleSyncImages = async () => {
         if (!selectedPatron) return;
-
+        setSyncingImages(true);
         const request: SyncPatronImagesRequest = {
             PatronId: selectedPatron.pid,
             PlayerId: selectedPatron.playerId,
@@ -1760,6 +1763,9 @@ const AdminRegistrationPage: React.FC = () => {
             showSnackbar('Images synced successfully!', 'success');
         } catch (error) {
             console.error('❌ Failed to sync images:', error);
+            showSnackbar('Failed to sync images. Please try again.', 'error');
+        } finally {
+            setSyncingImages(false);
         }
     };
 
@@ -1795,8 +1801,8 @@ const AdminRegistrationPage: React.FC = () => {
                         <TableCell sx={{ minWidth: 150 }}>Position</TableCell>
                         <TableCell sx={{ minWidth: 120 }}>ID Number</TableCell>
                         <TableCell sx={{ minWidth: 120 }}>Nationality</TableCell>
-                        <TableCell sx={{ minWidth: 250 }}>Address</TableCell>
-                        <TableCell sx={{ minWidth: 200 }}>Address in Vietnam</TableCell>
+                        <TableCell sx={{ minWidth: 250 }}>Main Address in Viet Nam</TableCell>
+                        <TableCell sx={{ minWidth: 200 }}>Other Address</TableCell>
                         <TableCell sx={{ minWidth: 180 }}>Country</TableCell>
                         <TableCell>Status</TableCell>
                         <TableCell sx={{ minWidth: 160 }}>Submit Date</TableCell>
@@ -2139,7 +2145,7 @@ const AdminRegistrationPage: React.FC = () => {
                                             </Typography>
 
                                             {selectedPatron.isHaveMembership ? (
-                                                <Button onClick={handleSyncImages} variant="contained">
+                                                <Button onClick={handleSyncImages} variant="contained" disabled={syncingImages}>
                                                     <CloudSyncIcon sx={{ mr: 1 }} /> Sync Images
                                                 </Button>
                                             ) : (

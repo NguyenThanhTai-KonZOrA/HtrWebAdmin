@@ -363,6 +363,39 @@ export const auditLogService = {
     getRegisteredLogs: async (request: AuditLogsRegisterMembershipRequest): Promise<AuditLogsRegisterMembershipPaginationResponse> => {
         const response = await api.post<ApiEnvelope<AuditLogsRegisterMembershipPaginationResponse>>("/api/AuditLog/audit-logs-membership/paginate", request);
         return unwrapApiEnvelope(response);
+    },
+
+    exportEnrolledEmployees: async (request: AuditLogsRegisterMembershipRequest): Promise<void> => {
+        try {
+            const response = await api.post(`/api/AuditLog/audit-logs-membership/export`, request, {
+                responseType: 'blob'
+            });
+            const blob = response.data;
+            const cd = response.headers['content-disposition'] || '';
+            const match = /filename\*?=(?:UTF-8''|")?([^\";]+)/i.exec(cd);
+            const serverFileName = "enrolled_report.xlsx";
+
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = serverFileName;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (error: any) {
+            if (error.response?.data instanceof Blob) {
+                // If error response is JSON wrapped in Blob
+                const text = await error.response.data.text();
+                try {
+                    const envelope = JSON.parse(text) as ApiEnvelope<unknown>;
+                    throw new Error(getErrorMessage(envelope.data, `HTTP ${error.response.status}`));
+                } catch {
+                    throw new Error(`HTTP ${error.response?.status || 'Unknown error'}`);
+                }
+            }
+            throw error;
+        }
     }
 };
 
