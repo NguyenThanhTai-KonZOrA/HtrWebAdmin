@@ -94,8 +94,8 @@ const AdminAuditLogsPage: React.FC = () => {
     const [entityType, setEntityType] = useState<string>('All');
     const [action, setAction] = useState<string>('All');
     const [userName, setUserName] = useState<string>('');
-    const [fromDate, setFromDate] = useState<string>('');
-    const [toDate, setToDate] = useState<string>('');
+    const [fromDate, setFromDate] = useState<string>(new Date(new Date().getTime() - 24 * 60 * 60 * 1000).toISOString().slice(0, 16)); // Default to 24 hours ago
+    const [toDate, setToDate] = useState<string>(new Date().toISOString().slice(0, 16)); // Default to now
     const [isSuccess, setIsSuccess] = useState<string>('All');
 
     // Detail dialog states
@@ -611,8 +611,8 @@ const AdminAuditLogsPage: React.FC = () => {
                                                 <Typography variant="body1">{selectedLog.ipAddress}</Typography>
                                             </Box>
                                             <Box flex="1 1 45%">
-                                                <Typography variant="body2" color="text.secondary">Timestamp</Typography>
-                                                <Typography variant="body1">{formatDate(selectedLog.createdAt)}</Typography>
+                                                <Typography variant="body2" color="text.secondary">Created At</Typography>
+                                                <Typography variant="body1">{FormatUtcTime.formatDateTime(selectedLog.createdAt)}</Typography>
                                             </Box>
                                         </Box>
                                     </CardContent>
