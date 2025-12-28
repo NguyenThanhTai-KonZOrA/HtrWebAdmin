@@ -12,5 +12,10 @@ export const PAGE_TITLES = {
     SYSTEM_SETTINGS: "System Settings",
     REGISTRATION: "Registration Management",
     DEVICE_MAPPING: "Device Mapping Settings",
+    AUDIT_LOGS: "Audit Logs",
+    ROLES: "Role Management",
+    PERMISSIONS: "Permission Management",
+    EMPLOYEES: "Employee Management",
+    ENROLL_MEMBERSHIP_LOGS: "Enrollment Player Logs",
     DEFAULT: "Queue Management System"
 } as const;

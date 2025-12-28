@@ -1,6 +1,6 @@
 import axios from "axios";
 import { showSessionExpiredNotification } from '../utils/sessionExpiredNotification';
-import type { CheckPatronIdentificationRequest, CheckValidIncomeRequest, CheckValidIncomeResponse, CountryResponse, CreateMappingRequest, CreateMappingResponse, CurrentHostNameResponse, CurrentStaffDeviceResponse, GetAllMappingsResponse, GetMappingByStaffDeviceResponse, IncomeFileResponse, MappingDataResponse, OnlineStaffDevicesResponse, PatronImagesResponse, PatronPagingRequest, PatronPagingResponse, PatronRegisterMembershipRequest, PatronRegisterMembershipResponse, PatronResponse, RenderDocumentResponse, StaffAndPatronDevicesResponse, StaffSignatureRequest, UpdateMappingRequest, UpdateMappingResponse } from "../registrationType";
+import type { AuditLogPaginationRequest, AuditLogPaginationResponse, AuditLogResponse, AuditLogsRegisterMembershipPaginationResponse, AuditLogsRegisterMembershipRequest, CheckPatronIdentificationRequest, CheckValidIncomeRequest, CheckValidIncomeResponse, CountryResponse, CreateMappingRequest, CreateMappingResponse, CurrentHostNameResponse, CurrentStaffDeviceResponse, GetAllMappingsResponse, GetMappingByStaffDeviceResponse, IncomeFileResponse, MappingDataResponse, OnlineStaffDevicesResponse, PatronImagesResponse, PatronPagingRequest, PatronPagingResponse, PatronRegisterMembershipRequest, PatronRegisterMembershipResponse, PatronResponse, RenderDocumentResponse, StaffAndPatronDevicesResponse, StaffSignatureRequest, SyncPatronImagesRequest, UpdateMappingRequest, UpdateMappingResponse } from "../registrationType";
 import type { SettingsResponse, CreateSettingsRequest, SettingsInfoResponse, ClearCacheSettingResponse, UpdateSettingsRequest, UpdateSettingsResponse, EmployeePerformanceRequest, EmployeePerformanceResponse } from "../type";
 
 const API_BASE = (window as any)._env_?.API_BASE;
@@ -148,6 +148,11 @@ export const patronService = {
 
     deletePatron: async (patronId: number): Promise<void> => {
         const response = await api.post<ApiEnvelope<void>>(`/api/RegistrationAdmin/patron/delete/${patronId}`);
+        return unwrapApiEnvelope(response);
+    },
+
+    syncPatronImages: async (request: SyncPatronImagesRequest): Promise<void> => {
+        const response = await api.post<ApiEnvelope<void>>(`/api/RegistrationAdmin/patron/sync-images`, request);
         return unwrapApiEnvelope(response);
     }
 };
@@ -319,6 +324,56 @@ export const employeeService = {
             const cd = response.headers['content-disposition'] || '';
             const match = /filename\*?=(?:UTF-8''|")?([^\";]+)/i.exec(cd);
             const serverFileName = "employee_performance_report.xlsx";
+
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = serverFileName;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (error: any) {
+            if (error.response?.data instanceof Blob) {
+                // If error response is JSON wrapped in Blob
+                const text = await error.response.data.text();
+                try {
+                    const envelope = JSON.parse(text) as ApiEnvelope<unknown>;
+                    throw new Error(getErrorMessage(envelope.data, `HTTP ${error.response.status}`));
+                } catch {
+                    throw new Error(`HTTP ${error.response?.status || 'Unknown error'}`);
+                }
+            }
+            throw error;
+        }
+    }
+};
+
+export const auditLogService = {
+    getAuditLogsFilterOptions: async (request: AuditLogPaginationRequest): Promise<AuditLogPaginationResponse> => {
+        const response = await api.post<ApiEnvelope<AuditLogPaginationResponse>>("/api/AuditLog/paginate", request);
+        return unwrapApiEnvelope(response);
+    },
+
+    getAuditLogById: async (auditLogId: number): Promise<AuditLogResponse> => {
+        const response = await api.get<ApiEnvelope<AuditLogResponse>>(`/api/AuditLog/${auditLogId}`);
+        return unwrapApiEnvelope(response);
+    },
+
+    getRegisteredLogs: async (request: AuditLogsRegisterMembershipRequest): Promise<AuditLogsRegisterMembershipPaginationResponse> => {
+        const response = await api.post<ApiEnvelope<AuditLogsRegisterMembershipPaginationResponse>>("/api/AuditLog/audit-logs-membership/paginate", request);
+        return unwrapApiEnvelope(response);
+    },
+
+    exportEnrolledEmployees: async (request: AuditLogsRegisterMembershipRequest): Promise<void> => {
+        try {
+            const response = await api.post(`/api/AuditLog/audit-logs-membership/export`, request, {
+                responseType: 'blob'
+            });
+            const blob = response.data;
+            const cd = response.headers['content-disposition'] || '';
+            const match = /filename\*?=(?:UTF-8''|")?([^\";]+)/i.exec(cd);
+            const serverFileName = "enrolled_report.xlsx";
 
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement("a");

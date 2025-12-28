@@ -14,10 +14,15 @@ import AdminRegistrationPage from './pages/AdminRegistrationPage'
 import DeviceMappingSettingsPage from './pages/DeviceMappingSettingsPage'
 import { Permission } from './constants/roles'
 import AdminSettingsPage from './pages/AdminSettingsPage'
+import AdminAuditLogsPage from './pages/AdminAuditLogsPage'
+import AdminMembershipLogsPage from './pages/AdminMembershipLogsPage'
+import AdminEmployeePage from './pages/AdminEmployeePage'
+import AdminPermissionPage from './pages/AdminPermissionPage'
+import AdminRolePage from './pages/AdminRolePage'
 
 function AppContent() {
   const networkStatus = useNetworkStatus();
-  
+
   // Validate token periodically
   useTokenValidator();
 
@@ -57,6 +62,18 @@ function AppContent() {
           </ProtectedRoute>
         } />
 
+        <Route path="/admin-audit-logs" element={
+          <ProtectedRoute>
+            <RoleBasedRoute
+              requiredPermission={Permission.VIEW_AUDIT_LOGS}
+              fallbackPath="/admin-audit-logs"
+              showAccessDenied={true}
+            >
+              <AdminAuditLogsPage />
+            </RoleBasedRoute>
+          </ProtectedRoute>
+        } />
+
         <Route path="/admin-settings" element={
           <ProtectedRoute>
             <RoleBasedRoute
@@ -65,6 +82,54 @@ function AppContent() {
               showAccessDenied={true}
             >
               <AdminSettingsPage />
+            </RoleBasedRoute>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/admin-member-audit-logs" element={
+          <ProtectedRoute>
+            <RoleBasedRoute
+              requiredPermission={Permission.VIEW_REPORTS}
+              fallbackPath="/admin-member-audit-logs"
+              showAccessDenied={true}
+            >
+              <AdminMembershipLogsPage />
+            </RoleBasedRoute>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/admin-roles" element={
+          <ProtectedRoute>
+            <RoleBasedRoute
+              requiredPermission={Permission.VIEW_ROLE_MANAGEMENT}
+              fallbackPath="/admin-roles"
+              showAccessDenied={true}
+            >
+              <AdminRolePage />
+            </RoleBasedRoute>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/admin-permissions" element={
+          <ProtectedRoute>
+            <RoleBasedRoute
+              requiredPermission={Permission.VIEW_ROLE_MANAGEMENT}
+              fallbackPath="/admin-permissions"
+              showAccessDenied={true}
+            >
+              <AdminPermissionPage />
+            </RoleBasedRoute>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/admin-employees" element={
+          <ProtectedRoute>
+            <RoleBasedRoute
+              requiredPermission={Permission.VIEW_ROLE_MANAGEMENT}
+              fallbackPath="/admin-employees"
+              showAccessDenied={true}
+            >
+              <AdminEmployeePage />
             </RoleBasedRoute>
           </ProtectedRoute>
         } />

@@ -53,7 +53,8 @@ import {
     Image as ImageIcon,
     InsertDriveFile as FileIcon,
     DeleteForever as DeleteForeverIcon,
-    DeleteSweep as DeleteSweepIcon
+    DeleteSweep as DeleteSweepIcon,
+    CloudSync as CloudSyncIcon
 } from '@mui/icons-material';
 import {
     patronService,
@@ -68,7 +69,8 @@ import type {
     CheckValidIncomeRequest,
     PatronRegisterMembershipRequest,
     StaffSignatureRequest,
-    IncomeFileResponse
+    IncomeFileResponse,
+    SyncPatronImagesRequest
 } from '../registrationType';
 import AdminLayout from '../components/layout/AdminLayout';
 import { useSetPageTitle } from '../hooks/useSetPageTitle';
@@ -171,6 +173,9 @@ const AdminRegistrationPage: React.FC = () => {
     const [idNumberWarning, setIdNumberWarning] = useState<string>('');
     const [checkingPhone, setCheckingPhone] = useState(false);
     const [checkingId, setCheckingId] = useState(false);
+
+    // Sync images state
+    const [syncingImages, setSyncingImages] = useState(false);
 
     // Error and success states (for page level - using Snackbar)
     const [snackbar, setSnackbar] = useState<{
@@ -1486,6 +1491,31 @@ const AdminRegistrationPage: React.FC = () => {
 
     // Handle delete income file
     const handleDeleteFile = async (batchId: string, saveAs: string) => {
+
+        // Confirm before delete
+        const result = await Swal.fire({
+            title: 'Delete File?',
+            html: `
+                <p>Are you sure you want to delete this file?</p>
+                <p class="text-danger"><strong>This action cannot be undone!</strong></p>
+            `,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, delete it!',
+            cancelButtonText: 'Cancel',
+            allowEscapeKey: true,
+            allowOutsideClick: false,
+            customClass: {
+                container: 'swal-high-zindex'
+            }
+        });
+
+        if (!result.isConfirmed) {
+            return;
+        }
+
         try {
             setDialogError(null);
 
@@ -1588,6 +1618,7 @@ const AdminRegistrationPage: React.FC = () => {
     // Check if signature request should be shown
     const canShowSignatureRequest = (): boolean => {
         if (!selectedPatron) return false;
+        if (selectedPatron.isHaveMembership) return false;
         //if (!editedPatron) return false;
         //if (!selectedPatron.isValidIncomeDocument) return false;
 
@@ -1610,6 +1641,10 @@ const AdminRegistrationPage: React.FC = () => {
             if (!incomeApproved && !selectedPatron.isValidIncomeDocument) {
                 return false;
             }
+        }
+
+        if (selectedPatron.isHaveMembership) {
+            return false;
         }
 
         // If already signed, no need to request again
@@ -1713,6 +1748,27 @@ const AdminRegistrationPage: React.FC = () => {
         return '✅ Ready to enroll player!';
     };
 
+    // Handle sync images
+    const handleSyncImages = async () => {
+        if (!selectedPatron) return;
+        setSyncingImages(true);
+        const request: SyncPatronImagesRequest = {
+            PatronId: selectedPatron.pid,
+            PlayerId: selectedPatron.playerId,
+            Reason: 'Sync images for patron'
+        };
+
+        try {
+            await patronService.syncPatronImages(request);
+            showSnackbar('Images synced successfully!', 'success');
+        } catch (error) {
+            console.error('❌ Failed to sync images:', error);
+            showSnackbar('Failed to sync images. Please try again.', 'error');
+        } finally {
+            setSyncingImages(false);
+        }
+    };
+
     // Get country name by ID
     const getCountryName = (countryId: string): string => {
         const country = countries.find(c => String(c.countryID) === countryId);
@@ -1745,8 +1801,8 @@ const AdminRegistrationPage: React.FC = () => {
                         <TableCell sx={{ minWidth: 150 }}>Position</TableCell>
                         <TableCell sx={{ minWidth: 120 }}>ID Number</TableCell>
                         <TableCell sx={{ minWidth: 120 }}>Nationality</TableCell>
-                        <TableCell sx={{ minWidth: 250 }}>Address</TableCell>
-                        <TableCell sx={{ minWidth: 200 }}>Address in Vietnam</TableCell>
+                        <TableCell sx={{ minWidth: 250 }}>Main Address in Viet Nam</TableCell>
+                        <TableCell sx={{ minWidth: 200 }}>Other Address</TableCell>
                         <TableCell sx={{ minWidth: 180 }}>Country</TableCell>
                         <TableCell>Status</TableCell>
                         <TableCell sx={{ minWidth: 160 }}>Submit Date</TableCell>
@@ -2038,9 +2094,16 @@ const AdminRegistrationPage: React.FC = () => {
                 >
                     <DialogTitle>
                         <Box display="flex" justifyContent="space-between" alignItems="center">
-                            <Typography variant="h6">
-                                Edit & Update Information {isVietnamese() ? '(Vietnamese)' : '(Foreigner)'}
-                            </Typography>
+
+                            {selectedPatron && !selectedPatron.isHaveMembership ? (
+                                <Typography variant="h6">
+                                    Edit & Update Information {isVietnamese() ? '(Vietnamese)' : '(Foreigner)'}
+                                </Typography>
+                            ) : (
+                                <Typography variant="h6">
+                                    View Information (Membership - Player ID: {selectedPatron?.playerId})
+                                </Typography>
+                            )}
                             <IconButton onClick={() => setDialogOpen(false)}>
                                 <CloseIcon />
                             </IconButton>
@@ -2076,9 +2139,21 @@ const AdminRegistrationPage: React.FC = () => {
                                 {/* Patron Images Section */}
                                 <Card variant="outlined">
                                     <CardContent>
-                                        <Typography variant="h6" gutterBottom sx={{ mb: 2, color: 'primary.main' }}>
-                                            Personal Identification Images
-                                        </Typography>
+                                        <Box flexDirection={{ xs: 'column', sm: 'row' }} display="flex" justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }} mb={2}>
+                                            <Typography variant="h6" gutterBottom sx={{ mb: 2, color: 'primary.main' }}>
+                                                Personal Identification Images
+                                            </Typography>
+
+                                            {/** Sync Images Button */}
+                                            {/* {selectedPatron.isHaveMembership ? (
+                                                <Button onClick={handleSyncImages} variant="contained" disabled={syncingImages}>
+                                                    <CloudSyncIcon sx={{ mr: 1 }} /> Sync Images
+                                                </Button>
+                                            ) : (
+                                                <Typography variant="body2" color="text.secondary">
+                                                </Typography>
+                                            )} */}
+                                        </Box>
                                         {patronImages ? (
                                             <Stack direction="row" spacing={3} justifyContent="center">
                                                 <Box textAlign="center">
@@ -3255,7 +3330,7 @@ const AdminRegistrationPage: React.FC = () => {
                     </DialogActions>
                 </Dialog>
             </Box>
-        </AdminLayout>
+        </AdminLayout >
     );
 };
 

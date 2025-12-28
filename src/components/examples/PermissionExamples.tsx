@@ -46,7 +46,7 @@ export function UserPermissionsInfo() {
         </Typography>
         
         <Typography>
-          Edit Device Mapping: {can(Permission.EDIT_DEVICE_MAPPING) ? '✅' : '❌'}
+          Edit Device Mapping: {can(Permission.VIEW_ADMIN_REGISTRATION) ? '✅' : '❌'}
         </Typography>
       </Stack>
     </Paper>
@@ -74,14 +74,14 @@ export function ButtonsWithPermissions() {
         </Button>
         
         {/* Button này CHỈ hiển thị nếu có permission EDIT_DEVICE_MAPPING */}
-        <PermissionGuard requiredPermission={Permission.EDIT_DEVICE_MAPPING}>
+        <PermissionGuard requiredPermission={Permission.VIEW_ADMIN_REGISTRATION}>
           <Button variant="contained" onClick={handleEdit}>
             Edit (Admin Only)
           </Button>
         </PermissionGuard>
         
         {/* Button này CHỈ hiển thị nếu có permission EDIT_DEVICE_MAPPING */}
-        <PermissionGuard requiredPermission={Permission.EDIT_DEVICE_MAPPING}>
+        <PermissionGuard requiredPermission={Permission.VIEW_ADMIN_REGISTRATION}>
           <Button variant="contained" color="error" onClick={handleDelete}>
             Delete (Admin Only)
           </Button>
@@ -186,7 +186,7 @@ export function ActionsWithPermissionCheck() {
 
   const handleEditDevice = () => {
     // Check permission trước khi thực hiện action
-    if (!can(Permission.EDIT_DEVICE_MAPPING)) {
+    if (!can(Permission.VIEW_AUDIT_LOGS)) {
       alert('❌ You do not have permission to edit devices');
       return;
     }

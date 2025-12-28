@@ -20,6 +20,7 @@ import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
 import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
+import { UserRole } from "../constants/roles";
 
 const Login: React.FC = () => {
     const [username, setUserName] = useState("");
@@ -29,15 +30,34 @@ const Login: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
     const location = useLocation();
-    const { login, token } = useAuth();
+    const { login, token, role } = useAuth();
 
     useEffect(() => {
         // Only navigate if we have a valid token and not currently loading/submitting
         if (token && !loading) {
-            const from = (location.state as any)?.from?.pathname || "/admin-registration";
-            navigate(from, { replace: true });
+            // Check if there's a "from" location (user was redirected to login)
+            const from = (location.state as any)?.from?.pathname;
+
+            if (from && from !== '/login') {
+                // If user tried to access a specific page, go there
+                navigate(from, { replace: true });
+            } else {
+                // Otherwise, redirect based on role
+                if (role === UserRole.ADMIN) {
+                    navigate('/admin-registration', { replace: true });
+                } else if (role === UserRole.USER) {
+                    navigate('/admin-registration', { replace: true });
+                } else if (role === UserRole.MANAGER) {
+                    navigate('/admin-registration', { replace: true });
+                } else if (role === UserRole.VIEWER) {
+                    navigate('/admin-registration', { replace: true });
+                } else {
+                    // Default fallback if role is not recognized
+                    navigate('/admin-registration', { replace: true });
+                }
+            }
         }
-    }, [token, navigate, location.state, loading]);
+    }, [token, navigate, location.state, loading, role]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
