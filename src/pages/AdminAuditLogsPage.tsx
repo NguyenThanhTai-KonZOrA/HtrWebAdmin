@@ -94,8 +94,29 @@ const AdminAuditLogsPage: React.FC = () => {
     const [entityType, setEntityType] = useState<string>('All');
     const [action, setAction] = useState<string>('All');
     const [userName, setUserName] = useState<string>('');
-    const [fromDate, setFromDate] = useState<string>(new Date(new Date().getTime() - 24 * 60 * 60 * 1000).toISOString().slice(0, 16)); // Default to 24 hours ago
-    const [toDate, setToDate] = useState<string>(new Date().toISOString().slice(0, 16)); // Default to now
+    const [fromDate, setFromDate] = useState<string>(() => {
+        // Set to 1 day ago in local time
+        const date = new Date();
+        date.setDate(date.getDate() - 1);
+        // Format to local datetime-local format (YYYY-MM-DDTHH:mm)
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        return `${year}-${month}-${day}T${hours}:${minutes}`;
+    });
+    const [toDate, setToDate] = useState<string>(() => {
+        // Set to current date/time in local time
+        const date = new Date();
+        // Format to local datetime-local format (YYYY-MM-DDTHH:mm)
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        return `${year}-${month}-${day}T${hours}:${minutes}`;
+    });
     const [isSuccess, setIsSuccess] = useState<string>('All');
 
     // Detail dialog states
