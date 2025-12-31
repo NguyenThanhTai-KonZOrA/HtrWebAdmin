@@ -1915,6 +1915,8 @@ const AdminRegistrationPage: React.FC = () => {
                         <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
                             <Typography variant="h6">
                                 New Registration ({newRegSearch.trim() && !newRegServerSearch ? filteredNewRegistrations.length : newRegTotalRecords})
+                                {/* &nbsp;&nbsp;<Chip label={`Online ${filteredNewRegistrations.filter(reg => reg.submitType === 1).length}`} color="success" size="small" />
+                                &nbsp;&nbsp;<Chip label={`Manual ${filteredNewRegistrations.filter(reg => reg.submitType === 2).length}`} color="secondary" size="small" /> */}
                             </Typography>
                             <Box display="flex" gap={1} alignItems="center">
                                 <TextField
