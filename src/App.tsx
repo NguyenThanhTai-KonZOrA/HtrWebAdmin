@@ -19,6 +19,7 @@ import AdminMembershipLogsPage from './pages/AdminMembershipLogsPage'
 import AdminEmployeePage from './pages/AdminEmployeePage'
 import AdminPermissionPage from './pages/AdminPermissionPage'
 import AdminRolePage from './pages/AdminRolePage'
+import AdminManageDevicePage from './pages/AdminManageDevicePage'
 
 function AppContent() {
   const networkStatus = useNetworkStatus();
@@ -130,6 +131,18 @@ function AppContent() {
               showAccessDenied={true}
             >
               <AdminEmployeePage />
+            </RoleBasedRoute>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/admin-devices" element={
+          <ProtectedRoute>
+            <RoleBasedRoute
+              requiredPermission={Permission.VIEW_ROLE_MANAGEMENT}
+              fallbackPath="/admin-devices"
+              showAccessDenied={true}
+            >
+              <AdminManageDevicePage />
             </RoleBasedRoute>
           </ProtectedRoute>
         } />

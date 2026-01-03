@@ -396,3 +396,44 @@ export interface UpdateSettingsResponse {
   warning: string;
   appliedAt: string;
 }
+
+export interface ManageDeviceResponse {
+  patronDevices: DeviceInfo[];
+  staffDevices: DeviceInfo[];
+  totalPatronDevices: number;
+  totalStaffDevices: number;
+}
+
+export interface DeviceInfo {
+  id: number;
+  deviceName: string;
+  deviceType: string; // "Staff" or "Patron"
+  macAddress: string;
+  ipAddress: string;
+  isOnline: boolean;
+  isActive: boolean;
+  connectionId: string;
+  staffUserName: string;
+  lastHeartbeat: string;
+  createdAt: string;
+  updatedAt: string;
+  status: boolean;
+  lastActiveAt: string;
+}
+
+export interface ToggleDeviceRequest {
+  deviceId: number;
+  deviceType: string; // "Staff" or "Patron"
+  isActive: boolean;
+}
+
+export interface DeleteDeviceRequest {
+  deviceId: number;
+  deviceType: string; // "Staff" or "Patron"
+}
+
+export interface ChangeHostnameRequest {
+  deviceId: number;
+  deviceType: string; // "Staff" or "Patron"
+  newHostname: string;
+}

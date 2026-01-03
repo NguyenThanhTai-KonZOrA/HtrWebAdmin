@@ -17,5 +17,6 @@ export const PAGE_TITLES = {
     PERMISSIONS: "Permission Management",
     EMPLOYEES: "Employee Management",
     ENROLL_MEMBERSHIP_LOGS: "Enrollment Player Logs",
+    MANAGE_DEVICES: "Device Management",
     DEFAULT: "Queue Management System"
 } as const;

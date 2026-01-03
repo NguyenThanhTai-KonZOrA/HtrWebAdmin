@@ -38,6 +38,13 @@ const navItems: NavItem[] = [
         requiredPermission: Permission.VIEW_DEVICE_MAPPING,
     },
     {
+        key: 'admin-devices',
+        title: 'Device Management',
+        href: '/admin-devices',
+        icon: SettingsIcon,
+        requiredPermission: Permission.VIEW_ROLE_MANAGEMENT,
+    },
+    {
         key: 'admin-audit-logs',
         title: 'Audit Logs',
         href: '/admin-audit-logs',
@@ -72,14 +79,6 @@ const navItems: NavItem[] = [
         icon: PermissionManagementIcon,
         requiredPermission: Permission.VIEW_ROLE_MANAGEMENT
     },
-
-    // {
-    //     key: 'admin-settings',
-    //     title: 'System Settings',
-    //     href: '/admin-settings',
-    //     icon: SettingsIcon,
-    //     requiredPermission: Permission.VIEW_ADMIN_SETTINGS,
-    // },
 ];
 
 export function SideNav(): React.JSX.Element {
