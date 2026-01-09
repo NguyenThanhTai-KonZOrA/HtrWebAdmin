@@ -349,10 +349,10 @@ export default function AdminManageDevicePage() {
                                                 <TableCell>IP Address</TableCell>
                                                 <TableCell>MAC Address</TableCell>
                                                 <TableCell>Staff Username</TableCell>
-                                                <TableCell>Status</TableCell>
                                                 <TableCell>Online</TableCell>
                                                 <TableCell>Last Heartbeat</TableCell>
-                                                <TableCell align="center">Actions</TableCell>
+                                                <TableCell>Status</TableCell>
+                                                {/* <TableCell align="center">Actions</TableCell> */}
                                             </TableRow>
                                         </TableHead>
                                         <TableBody>
@@ -382,15 +382,6 @@ export default function AdminManageDevicePage() {
                                                     </TableCell>
                                                     <TableCell>{device.staffUserName || "N/A"}</TableCell>
                                                     <TableCell>
-                                                        <Tooltip title={device.isActive ? "Click to deactivate" : "Click to activate"}>
-                                                            <Switch
-                                                                checked={device.isActive}
-                                                                onChange={() => handleToggleStatus(device)}
-                                                                color="success"
-                                                            />
-                                                        </Tooltip>
-                                                    </TableCell>
-                                                    <TableCell>
                                                         {device.isOnline ? (
                                                             <Chip
                                                                 icon={<OnlineIcon />}
@@ -412,7 +403,16 @@ export default function AdminManageDevicePage() {
                                                             {formatDate(device.lastHeartbeat)}
                                                         </Typography>
                                                     </TableCell>
-                                                    <TableCell align="center">
+                                                    <TableCell>
+                                                        <Tooltip title={device.isActive ? "Click to deactivate" : "Click to activate"}>
+                                                            <Switch
+                                                                checked={device.isActive}
+                                                                onChange={() => handleToggleStatus(device)}
+                                                                color="success"
+                                                            />
+                                                        </Tooltip>
+                                                    </TableCell>
+                                                    {/* <TableCell align="center">
                                                         <Stack direction="row" spacing={1} justifyContent="center">
                                                             <Tooltip title="Change Hostname">
                                                                 <IconButton
@@ -433,7 +433,7 @@ export default function AdminManageDevicePage() {
                                                                 </IconButton>
                                                             </Tooltip>
                                                         </Stack>
-                                                    </TableCell>
+                                                    </TableCell> */}
                                                 </TableRow>
                                             ))}
                                         </TableBody>

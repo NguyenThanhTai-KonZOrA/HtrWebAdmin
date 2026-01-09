@@ -131,6 +131,12 @@ const AdminRegistrationPage: React.FC = () => {
     // Server-side pagination states
     const [newRegTotalRecords, setNewRegTotalRecords] = useState(0);
     const [membershipTotalRecords, setMembershipTotalRecords] = useState(0);
+    const [totalRegistrationManualNew, setTotalRegistrationManualNew] = useState(0);
+    const [totalRegistrationOnlineNew, setTotalRegistrationOnlineNew] = useState(0);
+
+    const [totalRegistrationManualMembership, setTotalRegistrationManualMembership] = useState(0);
+    const [totalRegistrationOnlineMembership, setTotalRegistrationOnlineMembership] = useState(0);
+
     const [newRegServerSearch, setNewRegServerSearch] = useState('');
     const [membershipServerSearch, setMembershipServerSearch] = useState('');
 
@@ -494,6 +500,8 @@ const AdminRegistrationPage: React.FC = () => {
             const response = await patronService.getAllPatronsWithPagination(request);
             setNewRegistrations(response.data);
             setNewRegTotalRecords(response.totalRecords);
+            setTotalRegistrationManualNew(response.totalRegistrationManual);
+            setTotalRegistrationOnlineNew(response.totalRegistrationOnline);
         } catch (err) {
             console.error('Error loading new registrations:', err);
             showSnackbar('Failed to load new registrations', 'error');
@@ -519,6 +527,8 @@ const AdminRegistrationPage: React.FC = () => {
             const response = await patronService.getAllPatronsWithPagination(request);
             setMemberships(response.data);
             setMembershipTotalRecords(response.totalRecords);
+            setTotalRegistrationManualMembership(response.totalRegistrationManual);
+            setTotalRegistrationOnlineMembership(response.totalRegistrationOnline);
         } catch (err) {
             console.error('Error loading memberships:', err);
             showSnackbar('Failed to load memberships', 'error');
@@ -1915,8 +1925,8 @@ const AdminRegistrationPage: React.FC = () => {
                         <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
                             <Typography variant="h6">
                                 New Registration ({newRegSearch.trim() && !newRegServerSearch ? filteredNewRegistrations.length : newRegTotalRecords})
-                                {/* &nbsp;&nbsp;<Chip label={`Online ${filteredNewRegistrations.filter(reg => reg.submitType === 1).length}`} color="success" size="small" />
-                                &nbsp;&nbsp;<Chip label={`Manual ${filteredNewRegistrations.filter(reg => reg.submitType === 2).length}`} color="secondary" size="small" /> */}
+                                &nbsp;&nbsp;<Chip label={`Online ${totalRegistrationOnlineNew}`} color="success" size="small" />
+                                &nbsp;&nbsp;<Chip label={`Manual ${totalRegistrationManualNew}`} color="secondary" size="small" />
                             </Typography>
                             <Box display="flex" gap={1} alignItems="center">
                                 <TextField
@@ -2002,6 +2012,8 @@ const AdminRegistrationPage: React.FC = () => {
                         <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
                             <Typography variant="h6">
                                 Membership ({membershipSearch.trim() && !membershipServerSearch ? filteredMemberships.length : membershipTotalRecords})
+                                &nbsp;&nbsp;<Chip label={`Online ${totalRegistrationOnlineMembership}`} color="success" size="small" />
+                                &nbsp;&nbsp;<Chip label={`Manual ${totalRegistrationManualMembership}`} color="secondary" size="small" />
                             </Typography>
                             <Box display="flex" gap={1} alignItems="center">
                                 <TextField

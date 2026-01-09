@@ -109,7 +109,9 @@ export const patronService = {
                 pageSize: result.pageSize || request.Take || 10,
                 totalPages: result.totalPages || Math.ceil((result.totalRecords || result.total || 0) / (request.Take || 10)),
                 hasPrevious: result.hasPrevious || false,
-                hasNext: result.hasNext || false
+                hasNext: result.hasNext || false,
+                totalRegistrationManual: result.totalRegistrationManual || 0,
+                totalRegistrationOnline: result.totalRegistrationOnline || 0,
             } as PatronPagingResponse;
         }
 
@@ -122,7 +124,9 @@ export const patronService = {
             pageSize: dataArray.length,
             totalPages: 1,
             hasPrevious: false,
-            hasNext: false
+            hasNext: false,
+            totalRegistrationManual: 0,
+            totalRegistrationOnline: 0
         } as PatronPagingResponse;
     },
 

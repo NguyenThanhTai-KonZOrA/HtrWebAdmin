@@ -29,6 +29,8 @@ export interface PatronPagingRequest {
 
 export interface PatronPagingResponse {
     totalRecords: number;
+    totalRegistrationManual: number;
+    totalRegistrationOnline: number;
     data: PatronResponse[];
 }
 
