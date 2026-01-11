@@ -334,3 +334,15 @@ export interface AuditLogsRegisterMembershipResponse {
     details: string;
     playerName: string;
 }
+
+export interface SyncIncomeDocumentRequest {
+    OldPlayerId?: number;
+    NewPlayerId?: number;
+}
+
+export interface SyncIncomeDocumentResponse {
+    mappedBatches: number;
+    mappedFiles: number;
+    errors: string[];
+    newFilesUrl: string[];
+}

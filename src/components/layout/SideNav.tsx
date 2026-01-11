@@ -16,6 +16,7 @@ import {
     AssignmentInd as RoleManagementIcon,
     VerifiedUser as PermissionManagementIcon,
     People as PeopleIcon,
+    CloudSync as CloudSyncIcon
 } from '@mui/icons-material';
 import { useSidebar } from '../../contexts/SidebarContext';
 import { usePermission } from '../../hooks/usePermission';
@@ -28,6 +29,13 @@ const navItems: NavItem[] = [
         title: 'Registration Management',
         href: '/admin-registration',
         icon: PersonAddIcon,
+        requiredPermission: Permission.VIEW_ADMIN_REGISTRATION,
+    },
+    {
+        key: 'admin-migration-income-documents',
+        title: 'Income Documents Migration',
+        href: '/admin-migration-income-documents',
+        icon: CloudSyncIcon,
         requiredPermission: Permission.VIEW_ADMIN_REGISTRATION,
     },
     {

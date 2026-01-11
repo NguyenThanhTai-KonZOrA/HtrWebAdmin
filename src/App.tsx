@@ -20,6 +20,7 @@ import AdminEmployeePage from './pages/AdminEmployeePage'
 import AdminPermissionPage from './pages/AdminPermissionPage'
 import AdminRolePage from './pages/AdminRolePage'
 import AdminManageDevicePage from './pages/AdminManageDevicePage'
+import AdminSyncIncomeDocumentPage from './pages/AdminSyncIncomeDocumentPage'
 
 function AppContent() {
   const networkStatus = useNetworkStatus();
@@ -143,6 +144,18 @@ function AppContent() {
               showAccessDenied={true}
             >
               <AdminManageDevicePage />
+            </RoleBasedRoute>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/admin-migration-income-documents" element={
+          <ProtectedRoute>
+            <RoleBasedRoute
+              requiredPermission={Permission.VIEW_ROLE_MANAGEMENT}
+              fallbackPath="/admin-devices"
+              showAccessDenied={true}
+            >
+              <AdminSyncIncomeDocumentPage />
             </RoleBasedRoute>
           </ProtectedRoute>
         } />

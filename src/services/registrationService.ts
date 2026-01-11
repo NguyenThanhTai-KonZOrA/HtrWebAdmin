@@ -1,6 +1,6 @@
 import axios from "axios";
 import { showSessionExpiredNotification } from '../utils/sessionExpiredNotification';
-import type { AuditLogPaginationRequest, AuditLogPaginationResponse, AuditLogResponse, AuditLogsRegisterMembershipPaginationResponse, AuditLogsRegisterMembershipRequest, CheckPatronIdentificationRequest, CheckValidIncomeRequest, CheckValidIncomeResponse, CountryResponse, CreateMappingRequest, CreateMappingResponse, CurrentHostNameResponse, CurrentStaffDeviceResponse, GetAllMappingsResponse, GetMappingByStaffDeviceResponse, IncomeFileResponse, MappingDataResponse, OnlineStaffDevicesResponse, PatronImagesResponse, PatronPagingRequest, PatronPagingResponse, PatronRegisterMembershipRequest, PatronRegisterMembershipResponse, PatronResponse, RenderDocumentResponse, StaffAndPatronDevicesResponse, StaffSignatureRequest, SyncPatronImagesRequest, UpdateMappingRequest, UpdateMappingResponse } from "../registrationType";
+import type { AuditLogPaginationRequest, AuditLogPaginationResponse, AuditLogResponse, AuditLogsRegisterMembershipPaginationResponse, AuditLogsRegisterMembershipRequest, CheckPatronIdentificationRequest, CheckValidIncomeRequest, CheckValidIncomeResponse, CountryResponse, CreateMappingRequest, CreateMappingResponse, CurrentHostNameResponse, CurrentStaffDeviceResponse, GetAllMappingsResponse, GetMappingByStaffDeviceResponse, IncomeFileResponse, MappingDataResponse, OnlineStaffDevicesResponse, PatronImagesResponse, PatronPagingRequest, PatronPagingResponse, PatronRegisterMembershipRequest, PatronRegisterMembershipResponse, PatronResponse, RenderDocumentResponse, StaffAndPatronDevicesResponse, StaffSignatureRequest, SyncIncomeDocumentRequest, SyncIncomeDocumentResponse, SyncPatronImagesRequest, UpdateMappingRequest, UpdateMappingResponse } from "../registrationType";
 import type { SettingsResponse, CreateSettingsRequest, SettingsInfoResponse, ClearCacheSettingResponse, UpdateSettingsRequest, UpdateSettingsResponse, EmployeePerformanceRequest, EmployeePerformanceResponse, ManageDeviceResponse, ToggleDeviceRequest, DeleteDeviceRequest, ChangeHostnameRequest } from "../type";
 
 const API_BASE = (window as any)._env_?.API_BASE;
@@ -421,6 +421,22 @@ export const manageDeviceService = {
 
     changeHostname: async (request: ChangeHostnameRequest): Promise<boolean> => {
         const response = await api.post<ApiEnvelope<boolean>>(`/api/ManageDevice/change-hostname`, request);
+        return unwrapApiEnvelope(response);
+    }
+};
+
+export const syncService = {
+    syncIncomeDocumentsByExcel: async (formData: FormData): Promise<SyncIncomeDocumentResponse> => {
+        const response = await api.post<ApiEnvelope<SyncIncomeDocumentResponse>>("/api/SyncData/income/excel", formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        });
+        return unwrapApiEnvelope(response);
+    },
+
+    syncSinglePlayerIncomeDocument: async (request: SyncIncomeDocumentRequest): Promise<SyncIncomeDocumentResponse> => {
+        const response = await api.post<ApiEnvelope<SyncIncomeDocumentResponse>>("/api/SyncData/income/single-player", request);
         return unwrapApiEnvelope(response);
     }
 };
