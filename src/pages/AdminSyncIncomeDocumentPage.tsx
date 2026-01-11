@@ -61,6 +61,7 @@ interface ValidationResult {
 export default function AdminSyncIncomeDocumentPage() {
     useSetPageTitle("Income Documents Migration");
 
+    const API_BASE = (window as any)._env_?.API_BASE;
     // Single Player Sync States
     const [oldPlayerId, setOldPlayerId] = useState("");
     const [newPlayerId, setNewPlayerId] = useState("");
@@ -276,6 +277,7 @@ export default function AdminSyncIncomeDocumentPage() {
                                     sx={{ mb: 2 }}
                                     disabled={singleSyncLoading}
                                     inputProps={{ min: 1 }}
+                                    size="medium"
                                 />
 
                                 <TextField
@@ -287,6 +289,7 @@ export default function AdminSyncIncomeDocumentPage() {
                                     sx={{ mb: 2 }}
                                     disabled={singleSyncLoading}
                                     inputProps={{ min: 1 }}
+                                    size="medium"
                                 />
 
                                 <Button
@@ -296,6 +299,7 @@ export default function AdminSyncIncomeDocumentPage() {
                                     startIcon={<SyncIcon />}
                                     onClick={handleSinglePlayerSync}
                                     disabled={!isSingleSyncEnabled || singleSyncLoading}
+                                    size="large"
                                 >
                                     {singleSyncLoading ? "Syncing..." : "Sync Single Player"}
                                 </Button>
@@ -320,6 +324,7 @@ export default function AdminSyncIncomeDocumentPage() {
                                     onClick={handleDownloadTemplate}
                                     fullWidth
                                     sx={{ mb: 2 }}
+                                    size="large"
                                 >
                                     Download Template
                                 </Button>
@@ -337,6 +342,7 @@ export default function AdminSyncIncomeDocumentPage() {
                                         component="span"
                                         fullWidth
                                         startIcon={<UploadIcon />}
+                                        size="large"
                                     >
                                         Upload Excel File
                                     </Button>
@@ -549,7 +555,7 @@ export default function AdminSyncIncomeDocumentPage() {
                                                     <ListItemText
                                                         primary={
                                                             <Link
-                                                                href={url}
+                                                                href={`${API_BASE}${url}`}
                                                                 target="_blank"
                                                                 rel="noopener noreferrer"
                                                                 sx={{

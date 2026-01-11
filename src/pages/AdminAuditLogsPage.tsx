@@ -316,17 +316,23 @@ const AdminAuditLogsPage: React.FC = () => {
                                         />
                                     </Box>
 
-                                    {/* User Name */}
+                                    {/* Status */}
                                     <Box sx={{ minWidth: 200, flex: '1 1 200px' }}>
-                                        <TextField
-                                            label="User Name"
-                                            value={userName}
-                                            onChange={(e) => setUserName(e.target.value)}
-                                            size="small"
-                                            fullWidth
-                                            placeholder="Search by username..."
-                                        />
+                                        <FormControl fullWidth size="small">
+                                            <InputLabel>Status</InputLabel>
+                                            <Select
+                                                value={isSuccess}
+                                                onChange={(e) => setIsSuccess(e.target.value)}
+                                                label="Status"
+                                            >
+                                                <MenuItem value="All">All</MenuItem>
+                                                <MenuItem value="Success">Success</MenuItem>
+                                                <MenuItem value="Failed">Failed</MenuItem>
+                                            </Select>
+                                        </FormControl>
                                     </Box>
+
+
 
                                     {/* Entity Type */}
                                     <Box sx={{ minWidth: 200, flex: '1 1 200px' }}>
@@ -364,20 +370,16 @@ const AdminAuditLogsPage: React.FC = () => {
                                         </FormControl>
                                     </Box>
 
-                                    {/* Status */}
-                                    <Box sx={{ minWidth: 200, flex: '1 1 200px' }}>
-                                        <FormControl fullWidth size="small">
-                                            <InputLabel>Status</InputLabel>
-                                            <Select
-                                                value={isSuccess}
-                                                onChange={(e) => setIsSuccess(e.target.value)}
-                                                label="Status"
-                                            >
-                                                <MenuItem value="All">All</MenuItem>
-                                                <MenuItem value="Success">Success</MenuItem>
-                                                <MenuItem value="Failed">Failed</MenuItem>
-                                            </Select>
-                                        </FormControl>
+                                    {/* User Name */}
+                                    <Box >
+                                        <TextField
+                                            label="User Name"
+                                            value={userName}
+                                            onChange={(e) => setUserName(e.target.value)}
+                                            size="small"
+                                            fullWidth
+                                            placeholder="Search by username..."
+                                        />
                                     </Box>
 
                                     {/* Action Buttons */}

@@ -17,7 +17,8 @@ import {
     AssignmentInd as RoleManagementIcon,
     VerifiedUser as PermissionManagementIcon,
     People as PeopleIcon,
-    CloudSync as CloudSyncIcon
+    CloudSync as CloudSyncIcon,
+    Devices as DevicesIcon,
 } from '@mui/icons-material';
 import type { NavItem } from '../../commonType';
 import { Permission } from '../../constants/roles';
@@ -49,7 +50,7 @@ const navItems: NavItem[] = [
         key: 'admin-devices',
         title: 'Device Management',
         href: '/admin-devices',
-        icon: SettingsIcon,
+        icon: DevicesIcon,
         requiredPermission: Permission.VIEW_ROLE_MANAGEMENT,
     },
     {

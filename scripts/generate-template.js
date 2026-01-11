@@ -9,8 +9,8 @@ const __dirname = dirname(__filename);
 // Create worksheet data
 const wsData = [
     ['OldPlayerId', 'NewPlayerId'],
-    [12345, 67890],
-    [11111, 22222],
+    [1234, 100001234],
+    [1111, 100001111],
 ];
 
 // Create workbook and worksheet
