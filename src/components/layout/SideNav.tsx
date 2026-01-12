@@ -37,7 +37,7 @@ const navItems: NavItem[] = [
         title: 'Income Documents Migration',
         href: '/admin-migration-income-documents',
         icon: CloudSyncIcon,
-        requiredPermission: Permission.VIEW_ADMIN_REGISTRATION,
+        requiredPermission: Permission.VIEW_MIGRATION_INCOME,
     },
     {
         key: 'admin-device-mapping',

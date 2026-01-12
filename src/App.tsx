@@ -151,7 +151,7 @@ function AppContent() {
         <Route path="/admin-migration-income-documents" element={
           <ProtectedRoute>
             <RoleBasedRoute
-              requiredPermission={Permission.VIEW_ROLE_MANAGEMENT}
+              requiredPermission={Permission.VIEW_MIGRATION_INCOME}
               fallbackPath="/admin-devices"
               showAccessDenied={true}
             >
