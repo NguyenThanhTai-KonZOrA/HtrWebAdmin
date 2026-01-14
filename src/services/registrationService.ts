@@ -1,7 +1,8 @@
 import axios from "axios";
 import { showSessionExpiredNotification } from '../utils/sessionExpiredNotification';
-import type { AuditLogPaginationRequest, AuditLogPaginationResponse, AuditLogResponse, AuditLogsRegisterMembershipPaginationResponse, AuditLogsRegisterMembershipRequest, CheckPatronIdentificationRequest, CheckValidIncomeRequest, CheckValidIncomeResponse, CityResponse, CountryResponse, CreateMappingRequest, CreateMappingResponse, CurrentHostNameResponse, CurrentStaffDeviceResponse, GetAllMappingsResponse, GetMappingByStaffDeviceResponse, IncomeFileResponse, MappingDataResponse, OnlineStaffDevicesResponse, PatronImagesResponse, PatronPagingRequest, PatronPagingResponse, PatronRegisterMembershipRequest, PatronRegisterMembershipResponse, PatronResponse, RenderDocumentResponse, StaffAndPatronDevicesResponse, StaffSignatureRequest, SyncIncomeDocumentRequest, SyncIncomeDocumentResponse, SyncPatronImagesRequest, UpdateMappingRequest, UpdateMappingResponse } from "../registrationType";
+import type { AuditLogPaginationRequest, AuditLogPaginationResponse, AuditLogResponse, AuditLogsRegisterMembershipPaginationResponse, AuditLogsRegisterMembershipRequest, CheckPatronIdentificationRequest, CheckValidIncomeRequest, CheckValidIncomeResponse, CityResponse, CountryResponse, CreateMappingRequest, CreateMappingResponse, CurrentHostNameResponse, CurrentStaffDeviceResponse, GetAllMappingsResponse, GetMappingByStaffDeviceResponse, IncomeFileResponse, MappingDataResponse, OnlineStaffDevicesResponse, PatronFilterRequest, PatronImagesResponse, PatronPagingRequest, PatronPagingResponse, PatronRegisterMembershipRequest, PatronRegisterMembershipResponse, PatronResponse, RenderDocumentResponse, StaffAndPatronDevicesResponse, StaffSignatureRequest, SyncIncomeDocumentRequest, SyncIncomeDocumentResponse, SyncPatronImagesRequest, UpdateMappingRequest, UpdateMappingResponse } from "../registrationType";
 import type { SettingsResponse, CreateSettingsRequest, SettingsInfoResponse, ClearCacheSettingResponse, UpdateSettingsRequest, UpdateSettingsResponse, EmployeePerformanceRequest, EmployeePerformanceResponse, ManageDeviceResponse, ToggleDeviceRequest, DeleteDeviceRequest, ChangeHostnameRequest } from "../type";
+import { FormatUtcTime } from "../utils/formatUtcTime";
 
 const API_BASE = (window as any)._env_?.API_BASE;
 const api = axios.create({
@@ -158,6 +159,73 @@ export const patronService = {
     syncPatronImages: async (request: SyncPatronImagesRequest): Promise<void> => {
         const response = await api.post<ApiEnvelope<void>>(`/api/RegistrationAdmin/patron/sync-images`, request);
         return unwrapApiEnvelope(response);
+    },
+
+    getAllPatronsReportPagination: async (request: PatronFilterRequest): Promise<PatronPagingResponse> => {
+        const response = await api.post<ApiEnvelope<PatronPagingResponse>>("/api/RegistrationAdmin/patron/filter", request);
+        const result = unwrapApiEnvelope(response) as any;
+
+        // If the API returns an object with pagination info
+        if (result && typeof result === 'object' && !Array.isArray(result)) {
+            return {
+                data: result.data || result.list || [],
+                totalRecords: result.totalRecords || result.total || 0,
+                page: result.page || 1,
+                pageSize: result.pageSize || request.Take || 10,
+                totalPages: result.totalPages || Math.ceil((result.totalRecords || result.total || 0) / (request.Take || 10)),
+                hasPrevious: result.hasPrevious || false,
+                hasNext: result.hasNext || false,
+                totalRegistrationManual: result.totalRegistrationManual || 0,
+                totalRegistrationOnline: result.totalRegistrationOnline || 0,
+            } as PatronPagingResponse;
+        }
+
+        // If the API returns an array directly (legacy), wrap it in pagination structure
+        const dataArray = Array.isArray(result) ? result : [];
+        return {
+            data: dataArray,
+            totalRecords: dataArray.length,
+            page: 1,
+            pageSize: dataArray.length,
+            totalPages: 1,
+            hasPrevious: false,
+            hasNext: false,
+            totalRegistrationManual: 0,
+            totalRegistrationOnline: 0
+        } as PatronPagingResponse;
+    },
+
+    exportPatronFilter: async (request: PatronFilterRequest): Promise<void> => {
+        try {
+            const response = await api.post(`/api/RegistrationAdmin/patron/filter/export`, request, {
+                responseType: 'blob'
+            });
+            const blob = response.data;
+            const cd = response.headers['content-disposition'] || '';
+            const match = /filename\*?=(?:UTF-8''|")?([^\";]+)/i.exec(cd);
+            const serverFileName = `Registration_Report_From_${FormatUtcTime.formatDateWithoutTime(request.FromDate)}_To_${FormatUtcTime.formatDateWithoutTime(request.ToDate)}.xlsx`;
+
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = serverFileName;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (error: any) {
+            if (error.response?.data instanceof Blob) {
+                // If error response is JSON wrapped in Blob
+                const text = await error.response.data.text();
+                try {
+                    const envelope = JSON.parse(text) as ApiEnvelope<unknown>;
+                    throw new Error(getErrorMessage(envelope.data, `HTTP ${error.response.status}`));
+                } catch {
+                    throw new Error(`HTTP ${error.response?.status || 'Unknown error'}`);
+                }
+            }
+            throw error;
+        }
     }
 };
 

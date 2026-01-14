@@ -354,3 +354,14 @@ export interface CityResponse {
     city: string;
     postalCode: string;
 }
+
+export interface PatronFilterRequest {
+    Page: number;
+    PageSize: number;
+    Take?: number;
+    Skip?: number;
+    FromDate?: string;
+    ToDate?: string;
+    IsMembership?: boolean; // True for members, false for non-members
+    Type?: number; // Manual, Online
+}

@@ -19,6 +19,7 @@ import {
     People as PeopleIcon,
     CloudSync as CloudSyncIcon,
     Devices as DevicesIcon,
+    AssessmentTwoTone as AssessmentIcon
 } from '@mui/icons-material';
 import type { NavItem } from '../../commonType';
 import { Permission } from '../../constants/roles';
@@ -30,6 +31,13 @@ const navItems: NavItem[] = [
         title: 'Registration Management',
         href: '/admin-registration',
         icon: PersonAddIcon,
+        requiredPermission: Permission.VIEW_ADMIN_REGISTRATION,
+    },
+    {
+        key: 'admin-registration-report',
+        title: 'Registration Report',
+        href: '/admin-registration-report',
+        icon: AssessmentIcon,
         requiredPermission: Permission.VIEW_ADMIN_REGISTRATION,
     },
     {

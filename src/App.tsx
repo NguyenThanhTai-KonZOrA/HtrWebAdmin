@@ -21,6 +21,7 @@ import AdminPermissionPage from './pages/AdminPermissionPage'
 import AdminRolePage from './pages/AdminRolePage'
 import AdminManageDevicePage from './pages/AdminManageDevicePage'
 import AdminSyncIncomeDocumentPage from './pages/AdminSyncIncomeDocumentPage'
+import AdminRegistrationReport from './pages/AdminRegistrationReport'
 
 function AppContent() {
   const networkStatus = useNetworkStatus();
@@ -156,6 +157,18 @@ function AppContent() {
               showAccessDenied={true}
             >
               <AdminSyncIncomeDocumentPage />
+            </RoleBasedRoute>
+          </ProtectedRoute>
+        } />
+
+        <Route path="/admin-registration-report" element={
+          <ProtectedRoute>
+            <RoleBasedRoute
+              requiredPermission={Permission.VIEW_REPORTS}
+              fallbackPath="/admin-registration-report"
+              showAccessDenied={true}
+            >
+              <AdminRegistrationReport />
             </RoleBasedRoute>
           </ProtectedRoute>
         } />

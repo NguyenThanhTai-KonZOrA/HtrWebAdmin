@@ -17,7 +17,8 @@ import {
     VerifiedUser as PermissionManagementIcon,
     People as PeopleIcon,
     CloudSync as CloudSyncIcon,
-    Devices as DevicesIcon
+    Devices as DevicesIcon,
+    AssessmentTwoTone as AssessmentIcon
 } from '@mui/icons-material';
 import { useSidebar } from '../../contexts/SidebarContext';
 import { usePermission } from '../../hooks/usePermission';
@@ -31,6 +32,13 @@ const navItems: NavItem[] = [
         href: '/admin-registration',
         icon: PersonAddIcon,
         requiredPermission: Permission.VIEW_ADMIN_REGISTRATION,
+    },
+    {
+        key: 'admin-registration-report',
+        title: 'Registration Report',
+        href: '/admin-registration-report',
+        icon: AssessmentIcon,
+        requiredPermission: Permission.VIEW_REPORTS,
     },
     {
         key: 'admin-migration-income-documents',
