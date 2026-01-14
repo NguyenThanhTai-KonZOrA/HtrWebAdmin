@@ -1,6 +1,6 @@
 import axios from "axios";
 import { showSessionExpiredNotification } from '../utils/sessionExpiredNotification';
-import type { AuditLogPaginationRequest, AuditLogPaginationResponse, AuditLogResponse, AuditLogsRegisterMembershipPaginationResponse, AuditLogsRegisterMembershipRequest, CheckPatronIdentificationRequest, CheckValidIncomeRequest, CheckValidIncomeResponse, CountryResponse, CreateMappingRequest, CreateMappingResponse, CurrentHostNameResponse, CurrentStaffDeviceResponse, GetAllMappingsResponse, GetMappingByStaffDeviceResponse, IncomeFileResponse, MappingDataResponse, OnlineStaffDevicesResponse, PatronImagesResponse, PatronPagingRequest, PatronPagingResponse, PatronRegisterMembershipRequest, PatronRegisterMembershipResponse, PatronResponse, RenderDocumentResponse, StaffAndPatronDevicesResponse, StaffSignatureRequest, SyncIncomeDocumentRequest, SyncIncomeDocumentResponse, SyncPatronImagesRequest, UpdateMappingRequest, UpdateMappingResponse } from "../registrationType";
+import type { AuditLogPaginationRequest, AuditLogPaginationResponse, AuditLogResponse, AuditLogsRegisterMembershipPaginationResponse, AuditLogsRegisterMembershipRequest, CheckPatronIdentificationRequest, CheckValidIncomeRequest, CheckValidIncomeResponse, CityResponse, CountryResponse, CreateMappingRequest, CreateMappingResponse, CurrentHostNameResponse, CurrentStaffDeviceResponse, GetAllMappingsResponse, GetMappingByStaffDeviceResponse, IncomeFileResponse, MappingDataResponse, OnlineStaffDevicesResponse, PatronImagesResponse, PatronPagingRequest, PatronPagingResponse, PatronRegisterMembershipRequest, PatronRegisterMembershipResponse, PatronResponse, RenderDocumentResponse, StaffAndPatronDevicesResponse, StaffSignatureRequest, SyncIncomeDocumentRequest, SyncIncomeDocumentResponse, SyncPatronImagesRequest, UpdateMappingRequest, UpdateMappingResponse } from "../registrationType";
 import type { SettingsResponse, CreateSettingsRequest, SettingsInfoResponse, ClearCacheSettingResponse, UpdateSettingsRequest, UpdateSettingsResponse, EmployeePerformanceRequest, EmployeePerformanceResponse, ManageDeviceResponse, ToggleDeviceRequest, DeleteDeviceRequest, ChangeHostnameRequest } from "../type";
 
 const API_BASE = (window as any)._env_?.API_BASE;
@@ -199,6 +199,13 @@ export const incomeDocumentService = {
 export const countryService = {
     getCountries: async (): Promise<CountryResponse[]> => {
         const response = await api.get<ApiEnvelope<CountryResponse[]>>("/api/Country/full");
+        return unwrapApiEnvelope(response);
+    }
+};
+
+export const cityService = {
+    getCities: async (): Promise<CityResponse[]> => {
+        const response = await api.get<ApiEnvelope<CityResponse[]>>("/api/City/all");
         return unwrapApiEnvelope(response);
     }
 };

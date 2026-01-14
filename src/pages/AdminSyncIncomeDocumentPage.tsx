@@ -83,7 +83,6 @@ export default function AdminSyncIncomeDocumentPage() {
         try {
             setSingleSyncLoading(true);
             setError(null);
-            debugger
             const request: SyncIncomeDocumentRequest = {
                 OldPlayerId: parseInt(oldPlayerId),
                 NewPlayerId: parseInt(newPlayerId),

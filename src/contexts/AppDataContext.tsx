@@ -1,10 +1,11 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import { countryService, staffDeviceService } from '../services/registrationService';
-import type { CountryResponse, CurrentStaffDeviceResponse } from '../registrationType';
+import { cityService, countryService, staffDeviceService } from '../services/registrationService';
+import type { CityResponse, CountryResponse, CurrentStaffDeviceResponse } from '../registrationType';
 import { signalRService } from '../services/signalRService';
 
 interface AppDataContextType {
+    cities: CityResponse[];
     countries: CountryResponse[];
     staffDevice: CurrentStaffDeviceResponse | null;
     loading: boolean;
@@ -17,6 +18,7 @@ const AppDataContext = createContext<AppDataContextType | undefined>(undefined);
 
 export const AppDataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [countries, setCountries] = useState<CountryResponse[]>([]);
+    const [cities, setCities] = useState<CityResponse[]>([]);
     const [staffDevice, setStaffDevice] = useState<CurrentStaffDeviceResponse | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -31,6 +33,16 @@ export const AppDataProvider: React.FC<{ children: ReactNode }> = ({ children })
         }
     };
 
+    const fetchCities = async () => {
+        try {
+            const data = await cityService.getCities();
+            setCities(data);
+        } catch (err) {
+            console.error('Error fetching cities:', err);
+            setError('Failed to load cities');
+        }
+    };
+
     const fetchStaffDevice = async () => {
         try {
             console.log('🔄 [AppDataContext] Fetching staff device...');
@@ -39,13 +51,13 @@ export const AppDataProvider: React.FC<{ children: ReactNode }> = ({ children })
             console.log('📱 [AppDataContext] staffDeviceId:', data?.staffDeviceId);
             console.log('💻 [AppDataContext] deviceName:', data?.deviceName);
             setStaffDevice(data);
-            
+
             // ✅ Initialize SignalR IMMEDIATELY after getting staffDevice from API
             if (data?.staffDeviceId && data?.deviceName) {
                 console.log('🚀 [AppDataContext] Initializing SignalR with API data...');
                 console.log('   staffDeviceId:', data.staffDeviceId);
                 console.log('   deviceName:', data.deviceName);
-                
+
                 try {
                     await signalRService.startConnection(data.staffDeviceId, data.deviceName);
                     console.log('✅ [AppDataContext] SignalR initialized successfully');
@@ -67,12 +79,13 @@ export const AppDataProvider: React.FC<{ children: ReactNode }> = ({ children })
             console.log('🚀 [AppDataContext] Loading initial data...');
             setLoading(true);
             setError(null);
-            
+
             await Promise.all([
                 fetchCountries(),
+                fetchCities(),
                 fetchStaffDevice() // This now also initializes SignalR
             ]);
-            
+
             setLoading(false);
             console.log('✅ [AppDataContext] Initial data loaded successfully');
         };
@@ -81,10 +94,12 @@ export const AppDataProvider: React.FC<{ children: ReactNode }> = ({ children })
     }, []);
 
     const value = {
+        cities,
         countries,
         staffDevice,
         loading,
         error,
+        refetchCities: fetchCities,
         refetchCountries: fetchCountries,
         refetchStaffDevice: fetchStaffDevice
     };

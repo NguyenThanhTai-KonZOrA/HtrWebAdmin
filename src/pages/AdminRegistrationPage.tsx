@@ -34,7 +34,8 @@ import {
     FormControlLabel,
     FormLabel,
     Snackbar,
-    Alert
+    Alert,
+    Autocomplete
 } from '@mui/material';
 import {
     Visibility as VisibilityIcon,
@@ -109,7 +110,8 @@ const AdminRegistrationPage: React.FC = () => {
     useSetPageTitle(PAGE_TITLES.REGISTRATION);
 
     // Get global data from context
-    const { countries, staffDevice, loading: contextLoading } = useAppData();
+    const { cities, countries, staffDevice, loading: contextLoading } = useAppData();
+    // 
 
     // Only initialize SignalR after context has loaded and we have staffDeviceId
     // This prevents the "staffDeviceId is null" issue
@@ -366,7 +368,8 @@ const AdminRegistrationPage: React.FC = () => {
             selectedPatron.birthday !== editedPatron.birthday ||
             selectedPatron.address !== editedPatron.address ||
             selectedPatron.addressInVietNam !== editedPatron.addressInVietNam ||
-            selectedPatron.country !== editedPatron.country
+            selectedPatron.country !== editedPatron.country ||
+            selectedPatron.city !== editedPatron.city
         );
 
         setHasUnsavedChanges(hasChanges);
@@ -1062,6 +1065,17 @@ const AdminRegistrationPage: React.FC = () => {
                     delete errors.country;
                 }
                 break;
+            case 'city':
+                if (editedPatron.identificationCountry !== String(VIETNAM_COUNTRY_ID)) {
+                    if (!value?.trim()) {
+                        errors.city = 'City is required for non-Vietnamese nationals';
+                    } else {
+                        delete errors.city;
+                    }
+                } else {
+                    delete errors.city;
+                }
+                break;
         }
 
         setValidationErrors(errors);
@@ -1154,6 +1168,12 @@ const AdminRegistrationPage: React.FC = () => {
 
         if (!editedPatron.country?.trim()) {
             errors.country = 'Country is required';
+        }
+
+        if (editedPatron.identificationCountry === String(VIETNAM_COUNTRY_ID)) {
+            if (!editedPatron.city?.trim()) {
+                errors.city = 'City is required for non-Vietnamese nationals';
+            }
         }
 
         setValidationErrors(errors);
@@ -1785,6 +1805,12 @@ const AdminRegistrationPage: React.FC = () => {
         return country?.countryDescription || countryId;
     };
 
+    // Get city name by ID
+    const getCityName = (cityId: string): string => {
+        const city = cities.find(c => String(c.city) === cityId);
+        return city?.city || cityId;
+    };
+
     // Render table
     const renderTable = (data: PatronResponse[]) => (
         <TableContainer component={Paper} sx={{ maxHeight: 600 }}>
@@ -2159,14 +2185,14 @@ const AdminRegistrationPage: React.FC = () => {
                                             </Typography>
 
                                             {/** Sync Images Button */}
-                                            {/* {selectedPatron.isHaveMembership ? (
+                                            {selectedPatron.isHaveMembership ? (
                                                 <Button onClick={handleSyncImages} variant="contained" disabled={syncingImages}>
                                                     <CloudSyncIcon sx={{ mr: 1 }} /> Sync Images
                                                 </Button>
                                             ) : (
                                                 <Typography variant="body2" color="text.secondary">
                                                 </Typography>
-                                            )} */}
+                                            )}
                                         </Box>
                                         {patronImages ? (
                                             <Stack direction="row" spacing={3} justifyContent="center">
@@ -2477,28 +2503,30 @@ const AdminRegistrationPage: React.FC = () => {
                                                         ) : null
                                                     }}
                                                 />
-
-                                                <FormControl fullWidth disabled={!isEditing} error={!!validationErrors.identificationCountry} size="small">
-                                                    <InputLabel>Nationality *</InputLabel>
-                                                    <Select
-                                                        value={
-                                                            editedPatron.identificationCountry &&
-                                                                countries.some(c => String(c.countryID) === editedPatron.identificationCountry)
-                                                                ? editedPatron.identificationCountry
-                                                                : ''
-                                                        }
-                                                        required
-                                                        onChange={(e) => setEditedPatron({ ...editedPatron, identificationCountry: String(e.target.value) })}
-                                                        label="Nationality"
-                                                    >
-                                                        {countries.map((country) => (
-                                                            <MenuItem key={country.countryID} value={String(country.countryID)}>
-                                                                {country.countryDescription}
-                                                            </MenuItem>
-                                                        ))}
-                                                    </Select>
-                                                    {validationErrors.identificationCountry && <FormHelperText>{validationErrors.identificationCountry}</FormHelperText>}
-                                                </FormControl>
+                                                <Autocomplete
+                                                    fullWidth
+                                                    size="small"
+                                                    disabled={!isEditing}
+                                                    options={countries}
+                                                    getOptionLabel={(option) => option.countryDescription || ''}
+                                                    value={countries.find(c => String(c.countryID) === editedPatron.identificationCountry) || null}
+                                                    onChange={(_, newValue) => {
+                                                        setEditedPatron({
+                                                            ...editedPatron,
+                                                            identificationCountry: newValue ? String(newValue.countryID) : ''
+                                                        });
+                                                    }}
+                                                    isOptionEqualToValue={(option, value) => String(option.countryID) === String(value.countryID)}
+                                                    renderInput={(params) => (
+                                                        <TextField
+                                                            {...params}
+                                                            label="Nationality *"
+                                                            required
+                                                            error={!!validationErrors.identificationCountry}
+                                                            helperText={validationErrors.identificationCountry}
+                                                        />
+                                                    )}
+                                                />
 
                                                 <TextField
                                                     label="Expiration Date"
@@ -2586,26 +2614,56 @@ const AdminRegistrationPage: React.FC = () => {
                                                     helperText={validationErrors.addressInVietNam}
                                                 />
 
-                                                <FormControl fullWidth disabled={!isEditing} error={!!validationErrors.country} size="small">
-                                                    <InputLabel>Country</InputLabel>
-                                                    <Select
-                                                        value={
-                                                            editedPatron.country &&
-                                                                countries.some(c => String(c.countryID) === editedPatron.country)
-                                                                ? editedPatron.country
-                                                                : ''
-                                                        }
-                                                        onChange={(e) => setEditedPatron({ ...editedPatron, country: String(e.target.value) })}
-                                                        label="Country"
-                                                    >
-                                                        {countries.map((country) => (
-                                                            <MenuItem key={country.countryID} value={String(country.countryID)}>
-                                                                {country.countryDescription}
-                                                            </MenuItem>
-                                                        ))}
-                                                    </Select>
-                                                    {validationErrors.country && <FormHelperText>{validationErrors.country}</FormHelperText>}
-                                                </FormControl>
+                                                <Autocomplete
+                                                    sx={{ display: isVietnamese() ? 'visible' : 'none' }}
+                                                    fullWidth
+                                                    size="small"
+                                                    disabled={!isEditing}
+                                                    options={cities}
+                                                    getOptionLabel={(option) => `${option.city} - ${option.postalCode}` || ''}
+                                                    value={cities.find(c => String(c.city) === editedPatron.city) || null}
+                                                    onChange={(_, newValue) => {
+                                                        setEditedPatron({
+                                                            ...editedPatron,
+                                                            city: newValue ? String(newValue.city) : ''
+                                                        });
+                                                    }}
+                                                    isOptionEqualToValue={(option, value) => String(option.id) === String(value.id)}
+                                                    renderInput={(params) => (
+                                                        <TextField
+                                                            {...params}
+                                                            label={`City${editedPatron.identificationCountry === String(VIETNAM_COUNTRY_ID) ? ' *' : ''}`}
+                                                            onChange={(e) => setEditedPatron({ ...editedPatron, city: e.target.value })}
+                                                            onBlur={(e) => validateField('city', e.target.value)}
+                                                            error={!!validationErrors.city}
+                                                            helperText={validationErrors.city}
+                                                        />
+                                                    )}
+                                                />
+
+                                                <Autocomplete
+                                                    fullWidth
+                                                    size="small"
+                                                    disabled={!isEditing}
+                                                    options={countries}
+                                                    getOptionLabel={(option) => option.countryDescription || ''}
+                                                    value={countries.find(c => String(c.countryID) === editedPatron.country) || null}
+                                                    onChange={(_, newValue) => {
+                                                        setEditedPatron({
+                                                            ...editedPatron,
+                                                            country: newValue ? String(newValue.countryID) : ''
+                                                        });
+                                                    }}
+                                                    isOptionEqualToValue={(option, value) => String(option.countryID) === String(value.countryID)}
+                                                    renderInput={(params) => (
+                                                        <TextField
+                                                            {...params}
+                                                            label="Country"
+                                                            error={!!validationErrors.country}
+                                                            helperText={validationErrors.country}
+                                                        />
+                                                    )}
+                                                />
                                             </Stack>
                                         </CardContent>
                                     </Card>

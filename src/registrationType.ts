@@ -61,6 +61,8 @@ export interface PatronResponse {
     submitType: number;
     isSigned: boolean;
     isUpdated: boolean;
+    city: string;
+    postalCode: string;
 }
 
 export interface PatronImagesResponse {
@@ -345,4 +347,10 @@ export interface SyncIncomeDocumentResponse {
     mappedFiles: number;
     errors: string[];
     newFilesUrl: string[];
+}
+
+export interface CityResponse {
+    id: number;
+    city: string;
+    postalCode: string;
 }
