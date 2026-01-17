@@ -18,7 +18,9 @@ import {
     People as PeopleIcon,
     CloudSync as CloudSyncIcon,
     Devices as DevicesIcon,
-    AssessmentTwoTone as AssessmentIcon
+    AssessmentTwoTone as AssessmentIcon,
+    DrawTwoTone as DrawIcon,
+    ManageSearchTwoTone as ManageSearchIcon
 } from '@mui/icons-material';
 import { useSidebar } from '../../contexts/SidebarContext';
 import { usePermission } from '../../hooks/usePermission';
@@ -41,11 +43,25 @@ const navItems: NavItem[] = [
         requiredPermission: Permission.VIEW_REPORTS,
     },
     {
+        key: 'admin-customer-confirmation',
+        title: 'Verification Documents',
+        href: '/admin-customer-confirmation',
+        icon: DrawIcon,
+        requiredPermission: Permission.VIEW_REPORTS,
+    },
+    {
         key: 'admin-migration-income-documents',
         title: 'Income Documents Migration',
         href: '/admin-migration-income-documents',
         icon: CloudSyncIcon,
         requiredPermission: Permission.VIEW_MIGRATION_INCOME,
+    },
+    {
+        key: 'admin-member-audit-logs',
+        title: 'Enrollment Player Logs',
+        href: '/admin-member-audit-logs',
+        icon: ManageHistoryIcon,
+        requiredPermission: Permission.VIEW_REPORTS,
     },
     {
         key: 'admin-device-mapping',
@@ -60,20 +76,6 @@ const navItems: NavItem[] = [
         href: '/admin-devices',
         icon: DevicesIcon,
         requiredPermission: Permission.VIEW_ROLE_MANAGEMENT,
-    },
-    {
-        key: 'admin-audit-logs',
-        title: 'Audit Logs',
-        href: '/admin-audit-logs',
-        icon: ManageHistoryIcon,
-        requiredPermission: Permission.VIEW_AUDIT_LOGS,
-    },
-    {
-        key: 'admin-member-audit-logs',
-        title: 'Enrollment Player Logs',
-        href: '/admin-member-audit-logs',
-        icon: ManageHistoryIcon,
-        requiredPermission: Permission.VIEW_REPORTS,
     },
     {
         key: 'admin-employees',
@@ -95,6 +97,13 @@ const navItems: NavItem[] = [
         href: '/admin-permissions',
         icon: PermissionManagementIcon,
         requiredPermission: Permission.VIEW_ROLE_MANAGEMENT
+    },
+    {
+        key: 'admin-audit-logs',
+        title: 'Audit Logs',
+        href: '/admin-audit-logs',
+        icon: ManageSearchIcon,
+        requiredPermission: Permission.VIEW_AUDIT_LOGS,
     },
 ];
 

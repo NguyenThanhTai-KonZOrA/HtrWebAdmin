@@ -19,7 +19,9 @@ import {
     People as PeopleIcon,
     CloudSync as CloudSyncIcon,
     Devices as DevicesIcon,
-    AssessmentTwoTone as AssessmentIcon
+    AssessmentTwoTone as AssessmentIcon,
+    DrawTwoTone as DrawIcon,
+    ManageSearchTwoTone as ManageSearchIcon
 } from '@mui/icons-material';
 import type { NavItem } from '../../commonType';
 import { Permission } from '../../constants/roles';
@@ -38,7 +40,14 @@ const navItems: NavItem[] = [
         title: 'Registration Report',
         href: '/admin-registration-report',
         icon: AssessmentIcon,
-        requiredPermission: Permission.VIEW_ADMIN_REGISTRATION,
+        requiredPermission: Permission.VIEW_REPORTS,
+    },
+    {
+        key: 'admin-customer-confirmation',
+        title: 'Verification Documents',
+        href: '/admin-customer-confirmation',
+        icon: DrawIcon,
+        requiredPermission: Permission.VIEW_REPORTS,
     },
     {
         key: 'admin-migration-income-documents',
@@ -46,6 +55,13 @@ const navItems: NavItem[] = [
         href: '/admin-migration-income-documents',
         icon: CloudSyncIcon,
         requiredPermission: Permission.VIEW_MIGRATION_INCOME,
+    },
+    {
+        key: 'admin-member-audit-logs',
+        title: 'Enrollment Player Logs',
+        href: '/admin-member-audit-logs',
+        icon: ManageHistoryIcon,
+        requiredPermission: Permission.VIEW_REPORTS,
     },
     {
         key: 'admin-device-mapping',
@@ -60,20 +76,6 @@ const navItems: NavItem[] = [
         href: '/admin-devices',
         icon: DevicesIcon,
         requiredPermission: Permission.VIEW_ROLE_MANAGEMENT,
-    },
-    {
-        key: 'admin-audit-logs',
-        title: 'Audit Logs',
-        href: '/admin-audit-logs',
-        icon: ManageHistoryIcon,
-        requiredPermission: Permission.VIEW_AUDIT_LOGS,
-    },
-    {
-        key: 'admin-member-audit-logs',
-        title: 'Enrollment Player Logs',
-        href: '/admin-member-audit-logs',
-        icon: ManageHistoryIcon,
-        requiredPermission: Permission.VIEW_REPORTS,
     },
     {
         key: 'admin-employees',
@@ -95,6 +97,13 @@ const navItems: NavItem[] = [
         href: '/admin-permissions',
         icon: PermissionManagementIcon,
         requiredPermission: Permission.VIEW_ROLE_MANAGEMENT
+    },
+    {
+        key: 'admin-audit-logs',
+        title: 'Audit Logs',
+        href: '/admin-audit-logs',
+        icon: ManageSearchIcon,
+        requiredPermission: Permission.VIEW_AUDIT_LOGS,
     },
 ];
 

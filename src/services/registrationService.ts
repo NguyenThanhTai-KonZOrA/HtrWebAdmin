@@ -1,7 +1,7 @@
 import axios from "axios";
 import { showSessionExpiredNotification } from '../utils/sessionExpiredNotification';
 import type { AuditLogPaginationRequest, AuditLogPaginationResponse, AuditLogResponse, AuditLogsRegisterMembershipPaginationResponse, AuditLogsRegisterMembershipRequest, CheckPatronIdentificationRequest, CheckValidIncomeRequest, CheckValidIncomeResponse, CityResponse, CountryResponse, CreateMappingRequest, CreateMappingResponse, CurrentHostNameResponse, CurrentStaffDeviceResponse, GetAllMappingsResponse, GetMappingByStaffDeviceResponse, IncomeFileResponse, MappingDataResponse, OnlineStaffDevicesResponse, PatronFilterRequest, PatronImagesResponse, PatronPagingRequest, PatronPagingResponse, PatronRegisterMembershipRequest, PatronRegisterMembershipResponse, PatronResponse, RenderDocumentResponse, StaffAndPatronDevicesResponse, StaffSignatureRequest, SyncIncomeDocumentRequest, SyncIncomeDocumentResponse, SyncPatronImagesRequest, UpdateMappingRequest, UpdateMappingResponse } from "../registrationType";
-import type { SettingsResponse, CreateSettingsRequest, SettingsInfoResponse, ClearCacheSettingResponse, UpdateSettingsRequest, UpdateSettingsResponse, EmployeePerformanceRequest, EmployeePerformanceResponse, ManageDeviceResponse, ToggleDeviceRequest, DeleteDeviceRequest, ChangeHostnameRequest } from "../type";
+import type { SettingsResponse, CreateSettingsRequest, SettingsInfoResponse, ClearCacheSettingResponse, UpdateSettingsRequest, UpdateSettingsResponse, EmployeePerformanceRequest, EmployeePerformanceResponse, ManageDeviceResponse, ToggleDeviceRequest, DeleteDeviceRequest, ChangeHostnameRequest, CustomerConfirmationRequest, CustomerConfirmationResponse } from "../type";
 import { FormatUtcTime } from "../utils/formatUtcTime";
 
 const API_BASE = (window as any)._env_?.API_BASE;
@@ -299,6 +299,11 @@ export const renderDocumentService = {
         const response = await api.get<ApiEnvelope<RenderDocumentResponse>>(`/api/Documents/policy/render`, {
             params: { pid, playerId }
         });
+        return unwrapApiEnvelope(response);
+    },
+
+    getDocumentByPlayerId: async (request: CustomerConfirmationRequest): Promise<CustomerConfirmationResponse> => {
+        const response = await api.post<ApiEnvelope<CustomerConfirmationResponse>>(`/api/Documents/confirmation`, request);
         return unwrapApiEnvelope(response);
     }
 };

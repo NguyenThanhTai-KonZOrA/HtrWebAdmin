@@ -83,9 +83,29 @@ const AdminMembershipLogsPage: React.FC = () => {
     const [membershipStatus, setMembershipStatus] = useState<string>('All');
     const [userName, setUserName] = useState<string>('');
     // - 1 day 
-    const [fromDate, setFromDate] = useState<string>(new Date(new Date().getTime() - 24 * 60 * 60 * 1000).toISOString().slice(0, 16)); // Default to 1 day ago
-    const [toDate, setToDate] = useState<string>(new Date().toISOString().slice(0, 16)); // Default to current date
-
+    const [fromDate, setFromDate] = useState<string>(() => {
+        // Set to 1 day ago in local time
+        const date = new Date();
+        date.setDate(date.getDate() - 1);
+        // Format to local datetime-local format (YYYY-MM-DDTHH:mm)
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        return `${year}-${month}-${day}T${hours}:${minutes}`;
+    });
+    const [toDate, setToDate] = useState<string>(() => {
+        // Set to current date/time in local time
+        const date = new Date();
+        // Format to local datetime-local format (YYYY-MM-DDTHH:mm)
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        return `${year}-${month}-${day}T${hours}:${minutes}`;
+    });
     // Detail dialog states
     const [detailDialogOpen, setDetailDialogOpen] = useState(false);
     const [selectedLog, setSelectedLog] = useState<AuditLogResponse | null>(null);
@@ -268,6 +288,12 @@ const AdminMembershipLogsPage: React.FC = () => {
                                             onChange={(e) => setPlayerId(e.target.value)}
                                             placeholder="Enter Player ID"
                                             size="small"
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    e.preventDefault();
+                                                    handleSearch();
+                                                }
+                                            }}
                                         />
                                     </Box>
 
@@ -313,6 +339,12 @@ const AdminMembershipLogsPage: React.FC = () => {
                                             onChange={(e) => setUserName(e.target.value)}
                                             placeholder="Enter User Name"
                                             size="small"
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    e.preventDefault();
+                                                    handleSearch();
+                                                }
+                                            }}
                                         />
                                     </Box>
 
@@ -325,6 +357,18 @@ const AdminMembershipLogsPage: React.FC = () => {
                                             onChange={(e) => setFromDate(e.target.value)}
                                             InputLabelProps={{ shrink: true }}
                                             size="small"
+                                            onFocus={(e) => {
+                                                const input = e.target as HTMLInputElement;
+                                                if (input.showPicker) {
+                                                    input.showPicker();
+                                                }
+                                            }}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    e.preventDefault();
+                                                    handleSearch();
+                                                }
+                                            }}
                                         />
                                     </Box>
 
@@ -337,6 +381,18 @@ const AdminMembershipLogsPage: React.FC = () => {
                                             onChange={(e) => setToDate(e.target.value)}
                                             InputLabelProps={{ shrink: true }}
                                             size="small"
+                                            onFocus={(e) => {
+                                                const input = e.target as HTMLInputElement;
+                                                if (input.showPicker) {
+                                                    input.showPicker();
+                                                }
+                                            }}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    e.preventDefault();
+                                                    handleSearch();
+                                                }
+                                            }}
                                         />
                                     </Box>
 

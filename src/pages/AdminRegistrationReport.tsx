@@ -271,6 +271,18 @@ const AdminRegistrationReport: React.FC = () => {
                                             onChange={(e) => setFromDate(e.target.value)}
                                             InputLabelProps={{ shrink: true }}
                                             size="small"
+                                            onFocus={(e) => {
+                                                const input = e.target as HTMLInputElement;
+                                                if (input.showPicker) {
+                                                    input.showPicker();
+                                                }
+                                            }}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    e.preventDefault();
+                                                    handleSearch();
+                                                }
+                                            }}
                                         />
                                     </Box>
 
@@ -283,6 +295,18 @@ const AdminRegistrationReport: React.FC = () => {
                                             onChange={(e) => setToDate(e.target.value)}
                                             InputLabelProps={{ shrink: true }}
                                             size="small"
+                                            onFocus={(e) => {
+                                                const input = e.target as HTMLInputElement;
+                                                if (input.showPicker) {
+                                                    input.showPicker();
+                                                }
+                                            }}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    e.preventDefault();
+                                                    handleSearch();
+                                                }
+                                            }}
                                         />
                                     </Box>
 

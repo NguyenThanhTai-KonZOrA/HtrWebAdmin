@@ -437,3 +437,19 @@ export interface ChangeHostnameRequest {
   deviceType: string; // "Staff" or "Patron"
   newHostname: string;
 }
+
+export interface CustomerConfirmationRequest {
+  playerId: number;
+}
+
+export interface CustomerConfirmationResponse {
+  documentPath?: string;
+  documentType: string;
+  confirmationDate?: string;
+  registrationType?: number;
+  htrFormPath?: string;
+  notificationPath?: string;
+  isVietnamese?: boolean;
+  fullName?: string;
+  identificationNumber?: string;
+}

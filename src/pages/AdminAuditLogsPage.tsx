@@ -56,7 +56,8 @@ const ENTITY_TYPES = [
     'Authentication',
     'IncomeFile',
     'Signature',
-    'Identification'
+    'Identification',
+    'CustomerConfirmation'
 ];
 
 // Actions
@@ -77,7 +78,9 @@ const ACTIONS = [
     'Login',
     'RevokeToken',
     'UploadFile',
-    'DeleteFile'
+    'DeleteFile',
+    'GetDocumentByPlayerId',
+    'ExportRegistrationReport'
 ];
 
 const AdminAuditLogsPage: React.FC = () => {
