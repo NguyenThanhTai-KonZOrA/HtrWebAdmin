@@ -112,7 +112,7 @@ const AdminCustomerConfirmationPage: React.FC = () => {
 
         try {
             const link = document.createElement('a');
-            link.href = url;
+            link.href = url.startsWith('http') ? url : `${API_BASE}${url}`;
             link.setAttribute('download', filename);
             link.setAttribute('target', '_blank');
             document.body.appendChild(link);
@@ -139,6 +139,8 @@ const AdminCustomerConfirmationPage: React.FC = () => {
         if (!url) return 'unknown';
         const extension = url.split('.').pop()?.toLowerCase();
         if (extension === 'pdf') return 'PDF';
+        if (['xls', 'xlsx'].includes(extension || '')) return 'Excel';
+        if (['html', 'htm'].includes(extension || '')) return 'HTML';
         if (['jpg', 'jpeg', 'png', 'gif'].includes(extension || '')) return 'Image';
         if (['doc', 'docx'].includes(extension || '')) return 'Word';
         return 'Document';
@@ -367,7 +369,7 @@ const AdminCustomerConfirmationPage: React.FC = () => {
                                                     <ArticleIcon color="secondary" sx={{ fontSize: 40 }} />
                                                     <Box>
                                                         <Typography variant="subtitle1" fontWeight="medium">
-                                                            HTR Form
+                                                            HTR ACCOUNT APPLICATION FORM
                                                         </Typography>
                                                         <Typography variant="caption" color="text.secondary">
                                                             Type: {getFileType(documentData.htrFormPath)}
@@ -387,7 +389,7 @@ const AdminCustomerConfirmationPage: React.FC = () => {
                                                         variant="contained"
                                                         size="small"
                                                         startIcon={<DownloadIcon />}
-                                                        onClick={() => handleDownload(documentData.htrFormPath!, 'htr-form.pdf')}
+                                                        onClick={() => handleDownload(documentData.htrFormPath!, 'htr-form.html')}
                                                     >
                                                         Download
                                                     </Button>
@@ -520,9 +522,10 @@ const AdminCustomerConfirmationPage: React.FC = () => {
                                             Preview not available
                                         </Typography>
                                         <Typography variant="body2" color="text.secondary" paragraph>
-                                            This file type is {fileType} cannot be previewed in the browser.
+                                            This file type is {fileType} cannot be previewed in the browser. <br />
+                                            You can download the file to view it.
                                         </Typography>
-                                        <Button
+                                        {/* <Button
                                             variant="contained"
                                             startIcon={<DownloadIcon />}
                                             onClick={() => {
@@ -532,7 +535,7 @@ const AdminCustomerConfirmationPage: React.FC = () => {
                                             }}
                                         >
                                             Download File
-                                        </Button>
+                                        </Button> */}
                                     </Box>
                                 );
                             } else {
