@@ -283,6 +283,9 @@ const AdminRegistrationReport: React.FC = () => {
                                                     handleSearch();
                                                 }
                                             }}
+                                            inputProps={{
+                                                max: FormatUtcTime.getTodayStringWithTime() // Prevent selecting future dates
+                                            }}
                                         />
                                     </Box>
 
@@ -306,6 +309,10 @@ const AdminRegistrationReport: React.FC = () => {
                                                     e.preventDefault();
                                                     handleSearch();
                                                 }
+                                            }}
+                                            inputProps={{
+                                                max: FormatUtcTime.getTodayStringWithTime(), // Prevent selecting future dates
+                                                min: fromDate
                                             }}
                                         />
                                     </Box>

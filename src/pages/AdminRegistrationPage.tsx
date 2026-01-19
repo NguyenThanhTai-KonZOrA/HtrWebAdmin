@@ -1066,9 +1066,9 @@ const AdminRegistrationPage: React.FC = () => {
                 }
                 break;
             case 'city':
-                if (editedPatron.identificationCountry !== String(VIETNAM_COUNTRY_ID)) {
+                if (editedPatron.identificationCountry === String(VIETNAM_COUNTRY_ID)) {
                     if (!value?.trim()) {
-                        errors.city = 'City is required for non-Vietnamese nationals';
+                        errors.city = 'City is required for Vietnamese nationals';
                     } else {
                         delete errors.city;
                     }
@@ -1172,7 +1172,7 @@ const AdminRegistrationPage: React.FC = () => {
 
         if (editedPatron.identificationCountry === String(VIETNAM_COUNTRY_ID)) {
             if (!editedPatron.city?.trim()) {
-                errors.city = 'City is required for non-Vietnamese nationals';
+                errors.city = 'City is required for Vietnamese nationals';
             }
         }
 

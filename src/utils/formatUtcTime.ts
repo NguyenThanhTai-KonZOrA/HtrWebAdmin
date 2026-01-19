@@ -97,6 +97,16 @@ export class FormatUtcTime {
     return `${year}-${month}-${day}`;
   };
 
+  static getTodayStringWithTime = (): string => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    const hours = String(today.getHours()).padStart(2, '0');
+    const minutes = String(today.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+
   static GetTodayVietNamString = (): string => {
     // Set to today in local time
     const date = new Date();
@@ -158,17 +168,17 @@ export class FormatUtcTime {
     const day = String(d.getDate()).padStart(2, "0");
     const month = monthNames[d.getMonth()];
     const year = d.getFullYear();
-    
+
     // Convert to 12-hour format with AM/PM
     let hours = d.getHours();
     const ampm = hours >= 12 ? 'PM' : 'AM';
     hours = hours % 12;
     hours = hours ? hours : 12; // Convert 0 to 12 for midnight
     const hoursStr = String(hours).padStart(2, "0");
-    
+
     const minutes = String(d.getMinutes()).padStart(2, "0");
     const seconds = String(d.getSeconds()).padStart(2, "0");
-    
+
     return `${day}-${month}-${year} ${hoursStr}:${minutes}:${seconds} ${ampm}`;
   }
 

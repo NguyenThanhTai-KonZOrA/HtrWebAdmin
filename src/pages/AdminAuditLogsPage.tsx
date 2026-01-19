@@ -303,6 +303,21 @@ const AdminAuditLogsPage: React.FC = () => {
                                             size="small"
                                             fullWidth
                                             InputLabelProps={{ shrink: true }}
+                                            inputProps={{
+                                                max: FormatUtcTime.getTodayStringWithTime() // Prevent selecting future dates
+                                            }}
+                                            onFocus={(e) => {
+                                                const input = e.target as HTMLInputElement;
+                                                if (input.showPicker) {
+                                                    input.showPicker();
+                                                }
+                                            }}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    e.preventDefault();
+                                                    handleSearch();
+                                                }
+                                            }}
                                         />
                                     </Box>
 
@@ -316,6 +331,22 @@ const AdminAuditLogsPage: React.FC = () => {
                                             size="small"
                                             fullWidth
                                             InputLabelProps={{ shrink: true }}
+                                            inputProps={{
+                                                max: FormatUtcTime.getTodayStringWithTime(),// Prevent selecting future dates
+                                                min: toDate
+                                            }}
+                                            onFocus={(e) => {
+                                                const input = e.target as HTMLInputElement;
+                                                if (input.showPicker) {
+                                                    input.showPicker();
+                                                }
+                                            }}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    e.preventDefault();
+                                                    handleSearch();
+                                                }
+                                            }}
                                         />
                                     </Box>
 
