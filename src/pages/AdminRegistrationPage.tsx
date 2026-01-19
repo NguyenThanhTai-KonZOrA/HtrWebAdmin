@@ -2185,14 +2185,14 @@ const AdminRegistrationPage: React.FC = () => {
                                             </Typography>
 
                                             {/** Sync Images Button */}
-                                            {selectedPatron.isHaveMembership ? (
+                                            {/* {selectedPatron.isHaveMembership ? (
                                                 <Button onClick={handleSyncImages} variant="contained" disabled={syncingImages}>
                                                     <CloudSyncIcon sx={{ mr: 1 }} /> Sync Images
                                                 </Button>
                                             ) : (
                                                 <Typography variant="body2" color="text.secondary">
                                                 </Typography>
-                                            )}
+                                            )} */}
                                         </Box>
                                         {patronImages ? (
                                             <Stack direction="row" spacing={3} justifyContent="center">
