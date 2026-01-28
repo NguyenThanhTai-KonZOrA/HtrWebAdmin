@@ -109,7 +109,6 @@ const AdminCustomerConfirmationPage: React.FC = () => {
             setError('Document URL is not available');
             return;
         }
-
         try {
             const link = document.createElement('a');
             link.href = url.startsWith('http') ? url : `${API_BASE}${url}`;
@@ -411,11 +410,12 @@ const AdminCustomerConfirmationPage: React.FC = () => {
                                                     },
                                                 }}
                                             >
+
                                                 <Box display="flex" alignItems="center" gap={2}>
                                                     <NotificationIcon color="warning" sx={{ fontSize: 40 }} />
                                                     <Box>
                                                         <Typography variant="subtitle1" fontWeight="medium">
-                                                            Notification Document
+                                                            HTR Customer Information Confirmation
                                                         </Typography>
                                                         <Typography variant="caption" color="text.secondary">
                                                             Type: {getFileType(documentData.notificationPath)}
@@ -436,6 +436,60 @@ const AdminCustomerConfirmationPage: React.FC = () => {
                                                         size="small"
                                                         startIcon={<DownloadIcon />}
                                                         onClick={() => handleDownload(documentData.notificationPath!, 'notification.pdf')}
+                                                    >
+                                                        Download
+                                                    </Button>
+                                                </Box>
+                                            </Paper>
+                                        )}
+
+                                        {/* No Documents */}
+                                        {!documentData.documentPath && !documentData.htrFormPath && !documentData.notificationPath && (
+                                            <Alert severity="info">
+                                                No documents available for this Player ID
+                                            </Alert>
+                                        )}
+
+                                        {/* C Document */}
+                                        {documentData.htrMembershipTCPath && (
+                                            <Paper
+                                                variant="outlined"
+                                                sx={{
+                                                    p: 2,
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'space-between',
+                                                    '&:hover': {
+                                                        backgroundColor: 'action.hover',
+                                                    },
+                                                }}
+                                            >
+
+                                                <Box display="flex" alignItems="center" gap={2}>
+                                                    <NotificationIcon color="warning" sx={{ fontSize: 40 }} />
+                                                    <Box>
+                                                        <Typography variant="subtitle1" fontWeight="medium">
+                                                            HTR Membership T&C
+                                                        </Typography>
+                                                        <Typography variant="caption" color="text.secondary">
+                                                            Type: {getFileType(documentData.htrMembershipTCPath)}
+                                                        </Typography>
+                                                    </Box>
+                                                </Box>
+                                                <Box display="flex" gap={1}>
+                                                    <Button
+                                                        variant="outlined"
+                                                        size="small"
+                                                        startIcon={<VisibilityIcon />}
+                                                        onClick={() => handlePreview(documentData.htrMembershipTCPath!, 'HTR Membership T&C')}
+                                                    >
+                                                        Preview
+                                                    </Button>
+                                                    <Button
+                                                        variant="contained"
+                                                        size="small"
+                                                        startIcon={<DownloadIcon />}
+                                                        onClick={() => handleDownload(documentData.htrMembershipTCPath!, 'HTRMembershipTC.pdf')}
                                                     >
                                                         Download
                                                     </Button>

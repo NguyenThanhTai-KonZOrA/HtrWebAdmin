@@ -177,7 +177,7 @@ function AppContent() {
         <Route path="/admin-customer-confirmation" element={
           <ProtectedRoute>
             <RoleBasedRoute
-              requiredPermission={Permission.VIEW_REPORTS}
+              requiredPermission={Permission.VIEW_VERIFICATION_DOCUMENT}
               fallbackPath="/admin-customer-confirmation"
               showAccessDenied={true}
             >

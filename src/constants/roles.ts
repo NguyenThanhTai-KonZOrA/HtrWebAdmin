@@ -18,7 +18,8 @@ export const Permission = {
     VIEW_ROLE_MANAGEMENT: 'view_role_management',
     VIEW_AUDIT_LOGS: 'view_audit_logs',
     VIEW_EMPLOYEE_MANAGEMENT: 'view_employee_management',
-    VIEW_MIGRATION_INCOME: 'view_migration_income'
+    VIEW_MIGRATION_INCOME: 'view_migration_income',
+    VIEW_VERIFICATION_DOCUMENT: 'view_verification_document'
 } as const;
 
 export type Permission = typeof Permission[keyof typeof Permission];
@@ -35,7 +36,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
         Permission.VIEW_ROLE_MANAGEMENT,
         Permission.VIEW_AUDIT_LOGS,
         Permission.VIEW_EMPLOYEE_MANAGEMENT,
-        Permission.VIEW_MIGRATION_INCOME
+        Permission.VIEW_MIGRATION_INCOME,
+        Permission.VIEW_VERIFICATION_DOCUMENT
     ],
     [UserRole.USER]: [
         Permission.VIEW_ADMIN_REGISTRATION,
@@ -43,11 +45,11 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     ],
     [UserRole.MANAGER]: [
         Permission.VIEW_ADMIN_REGISTRATION,
-        Permission.VIEW_MIGRATION_INCOME
+        Permission.VIEW_MIGRATION_INCOME,
+        Permission.VIEW_VERIFICATION_DOCUMENT
     ],
     [UserRole.VIEWER]: [
-        Permission.VIEW_ADMIN_REGISTRATION,
-        Permission.VIEW_REPORTS,
+        Permission.VIEW_ADMIN_REGISTRATION
     ],
 };
 

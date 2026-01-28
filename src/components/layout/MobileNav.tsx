@@ -47,7 +47,7 @@ const navItems: NavItem[] = [
         title: 'Verification Documents',
         href: '/admin-customer-confirmation',
         icon: DrawIcon,
-        requiredPermission: Permission.VIEW_REPORTS,
+        requiredPermission: Permission.VIEW_VERIFICATION_DOCUMENT,
     },
     {
         key: 'admin-migration-income-documents',
