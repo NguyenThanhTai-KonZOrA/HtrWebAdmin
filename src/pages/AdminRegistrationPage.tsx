@@ -2520,7 +2520,7 @@ const AdminRegistrationPage: React.FC = () => {
                                                     renderInput={(params) => (
                                                         <TextField
                                                             {...params}
-                                                            label="Nationality *"
+                                                            label="Nationality"
                                                             required
                                                             error={!!validationErrors.identificationCountry}
                                                             helperText={validationErrors.identificationCountry}

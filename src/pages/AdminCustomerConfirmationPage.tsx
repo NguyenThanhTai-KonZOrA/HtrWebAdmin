@@ -450,7 +450,7 @@ const AdminCustomerConfirmationPage: React.FC = () => {
                                             </Alert>
                                         )}
 
-                                        {/* C Document */}
+                                        {/* T and C Document */}
                                         {documentData.htrMembershipTCPath && (
                                             <Paper
                                                 variant="outlined"
@@ -490,6 +490,53 @@ const AdminCustomerConfirmationPage: React.FC = () => {
                                                         size="small"
                                                         startIcon={<DownloadIcon />}
                                                         onClick={() => handleDownload(documentData.htrMembershipTCPath!, 'HTRMembershipTC.pdf')}
+                                                    >
+                                                        Download
+                                                    </Button>
+                                                </Box>
+                                            </Paper>
+                                        )}
+
+                                        {/* HTP Document */}
+                                        {documentData.fileHTPNotificationPath && (
+                                            <Paper
+                                                variant="outlined"
+                                                sx={{
+                                                    p: 2,
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'space-between',
+                                                    '&:hover': {
+                                                        backgroundColor: 'action.hover',
+                                                    },
+                                                }}
+                                            >
+
+                                                <Box display="flex" alignItems="center" gap={2}>
+                                                    <DocumentIcon color="success" sx={{ fontSize: 40 }} />
+                                                    <Box>
+                                                        <Typography variant="subtitle1" fontWeight="medium">
+                                                            HTP Customer Confirmation
+                                                        </Typography>
+                                                        <Typography variant="caption" color="text.secondary">
+                                                            Type: {getFileType(documentData.fileHTPNotificationPath)}
+                                                        </Typography>
+                                                    </Box>
+                                                </Box>
+                                                <Box display="flex" gap={1}>
+                                                    <Button
+                                                        variant="outlined"
+                                                        size="small"
+                                                        startIcon={<VisibilityIcon />}
+                                                        onClick={() => handlePreview(documentData.fileHTPNotificationPath!, 'HTP Customer Confirmation')}
+                                                    >
+                                                        Preview
+                                                    </Button>
+                                                    <Button
+                                                        variant="contained"
+                                                        size="small"
+                                                        startIcon={<DownloadIcon />}
+                                                        onClick={() => handleDownload(documentData.fileHTPNotificationPath!, 'HTRMembershipTC.pdf')}
                                                     >
                                                         Download
                                                     </Button>

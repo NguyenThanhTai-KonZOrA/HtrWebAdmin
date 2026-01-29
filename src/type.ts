@@ -450,6 +450,7 @@ export interface CustomerConfirmationResponse {
   htrFormPath?: string;
   notificationPath?: string;
   htrMembershipTCPath?: string;
+  fileHTPNotificationPath?: string;
   isVietnamese?: boolean;
   fullName?: string;
   identificationNumber?: string;
