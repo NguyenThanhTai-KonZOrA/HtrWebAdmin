@@ -73,7 +73,7 @@ const AdminCustomerConfirmationPage: React.FC = () => {
             const response = await renderDocumentService.getDocumentByPlayerId(request);
             setDocumentData(response);
 
-            if (!response.documentPath && !response.htrFormPath && !response.notificationPath) {
+            if (!response.documentPath && !response.htrFormPath && !response.filePDPNotificationPath) {
                 setError('No documents found for this Player ID');
             }
         } catch (err: any) {
@@ -397,7 +397,7 @@ const AdminCustomerConfirmationPage: React.FC = () => {
                                         )}
 
                                         {/* Notification Document */}
-                                        {documentData.notificationPath && (
+                                        {documentData.filePDPNotificationPath && (
                                             <Paper
                                                 variant="outlined"
                                                 sx={{
@@ -415,10 +415,10 @@ const AdminCustomerConfirmationPage: React.FC = () => {
                                                     <NotificationIcon color="warning" sx={{ fontSize: 40 }} />
                                                     <Box>
                                                         <Typography variant="subtitle1" fontWeight="medium">
-                                                            HTR Customer Information Confirmation
+                                                            PDP Notification Document
                                                         </Typography>
                                                         <Typography variant="caption" color="text.secondary">
-                                                            Type: {getFileType(documentData.notificationPath)}
+                                                            Type: {getFileType(documentData.filePDPNotificationPath)}
                                                         </Typography>
                                                     </Box>
                                                 </Box>
@@ -427,7 +427,7 @@ const AdminCustomerConfirmationPage: React.FC = () => {
                                                         variant="outlined"
                                                         size="small"
                                                         startIcon={<VisibilityIcon />}
-                                                        onClick={() => handlePreview(documentData.notificationPath!, 'Notification Document')}
+                                                        onClick={() => handlePreview(documentData.filePDPNotificationPath!, 'Notification Document')}
                                                     >
                                                         Preview
                                                     </Button>
@@ -435,19 +435,12 @@ const AdminCustomerConfirmationPage: React.FC = () => {
                                                         variant="contained"
                                                         size="small"
                                                         startIcon={<DownloadIcon />}
-                                                        onClick={() => handleDownload(documentData.notificationPath!, 'notification.pdf')}
+                                                        onClick={() => handleDownload(documentData.filePDPNotificationPath!, 'notification.pdf')}
                                                     >
                                                         Download
                                                     </Button>
                                                 </Box>
                                             </Paper>
-                                        )}
-
-                                        {/* No Documents */}
-                                        {!documentData.documentPath && !documentData.htrFormPath && !documentData.notificationPath && (
-                                            <Alert severity="info">
-                                                No documents available for this Player ID
-                                            </Alert>
                                         )}
 
                                         {/* T and C Document */}
@@ -545,7 +538,7 @@ const AdminCustomerConfirmationPage: React.FC = () => {
                                         )}
 
                                         {/* No Documents */}
-                                        {!documentData.documentPath && !documentData.htrFormPath && !documentData.notificationPath && (
+                                        {!documentData.documentPath && !documentData.htrFormPath && !documentData.filePDPNotificationPath && (
                                             <Alert severity="info">
                                                 No documents available for this Player ID
                                             </Alert>

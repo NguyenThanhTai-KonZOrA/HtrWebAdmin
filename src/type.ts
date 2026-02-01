@@ -448,7 +448,7 @@ export interface CustomerConfirmationResponse {
   confirmationDate?: string;
   registrationType?: number;
   htrFormPath?: string;
-  notificationPath?: string;
+  filePDPNotificationPath?: string;
   htrMembershipTCPath?: string;
   fileHTPNotificationPath?: string;
   isVietnamese?: boolean;
