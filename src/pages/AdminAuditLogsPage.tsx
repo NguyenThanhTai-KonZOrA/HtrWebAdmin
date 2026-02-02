@@ -80,7 +80,8 @@ const ACTIONS = [
     'UploadFile',
     'DeleteFile',
     'GetDocumentByPlayerId',
-    'ExportRegistrationReport'
+    'ExportRegistrationReport',
+    'GenerateDocuments'
 ];
 
 const AdminAuditLogsPage: React.FC = () => {

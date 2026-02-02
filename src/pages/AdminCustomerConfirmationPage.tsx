@@ -127,7 +127,7 @@ const AdminCustomerConfirmationPage: React.FC = () => {
     const formatDate = (dateString?: string): string => {
         if (!dateString) return '-';
         try {
-            return FormatUtcTime.formatDateTime(dateString);
+            return FormatUtcTime.formatDateDDMMMYYYY(dateString);
         } catch {
             return dateString;
         }

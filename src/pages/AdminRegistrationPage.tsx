@@ -1904,7 +1904,7 @@ const AdminRegistrationPage: React.FC = () => {
                                         size='small' />
                                 </TableCell>
                                 <TableCell>{patron.playerId === 0 ? '-' : patron.playerId}</TableCell>
-                                <TableCell>{`${patron.firstName} ${patron.lastName}`}</TableCell>
+                                <TableCell>{patron.identificationCountry !== 'Viet Nam' ? `${patron.firstName} ${patron.lastName}` : `${patron.lastName} ${patron.firstName}`}</TableCell>
                                 <TableCell>{patron.gender || '-'}</TableCell>
                                 <TableCell>{patron.mobilePhone}</TableCell>
                                 <TableCell>{patron.jobTitle || '-'}</TableCell>
@@ -2284,34 +2284,67 @@ const AdminRegistrationPage: React.FC = () => {
                                             Personal Information
                                         </Typography>
                                         <Stack spacing={2}>
-                                            <Stack direction="row" spacing={2}>
-                                                {/* auto upper case last name */}
-                                                <TextField
-                                                    label="Middle & Last Name"
-                                                    value={editedPatron.lastName || ''}
-                                                    required
-                                                    onChange={(e) => setEditedPatron({ ...editedPatron, lastName: e.target.value.toUpperCase() })}
-                                                    onBlur={(e) => validateField('lastName', e.target.value)}
-                                                    disabled={!isEditing}
-                                                    fullWidth
-                                                    size="small"
-                                                    error={!!validationErrors.lastName}
-                                                    helperText={validationErrors.lastName}
-                                                />
-                                                {/* auto upper case first name */}
-                                                <TextField
-                                                    label="First Name"
-                                                    value={editedPatron.firstName || ''}
-                                                    required
-                                                    onChange={(e) => setEditedPatron({ ...editedPatron, firstName: e.target.value.toUpperCase() })}
-                                                    onBlur={(e) => validateField('firstName', e.target.value)}
-                                                    disabled={!isEditing}
-                                                    fullWidth
-                                                    size="small"
-                                                    error={!!validationErrors.firstName}
-                                                    helperText={validationErrors.firstName}
-                                                />
-                                            </Stack>
+                                            {editedPatron.identificationCountry !== String(VIETNAM_COUNTRY_ID) && (
+                                                <Stack direction="row" spacing={2}>
+                                                    {/* auto upper case last name */}
+                                                    <TextField
+                                                        label="Middle & Last Name"
+                                                        value={editedPatron.lastName || ''}
+                                                        required
+                                                        onChange={(e) => setEditedPatron({ ...editedPatron, lastName: e.target.value.toUpperCase() })}
+                                                        onBlur={(e) => validateField('lastName', e.target.value)}
+                                                        disabled={!isEditing}
+                                                        fullWidth
+                                                        size="small"
+                                                        error={!!validationErrors.lastName}
+                                                        helperText={validationErrors.lastName}
+                                                    />
+                                                    {/* auto upper case first name */}
+                                                    <TextField
+                                                        label="First Name"
+                                                        value={editedPatron.firstName || ''}
+                                                        required
+                                                        onChange={(e) => setEditedPatron({ ...editedPatron, firstName: e.target.value.toUpperCase() })}
+                                                        onBlur={(e) => validateField('firstName', e.target.value)}
+                                                        disabled={!isEditing}
+                                                        fullWidth
+                                                        size="small"
+                                                        error={!!validationErrors.firstName}
+                                                        helperText={validationErrors.firstName}
+                                                    />
+                                                </Stack>
+                                            )}
+
+                                            {editedPatron.identificationCountry === String(VIETNAM_COUNTRY_ID) && (
+                                                <Stack direction="row" spacing={2}>
+                                                    {/* auto upper case last name */}
+                                                    <TextField
+                                                        label="First Name"
+                                                        value={editedPatron.lastName || ''}
+                                                        required
+                                                        onChange={(e) => setEditedPatron({ ...editedPatron, lastName: e.target.value.toUpperCase() })}
+                                                        onBlur={(e) => validateField('lastName', e.target.value)}
+                                                        disabled={!isEditing}
+                                                        fullWidth
+                                                        size="small"
+                                                        error={!!validationErrors.lastName}
+                                                        helperText={validationErrors.lastName}
+                                                    />
+                                                    {/* auto upper case first name */}
+                                                    <TextField
+                                                        label="Middle & Last Name"
+                                                        value={editedPatron.firstName || ''}
+                                                        required
+                                                        onChange={(e) => setEditedPatron({ ...editedPatron, firstName: e.target.value.toUpperCase() })}
+                                                        onBlur={(e) => validateField('firstName', e.target.value)}
+                                                        disabled={!isEditing}
+                                                        fullWidth
+                                                        size="small"
+                                                        error={!!validationErrors.firstName}
+                                                        helperText={validationErrors.firstName}
+                                                    />
+                                                </Stack>
+                                            )}
 
                                             <TextField
                                                 type='number'
