@@ -45,7 +45,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     ],
     [UserRole.MANAGER]: [
         Permission.VIEW_ADMIN_REGISTRATION,
-        Permission.VIEW_MIGRATION_INCOME
+        Permission.VIEW_MIGRATION_INCOME,
+        Permission.VIEW_VERIFICATION_DOCUMENT
     ],
     [UserRole.VIEWER]: [
         Permission.VIEW_ADMIN_REGISTRATION
