@@ -2319,7 +2319,7 @@ const AdminRegistrationPage: React.FC = () => {
                                                 <Stack direction="row" spacing={2}>
                                                     {/* auto upper case last name */}
                                                     <TextField
-                                                        label="First Name"
+                                                        label="Middle & Last Name"
                                                         value={editedPatron.lastName || ''}
                                                         required
                                                         onChange={(e) => setEditedPatron({ ...editedPatron, lastName: e.target.value.toUpperCase() })}
@@ -2332,7 +2332,7 @@ const AdminRegistrationPage: React.FC = () => {
                                                     />
                                                     {/* auto upper case first name */}
                                                     <TextField
-                                                        label="Middle & Last Name"
+                                                        label="First Name"
                                                         value={editedPatron.firstName || ''}
                                                         required
                                                         onChange={(e) => setEditedPatron({ ...editedPatron, firstName: e.target.value.toUpperCase() })}
