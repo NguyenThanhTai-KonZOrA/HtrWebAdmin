@@ -454,4 +454,5 @@ export interface CustomerConfirmationResponse {
   isVietnamese?: boolean;
   fullName?: string;
   identificationNumber?: string;
+  isReSigned: boolean;
 }

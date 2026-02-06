@@ -37,6 +37,8 @@ const AdminCustomerConfirmationPage: React.FC = () => {
     useSetPageTitle('Customer Verification Documents');
 
     const API_BASE = (window as any)._env_?.API_BASE;
+    const ONLINE_API_BASE = (window as any)._env_?.ONLINE_API_BASE;
+
     // States
     const [playerId, setPlayerId] = useState<string>('');
     const [loading, setLoading] = useState(false);
@@ -86,12 +88,17 @@ const AdminCustomerConfirmationPage: React.FC = () => {
     };
 
     // Handle preview document
-    const handlePreview = (url: string, title: string) => {
+    const handlePreview = (url: string, title: string, isReSigned: boolean) => {
         if (!url) {
             setError('Document URL is not available');
             return;
         }
-        setPreviewUrl(`${API_BASE}${url}`);
+        let finalUrl = isReSigned ? ONLINE_API_BASE : API_BASE;
+        if (title === 'HTR Form') {
+            finalUrl = API_BASE;
+        }
+
+        setPreviewUrl(`${finalUrl}${url}`);
         setPreviewTitle(title);
         setPreviewDialogOpen(true);
     };
@@ -104,7 +111,31 @@ const AdminCustomerConfirmationPage: React.FC = () => {
     };
 
     // Handle download document
-    const handleDownload = (url: string, filename: string) => {
+    const handleDownload = (url: string, filename: string, isReSigned: boolean) => {
+        if (!url) {
+            setError('Document URL is not available');
+            return;
+        }
+        let finalUrl = isReSigned ? ONLINE_API_BASE : API_BASE;
+        if (filename === 'htr-form.html') {
+            finalUrl = API_BASE;
+        }
+        try {
+            const link = document.createElement('a');
+            link.href = url.startsWith('http') ? url : `${finalUrl}${url}`;
+            link.setAttribute('download', filename);
+            link.setAttribute('target', '_blank');
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } catch (err) {
+            console.error('Error downloading document:', err);
+            setError('Failed to download document');
+        }
+    };
+
+    // Handle download document
+    const handleViewDownload = (url: string, filename: string) => {
         if (!url) {
             setError('Document URL is not available');
             return;
@@ -334,7 +365,7 @@ const AdminCustomerConfirmationPage: React.FC = () => {
                                                         variant="outlined"
                                                         size="small"
                                                         startIcon={<VisibilityIcon />}
-                                                        onClick={() => handlePreview(documentData.documentPath!, 'Main Document')}
+                                                        onClick={() => handlePreview(documentData.documentPath!, 'Main Document', documentData.isReSigned)}
                                                     >
                                                         Preview
                                                     </Button>
@@ -342,7 +373,7 @@ const AdminCustomerConfirmationPage: React.FC = () => {
                                                         variant="contained"
                                                         size="small"
                                                         startIcon={<DownloadIcon />}
-                                                        onClick={() => handleDownload(documentData.documentPath!, 'main-document.pdf')}
+                                                        onClick={() => handleDownload(documentData.documentPath!, 'main-document.pdf', documentData.isReSigned)}
                                                     >
                                                         Download
                                                     </Button>
@@ -380,7 +411,7 @@ const AdminCustomerConfirmationPage: React.FC = () => {
                                                         variant="outlined"
                                                         size="small"
                                                         startIcon={<VisibilityIcon />}
-                                                        onClick={() => handlePreview(documentData.htrFormPath!, 'HTR Form')}
+                                                        onClick={() => handlePreview(documentData.htrFormPath!, 'HTR Form', documentData.isReSigned)}
                                                     >
                                                         Preview
                                                     </Button>
@@ -388,7 +419,7 @@ const AdminCustomerConfirmationPage: React.FC = () => {
                                                         variant="contained"
                                                         size="small"
                                                         startIcon={<DownloadIcon />}
-                                                        onClick={() => handleDownload(documentData.htrFormPath!, 'htr-form.html')}
+                                                        onClick={() => handleDownload(documentData.htrFormPath!, 'htr-form.html', documentData.isReSigned)}
                                                     >
                                                         Download
                                                     </Button>
@@ -427,7 +458,7 @@ const AdminCustomerConfirmationPage: React.FC = () => {
                                                         variant="outlined"
                                                         size="small"
                                                         startIcon={<VisibilityIcon />}
-                                                        onClick={() => handlePreview(documentData.filePDPNotificationPath!, 'Notification Document')}
+                                                        onClick={() => handlePreview(documentData.filePDPNotificationPath!, 'Notification Document', documentData.isReSigned)}
                                                     >
                                                         Preview
                                                     </Button>
@@ -435,7 +466,7 @@ const AdminCustomerConfirmationPage: React.FC = () => {
                                                         variant="contained"
                                                         size="small"
                                                         startIcon={<DownloadIcon />}
-                                                        onClick={() => handleDownload(documentData.filePDPNotificationPath!, 'notification.pdf')}
+                                                        onClick={() => handleDownload(documentData.filePDPNotificationPath!, 'notification.pdf', documentData.isReSigned)}
                                                     >
                                                         Download
                                                     </Button>
@@ -474,7 +505,7 @@ const AdminCustomerConfirmationPage: React.FC = () => {
                                                         variant="outlined"
                                                         size="small"
                                                         startIcon={<VisibilityIcon />}
-                                                        onClick={() => handlePreview(documentData.htrMembershipTCPath!, 'HTR Membership T&C')}
+                                                        onClick={() => handlePreview(documentData.htrMembershipTCPath!, 'HTR Membership T&C', documentData.isReSigned)}
                                                     >
                                                         Preview
                                                     </Button>
@@ -482,7 +513,7 @@ const AdminCustomerConfirmationPage: React.FC = () => {
                                                         variant="contained"
                                                         size="small"
                                                         startIcon={<DownloadIcon />}
-                                                        onClick={() => handleDownload(documentData.htrMembershipTCPath!, 'HTRMembershipTC.pdf')}
+                                                        onClick={() => handleDownload(documentData.htrMembershipTCPath!, 'HTRMembershipTC.pdf', documentData.isReSigned)}
                                                     >
                                                         Download
                                                     </Button>
@@ -521,7 +552,7 @@ const AdminCustomerConfirmationPage: React.FC = () => {
                                                         variant="outlined"
                                                         size="small"
                                                         startIcon={<VisibilityIcon />}
-                                                        onClick={() => handlePreview(documentData.fileHTPNotificationPath!, 'HTP Customer Confirmation')}
+                                                        onClick={() => handlePreview(documentData.fileHTPNotificationPath!, 'HTP Customer Confirmation', documentData.isReSigned)}
                                                     >
                                                         Preview
                                                     </Button>
@@ -529,7 +560,7 @@ const AdminCustomerConfirmationPage: React.FC = () => {
                                                         variant="contained"
                                                         size="small"
                                                         startIcon={<DownloadIcon />}
-                                                        onClick={() => handleDownload(documentData.fileHTPNotificationPath!, 'HTRMembershipTC.pdf')}
+                                                        onClick={() => handleDownload(documentData.fileHTPNotificationPath!, 'HTRMembershipTC.pdf', documentData.isReSigned)}
                                                     >
                                                         Download
                                                     </Button>
@@ -548,7 +579,8 @@ const AdminCustomerConfirmationPage: React.FC = () => {
                             </Stack>
                         </CardContent>
                     </Card>
-                )}
+                )
+                }
 
                 {/* Preview Dialog */}
                 <Dialog
@@ -656,15 +688,15 @@ const AdminCustomerConfirmationPage: React.FC = () => {
                             variant="contained"
                             startIcon={<DownloadIcon />}
                             onClick={() => {
-                                handleDownload(previewUrl, `${previewTitle.toLowerCase().replace(/\s+/g, '-')}.pdf`);
+                                handleViewDownload(previewUrl, `${previewTitle.toLowerCase().replace(/\s+/g, '-')}.pdf`);
                             }}
                         >
                             Download
                         </Button>
                     </DialogActions>
                 </Dialog>
-            </Box>
-        </AdminLayout>
+            </Box >
+        </AdminLayout >
     );
 };
 

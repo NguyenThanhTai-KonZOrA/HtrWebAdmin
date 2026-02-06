@@ -41,6 +41,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     ],
     [UserRole.USER]: [
         Permission.VIEW_ADMIN_REGISTRATION,
+        Permission.VIEW_VERIFICATION_DOCUMENT
         // User does not have permission for device mapping
     ],
     [UserRole.MANAGER]: [
@@ -49,7 +50,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
         Permission.VIEW_VERIFICATION_DOCUMENT
     ],
     [UserRole.VIEWER]: [
-        Permission.VIEW_ADMIN_REGISTRATION
+        Permission.VIEW_ADMIN_REGISTRATION,
+        Permission.VIEW_VERIFICATION_DOCUMENT
     ],
 };
 
