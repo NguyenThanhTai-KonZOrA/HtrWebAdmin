@@ -1,6 +1,6 @@
 import axios from "axios";
 import { showSessionExpiredNotification } from '../utils/sessionExpiredNotification';
-import type { AuditLogPaginationRequest, AuditLogPaginationResponse, AuditLogResponse, AuditLogsRegisterMembershipPaginationResponse, AuditLogsRegisterMembershipRequest, CheckPatronIdentificationRequest, CheckValidIncomeRequest, CheckValidIncomeResponse, CityResponse, CountryResponse, CreateMappingRequest, CreateMappingResponse, CurrentHostNameResponse, CurrentStaffDeviceResponse, DocumentsPagingRequest, DocumentsPagingResponse, GetAllMappingsResponse, GetMappingByStaffDeviceResponse, IncomeFileResponse, MappingDataResponse, OnlineStaffDevicesResponse, PatronFilterRequest, PatronImagesResponse, PatronPagingRequest, PatronPagingResponse, PatronRegisterMembershipRequest, PatronRegisterMembershipResponse, PatronResponse, RenderDocumentResponse, StaffAndPatronDevicesResponse, StaffSignatureRequest, SyncIncomeDocumentRequest, SyncIncomeDocumentResponse, SyncPatronImagesRequest, UpdateMappingRequest, UpdateMappingResponse } from "../registrationType";
+import type { AuditLogPaginationRequest, AuditLogPaginationResponse, AuditLogResponse, AuditLogsRegisterMembershipPaginationResponse, AuditLogsRegisterMembershipRequest, CheckPatronIdentificationRequest, CheckValidIncomeRequest, CheckValidIncomeResponse, CheckValidVisaRequest, CheckValidVisaResponse, CityResponse, CountryResponse, CreateMappingRequest, CreateMappingResponse, CurrentHostNameResponse, CurrentStaffDeviceResponse, DocumentsPagingRequest, DocumentsPagingResponse, GetAllMappingsResponse, GetMappingByStaffDeviceResponse, IncomeFileResponse, MappingDataResponse, OnlineStaffDevicesResponse, PatronFilterRequest, PatronImagesResponse, PatronPagingRequest, PatronPagingResponse, PatronRegisterMembershipRequest, PatronRegisterMembershipResponse, PatronResponse, RenderDocumentResponse, StaffAndPatronDevicesResponse, StaffSignatureRequest, SyncIncomeDocumentRequest, SyncIncomeDocumentResponse, SyncPatronImagesRequest, UpdateMappingRequest, UpdateMappingResponse } from "../registrationType";
 import type { SettingsResponse, CreateSettingsRequest, SettingsInfoResponse, ClearCacheSettingResponse, UpdateSettingsRequest, UpdateSettingsResponse, EmployeePerformanceRequest, EmployeePerformanceResponse, ManageDeviceResponse, ToggleDeviceRequest, DeleteDeviceRequest, ChangeHostnameRequest, CustomerConfirmationRequest, CustomerConfirmationResponse } from "../type";
 import { FormatUtcTime } from "../utils/formatUtcTime";
 
@@ -333,6 +333,20 @@ export const checkInformationService = {
         const response = await api.get<ApiEnvelope<boolean>>("/api/RegistrationAdmin/patron/check-phone", {
             params: { phoneNumber }
         });
+        return unwrapApiEnvelope(response);
+    },
+
+    checkDuplicateVisaNumber: async (visaNumber: string): Promise<boolean> => {
+        const response = await api.get<ApiEnvelope<boolean>>("/api/RegistrationAdmin/patron/check-visa", {
+            params: { visaNumber }
+        });
+        return unwrapApiEnvelope(response);
+    },
+
+    // NOTE: This endpoint needs to be implemented on the backend
+    // For now, it reuses the same structure as income approval
+    checkValidVisa: async (request: CheckValidVisaRequest): Promise<CheckValidVisaResponse> => {
+        const response = await api.post<ApiEnvelope<CheckValidVisaResponse>>("/api/RegistrationAdmin/visa/approve", request);
         return unwrapApiEnvelope(response);
     }
 };

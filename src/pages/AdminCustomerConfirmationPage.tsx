@@ -54,11 +54,11 @@ const AdminCustomerConfirmationPage: React.FC = () => {
 
     // Upload dialog states
     const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
-    const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-    const [selectedDocumentType, setSelectedDocumentType] = useState<number | ''>('');
+    const [filesWithTypes, setFilesWithTypes] = useState<Array<{ file: File; documentType: number | '' }>>([]);
     const [uploading, setUploading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
     const [uploadError, setUploadError] = useState('');
+    const [uploadSuccessCount, setUploadSuccessCount] = useState(0);
 
     // Preview Dialog States
     const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
@@ -68,6 +68,8 @@ const AdminCustomerConfirmationPage: React.FC = () => {
     // Handle search
     const handleSearch = async () => {
         if (!playerId.trim()) {
+            setUploadError('');
+            setUploading(false);
             setError('Please enter a Player ID');
             return;
         }
@@ -214,16 +216,33 @@ const AdminCustomerConfirmationPage: React.FC = () => {
     const handleCloseUploadDialog = () => {
         if (uploading) return;
         setUploadDialogOpen(false);
-        setSelectedFiles([]);
-        setSelectedDocumentType('');
+        setFilesWithTypes([]);
         setUploadError('');
         setUploadProgress(0);
+        setUploadSuccessCount(0);
     };
 
     const handleFileSelection = (event: React.ChangeEvent<HTMLInputElement>) => {
         const files = event.target.files ? Array.from(event.target.files) : [];
-        setSelectedFiles(files);
+        const newFilesWithTypes = files.map(file => ({ file, documentType: '' as number | '' }));
+        setFilesWithTypes(newFilesWithTypes);
         setUploadError('');
+    };
+
+    const handleDocumentTypeChange = (index: number, documentType: number) => {
+        const updated = [...filesWithTypes];
+        updated[index].documentType = documentType;
+        setFilesWithTypes(updated);
+        setUploadError('');
+    };
+
+    const handleRemoveFile = (index: number) => {
+        const updated = filesWithTypes.filter((_, i) => i !== index);
+        setFilesWithTypes(updated);
+    };
+
+    const areAllDocumentTypesSelected = (): boolean => {
+        return filesWithTypes.length > 0 && filesWithTypes.every(item => item.documentType !== '');
     };
 
     const handleUploadFiles = async () => {
@@ -238,13 +257,13 @@ const AdminCustomerConfirmationPage: React.FC = () => {
             return;
         }
 
-        if (!selectedFiles.length) {
+        if (!filesWithTypes.length) {
             setUploadError('Please select at least one file.');
             return;
         }
 
-        if (selectedDocumentType === '') {
-            setUploadError('Please select a document type.');
+        if (!areAllDocumentTypesSelected()) {
+            setUploadError('Please select document type for all files.');
             return;
         }
 
@@ -252,25 +271,33 @@ const AdminCustomerConfirmationPage: React.FC = () => {
             setUploading(true);
             setUploadError('');
             setUploadProgress(0);
+            setUploadSuccessCount(0);
 
-            for (let index = 0; index < selectedFiles.length; index += 1) {
-                const file = selectedFiles[index];
+            // Upload each file individually
+            for (let index = 0; index < filesWithTypes.length; index += 1) {
+                const { file, documentType } = filesWithTypes[index];
                 const formData = new FormData();
                 formData.append('PlayerId', playerIdNum.toString());
                 formData.append('ManualDocumentFile', file);
-                formData.append('DocumentType', selectedDocumentType.toString());
+                formData.append('DocumentType', documentType.toString());
 
                 await renderDocumentService.uploadManualDocument(formData);
-                const progress = Math.round(((index + 1) / selectedFiles.length) * 100);
+
+                const progress = Math.round(((index + 1) / filesWithTypes.length) * 100);
                 setUploadProgress(progress);
+                setUploadSuccessCount(index + 1);
             }
 
-            handleCloseUploadDialog();
-            await handleSearch();
+            // Success - close dialog and refresh
+            setTimeout(async () => {
+                handleCloseUploadDialog();
+                await handleSearch();
+                setUploadError('');
+                setUploading(false);
+            }, 1000); // Show success for 1 second
         } catch (err: any) {
             console.error('Upload failed:', err);
             setUploadError(err.response?.data?.message || 'Upload failed. Please try again.');
-        } finally {
             setUploading(false);
         }
     };
@@ -688,12 +715,12 @@ const AdminCustomerConfirmationPage: React.FC = () => {
                 <Dialog
                     open={uploadDialogOpen}
                     onClose={handleCloseUploadDialog}
-                    maxWidth="sm"
+                    maxWidth="md"
                     fullWidth
                 >
                     <DialogTitle>Upload Manual Document</DialogTitle>
                     <DialogContent dividers>
-                        <Stack spacing={2}>
+                        <Stack spacing={3}>
                             <Button
                                 variant="outlined"
                                 component="label"
@@ -703,61 +730,90 @@ const AdminCustomerConfirmationPage: React.FC = () => {
                                 <input
                                     type="file"
                                     multiple
+                                    accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
                                     hidden
                                     onChange={handleFileSelection}
                                 />
                             </Button>
 
-                            {selectedFiles.length > 0 && (
+                            {filesWithTypes.length > 0 && (
                                 <Box>
-                                    <Typography variant="body2" color="text.secondary" gutterBottom>
-                                        Selected files:
+                                    <Typography variant="body2" color="text.secondary" gutterBottom sx={{ mb: 1 }}>
+                                        Selected files ({filesWithTypes.length}):
                                     </Typography>
-                                    <Stack spacing={0.5}>
-                                        {selectedFiles.map((file, index) => (
-                                            <Typography key={`${file.name}-${index}`} variant="body2">
-                                                {file.name}
-                                            </Typography>
+                                    <Stack spacing={1.5}>
+                                        {filesWithTypes.map((item, index) => (
+                                            <Paper
+                                                key={`${item.file.name}-${index}`}
+                                                variant="outlined"
+                                                sx={{
+                                                    p: 2,
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: 2,
+                                                    backgroundColor: item.documentType === '' ? 'warning.lighter' : 'background.paper'
+                                                }}
+                                            >
+                                                <Box sx={{ flex: 1, minWidth: 0 }}>
+                                                    <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                                                        {item.file.name}
+                                                    </Typography>
+                                                    <Typography variant="caption" color="text.secondary">
+                                                        {(item.file.size / 1024).toFixed(1)} KB
+                                                    </Typography>
+                                                </Box>
+                                                <FormControl size="small" sx={{ minWidth: 200 }} disabled={uploading}>
+                                                    <InputLabel>Document Type *</InputLabel>
+                                                    <Select
+                                                        value={item.documentType}
+                                                        label="Document Type *"
+                                                        onChange={(e) => handleDocumentTypeChange(index, e.target.value as number)}
+                                                        error={item.documentType === ''}
+                                                    >
+                                                        {documentTypeOptions.map((option) => {
+                                                            const isDisabled = documentData?.isVietnamese
+                                                                ? option.value === 2
+                                                                : option.value === 3;
+                                                            return (
+                                                                <MenuItem
+                                                                    key={option.value}
+                                                                    value={option.value}
+                                                                    disabled={isDisabled}
+                                                                >
+                                                                    {option.label}
+                                                                </MenuItem>
+                                                            );
+                                                        })}
+                                                    </Select>
+                                                </FormControl>
+                                                {!uploading && (
+                                                    <IconButton
+                                                        size="small"
+                                                        color="error"
+                                                        onClick={() => handleRemoveFile(index)}
+                                                    >
+                                                        <CloseIcon fontSize="small" />
+                                                    </IconButton>
+                                                )}
+                                            </Paper>
                                         ))}
                                     </Stack>
                                 </Box>
                             )}
 
-                            <FormControl fullWidth disabled={uploading}>
-                                <InputLabel id="document-type-label">Document Type</InputLabel>
-                                <Select
-                                    labelId="document-type-label"
-                                    label="Document Type"
-                                    value={selectedDocumentType}
-                                    onChange={(event) => {
-                                        setSelectedDocumentType(event.target.value as number);
-                                        setUploadError('');
-                                    }}
-                                >
-                                    {documentTypeOptions.map((option) => {
-                                        if (documentData?.isVietnamese) {
-                                            return (
-                                                <MenuItem key={option.value} value={option.value} disabled={option.value === 2}>
-                                                    {option.label}
-                                                </MenuItem>
-                                            );
-                                        } else {
-                                            return (
-                                                <MenuItem key={option.value} value={option.value} disabled={option.value === 3}>
-                                                    {option.label}
-                                                </MenuItem>
-                                            );
-                                        }
-
-                                    })}
-                                </Select>
-                            </FormControl>
-
                             {uploading && (
                                 <Box>
-                                    <LinearProgress variant="determinate" value={uploadProgress} />
-                                    <Typography variant="caption" color="text.secondary">
-                                        Uploading... {uploadProgress}%
+                                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                                        <Typography variant="body2" color="primary" fontWeight="medium">
+                                            Uploading files...
+                                        </Typography>
+                                        <Typography variant="body2" color="text.secondary">
+                                            {uploadSuccessCount} / {filesWithTypes.length} files
+                                        </Typography>
+                                    </Box>
+                                    <LinearProgress variant="determinate" value={uploadProgress} sx={{ height: 8, borderRadius: 1 }} />
+                                    <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                                        {uploadProgress}% completed
                                     </Typography>
                                 </Box>
                             )}
@@ -765,6 +821,12 @@ const AdminCustomerConfirmationPage: React.FC = () => {
                             {uploadError && (
                                 <Alert severity="error">
                                     {uploadError}
+                                </Alert>
+                            )}
+
+                            {!areAllDocumentTypesSelected() && filesWithTypes.length > 0 && !uploading && (
+                                <Alert severity="warning">
+                                    Please select document type for all files before uploading.
                                 </Alert>
                             )}
                         </Stack>
@@ -776,9 +838,9 @@ const AdminCustomerConfirmationPage: React.FC = () => {
                         <Button
                             variant="contained"
                             onClick={handleUploadFiles}
-                            disabled={uploading}
+                            disabled={uploading || !areAllDocumentTypesSelected()}
                         >
-                            {uploading ? 'Uploading...' : 'Upload'}
+                            {uploading ? `Uploading... (${uploadSuccessCount}/${filesWithTypes.length})` : 'Upload Files'}
                         </Button>
                     </DialogActions>
                 </Dialog>

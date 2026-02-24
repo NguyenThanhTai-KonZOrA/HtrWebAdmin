@@ -71,7 +71,8 @@ import type {
     PatronRegisterMembershipRequest,
     StaffSignatureRequest,
     IncomeFileResponse,
-    SyncPatronImagesRequest
+    SyncPatronImagesRequest,
+    CheckValidVisaRequest
 } from '../registrationType';
 import AdminLayout from '../components/layout/AdminLayout';
 import { useSetPageTitle } from '../hooks/useSetPageTitle';
@@ -164,6 +165,14 @@ const AdminRegistrationPage: React.FC = () => {
     const [expireDateError, setExpireDateError] = useState('');
     const [approvingIncome, setApprovingIncome] = useState(false);
     const [incomeApproved, setIncomeApproved] = useState(false);
+    const [visaApproved, setVisaApproved] = useState(false);
+
+    // Visa document states (for foreigners)
+    const [visaNumber, setVisaNumber] = useState('');
+    const [visaNumberError, setVisaNumberError] = useState('');
+    const [visaExpiryDate, setVisaExpiryDate] = useState('');
+    const [visaExpiryDateError, setVisaExpiryDateError] = useState('');
+    const [approvingVisa, setApprovingVisa] = useState(false);
 
     // Enroll player states
     const [enrollDialogOpen, setEnrollDialogOpen] = useState(false);
@@ -179,8 +188,10 @@ const AdminRegistrationPage: React.FC = () => {
     // Validation warnings for duplicate check
     const [phoneNumberWarning, setPhoneNumberWarning] = useState<string>('');
     const [idNumberWarning, setIdNumberWarning] = useState<string>('');
+    const [visaNumberWarning, setVisaNumberWarning] = useState<string>('');
     const [checkingPhone, setCheckingPhone] = useState(false);
     const [checkingId, setCheckingId] = useState(false);
+    const [checkingVisa, setCheckingVisa] = useState(false);
 
     // Sync images state
     const [syncingImages, setSyncingImages] = useState(false);
@@ -225,6 +236,7 @@ const AdminRegistrationPage: React.FC = () => {
     // Debounce timer refs
     const phoneCheckTimerRef = React.useRef<number | null>(null);
     const idCheckTimerRef = React.useRef<number | null>(null);
+    const visaCheckTimerRef = React.useRef<number | null>(null);
     const newRegSearchTimerRef = React.useRef<number | null>(null);
     const membershipSearchTimerRef = React.useRef<number | null>(null);
 
@@ -240,6 +252,9 @@ const AdminRegistrationPage: React.FC = () => {
             }
             if (idCheckTimerRef.current) {
                 clearTimeout(idCheckTimerRef.current);
+            }
+            if (visaCheckTimerRef.current) {
+                clearTimeout(visaCheckTimerRef.current);
             }
             if (newRegSearchTimerRef.current) {
                 clearTimeout(newRegSearchTimerRef.current);
@@ -369,7 +384,9 @@ const AdminRegistrationPage: React.FC = () => {
             selectedPatron.address !== editedPatron.address ||
             selectedPatron.addressInVietNam !== editedPatron.addressInVietNam ||
             selectedPatron.country !== editedPatron.country ||
-            selectedPatron.city !== editedPatron.city
+            selectedPatron.city !== editedPatron.city ||
+            selectedPatron.visaNumber !== editedPatron.visaNumber ||
+            selectedPatron.visaExpiryDate !== editedPatron.visaExpiryDate
         );
 
         setHasUnsavedChanges(hasChanges);
@@ -766,6 +783,42 @@ const AdminRegistrationPage: React.FC = () => {
         }, 800);
     };
 
+    // Check visa number exists with debounce
+    const checkVisaNumber = async (visaNum: string) => {
+        // Clear previous timer
+        if (visaCheckTimerRef.current) {
+            clearTimeout(visaCheckTimerRef.current);
+        }
+
+        // Reset warning
+        setVisaNumberWarning('');
+
+        // Skip if empty or same as original
+        if (!visaNum || visaNum === selectedPatron?.visaNumber) {
+            return;
+        }
+
+        // Skip if Vietnamese (not required for Vietnamese)
+        if (isVietnamese()) {
+            return;
+        }
+
+        // Debounce 800ms
+        visaCheckTimerRef.current = setTimeout(async () => {
+            try {
+                setCheckingVisa(true);
+                const exists = await checkInformationService.checkDuplicateVisaNumber(visaNum);
+                if (exists) {
+                    setVisaNumberWarning('⚠️ This visa number already exists in the system!');
+                }
+            } catch (error) {
+                console.error('Error checking visa number:', error);
+            } finally {
+                setCheckingVisa(false);
+            }
+        }, 800);
+    };
+
     // Filter and paginate data
     const filteredNewRegistrations = useMemo(() => {
         // Client-side filter only for search
@@ -833,8 +886,10 @@ const AdminRegistrationPage: React.FC = () => {
             // Reset validation warnings
             setPhoneNumberWarning('');
             setIdNumberWarning('');
+            setVisaNumberWarning('');
             setCheckingPhone(false);
             setCheckingId(false);
+            setCheckingVisa(false);
 
             // Reset unsaved changes flag
             setHasUnsavedChanges(false);
@@ -845,6 +900,9 @@ const AdminRegistrationPage: React.FC = () => {
             }
             if (idCheckTimerRef.current) {
                 clearTimeout(idCheckTimerRef.current);
+            }
+            if (visaCheckTimerRef.current) {
+                clearTimeout(visaCheckTimerRef.current);
             }
 
             // Get patron detail and images
@@ -889,6 +947,13 @@ const AdminRegistrationPage: React.FC = () => {
             setExpireDate(patronDetail.incomeExpiryDate || '');
             setExpireDateError('');
             setIncomeApproved(patronDetail.isValidIncomeDocument);
+
+            // Reset visa fields
+            setVisaNumber(patronDetail.visaNumber || '');
+            setVisaNumberError('');
+            setVisaExpiryDate(patronDetail.visaExpiryDate || '');
+            setVisaExpiryDateError('');
+            setVisaApproved(patronDetail.isValidVisa);
 
             // Reset document HTML
             setDocumentHtml('');
@@ -1076,6 +1141,30 @@ const AdminRegistrationPage: React.FC = () => {
                     delete errors.city;
                 }
                 break;
+            case 'visaNumber':
+                if (editedPatron.identificationCountry !== String(VIETNAM_COUNTRY_ID)) {
+                    if (!value?.trim()) {
+                        errors.visaNumber = 'Visa Number is required for foreign nationals';
+                    } else {
+                        delete errors.visaNumber;
+                    }
+                } else {
+                    delete errors.visaNumber;
+                }
+                break;
+            case 'visaExpiryDate':
+                if (editedPatron.identificationCountry !== String(VIETNAM_COUNTRY_ID)) {
+                    if (!value) {
+                        errors.visaExpiryDate = 'Visa Expiry Date is required for foreign nationals';
+                    } else if (new Date(value) <= new Date()) {
+                        errors.visaExpiryDate = 'Visa Expiry Date must be a future date';
+                    } else {
+                        delete errors.visaExpiryDate;
+                    }
+                } else {
+                    delete errors.visaExpiryDate;
+                }
+                break;
         }
 
         setValidationErrors(errors);
@@ -1176,12 +1265,25 @@ const AdminRegistrationPage: React.FC = () => {
             }
         }
 
+        // Visa validation for foreigners with submitType 1 or 2
+        if (editedPatron.identificationCountry !== String(VIETNAM_COUNTRY_ID) && (selectedPatron?.submitType === 1 || selectedPatron?.submitType === 2)) {
+            if (!visaNumber?.trim()) {
+                errors.visaNumber = 'Visa Number is required for foreign nationals';
+            }
+            if (!visaExpiryDate) {
+                errors.visaExpiryDate = 'Visa Expiry Date is required for foreign nationals';
+            } else if (new Date(visaExpiryDate) <= new Date()) {
+                errors.visaExpiryDate = 'Visa Expiry Date must be a future date';
+            }
+        }
+
         setValidationErrors(errors);
         return Object.keys(errors).length === 0;
     };
 
     // Handle patron update
     const handleUpdatePatron = async () => {
+        debugger;
         if (!editedPatron) return;
 
         // Validate Vietnamese phone number format first
@@ -1205,8 +1307,13 @@ const AdminRegistrationPage: React.FC = () => {
             return;
         }
 
+        if (visaNumberWarning) {
+            setDialogError('Cannot update: Visa number already exists in the system.');
+            return;
+        }
+
         // Check if still checking
-        if (checkingPhone || checkingId) {
+        if (checkingPhone || checkingId || checkingVisa) {
             setDialogError('Please wait for validation to complete.');
             return;
         }
@@ -1386,6 +1493,49 @@ const AdminRegistrationPage: React.FC = () => {
             console.error('Error approving income document:', err);
         } finally {
             setApprovingIncome(false);
+        }
+    };
+
+    // Handle visa approval
+    const handleApproveVisa = async () => {
+        if (!selectedPatron || !visaNumber || !visaExpiryDate) return;
+
+        try {
+            setApprovingVisa(true);
+            setDialogError(null);
+
+            const request: CheckValidVisaRequest = {
+                PatronId: selectedPatron.pid,
+                VisaNumber: visaNumber,
+                VisaExpiryDate: visaExpiryDate
+            };
+
+            await checkInformationService.checkValidVisa(request);
+            setDialogSuccess('Visa information approved successfully!');
+            setVisaApproved(true);
+
+            // Update the patron's visa info
+            if (editedPatron) {
+                setEditedPatron({
+                    ...editedPatron,
+                    isValidVisa: true,
+                    visaNumber: visaNumber,
+                    visaExpiryDate: visaExpiryDate
+                });
+            }
+            if (selectedPatron) {
+                setSelectedPatron({
+                    ...selectedPatron,
+                    isValidVisa: true,
+                    visaNumber: visaNumber,
+                    visaExpiryDate: visaExpiryDate
+                });
+            }
+        } catch (err) {
+            setDialogError('Failed to approve visa information.');
+            console.error('Error approving visa:', err);
+        } finally {
+            setApprovingVisa(false);
         }
     };
 
@@ -1690,9 +1840,20 @@ const AdminRegistrationPage: React.FC = () => {
         return needsIncomeDocument();
     };
 
+    // Check if visa section should be shown (for foreigners with submitType 1 or 2)
+    const shouldShowVisaSection = (): boolean => {
+        if (!selectedPatron) return false;
+        return !isVietnamese() && (selectedPatron.submitType === 1 || selectedPatron.submitType === 2);
+    };
+
     // Check if income document is valid
     const isIncomeFormValid = (): boolean => {
         return !!(incomeDocument?.trim() && expireDate && new Date(expireDate) > new Date());
+    };
+
+    // Check if visa information is valid
+    const isVisaFormValid = (): boolean => {
+        return !!(visaNumber?.trim() && visaExpiryDate && new Date(visaExpiryDate) > new Date());
     };
 
     // Determine if Approve Income button should be enabled
@@ -1711,6 +1872,24 @@ const AdminRegistrationPage: React.FC = () => {
 
         // Check if form is valid and not approved
         return areRequiredFieldsFilled() && isIncomeFormValid() && !incomeApproved && !selectedPatron.isValidIncomeDocument;
+    };
+
+    // Determine if Approve Visa button should be enabled
+    const canApproveVisa = (): boolean => {
+        if (!selectedPatron) return false;
+
+        // Must update patron before (isUpdated === true)
+        if (!selectedPatron.isUpdated && !patronUpdated) {
+            return false;
+        }
+
+        // Must be foreign national
+        if (isVietnamese()) {
+            return false;
+        }
+
+        // Check if form is valid and not approved
+        return areRequiredFieldsFilled() && isVisaFormValid() && !visaApproved && !selectedPatron.isValidVisa;
     };
 
     // Determine if Enroll Player button should be enabled
@@ -1739,7 +1918,12 @@ const AdminRegistrationPage: React.FC = () => {
             return (incomeApproved || selectedPatron.isValidIncomeDocument) && isPatronSigned;
         }
 
-        // If not Vietnamese: only need isUpdated = true and isSigned = true
+        // If not Vietnamese with submitType 1 or 2: must approve visa and signed
+        if (!isVietnamese() && (selectedPatron.submitType === 1 || selectedPatron.submitType === 2)) {
+            return (visaApproved || selectedPatron.isValidVisa) && isPatronSigned;
+        }
+
+        // If not Vietnamese with other submitType: only need isUpdated = true and isSigned = true
         return isPatronSigned;
     };
 
@@ -1766,6 +1950,12 @@ const AdminRegistrationPage: React.FC = () => {
                 return '⏳ Waiting for customer signature';
             }
         } else {
+            // For foreigners with submitType 1 or 2
+            if (selectedPatron.submitType === 1 || selectedPatron.submitType === 2) {
+                if (!(visaApproved || selectedPatron.isValidVisa)) {
+                    return '⏳ Please approve visa information first';
+                }
+            }
             if (!isPatronSigned) {
                 return '⏳ Waiting for customer signature';
             }
@@ -2702,6 +2892,127 @@ const AdminRegistrationPage: React.FC = () => {
                                     </Card>
                                 </Stack>
 
+                                {/* Check Visa Section - for non-Vietnamese with submitType 1 or 2 */}
+                                {shouldShowVisaSection() && (
+                                    <Card variant="outlined">
+                                        <CardContent>
+                                            <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+                                                <Typography variant="h6" sx={{ color: 'primary.main' }}>
+                                                    Visa Information Approval
+                                                </Typography>
+                                                <Button
+                                                    variant="contained"
+                                                    color="success"
+                                                    onClick={handleApproveVisa}
+                                                    disabled={!canApproveVisa() || approvingVisa}
+                                                    startIcon={approvingVisa ? <CircularProgress size={16} /> : (visaApproved || selectedPatron.isValidVisa) ? <CheckCircleIcon /> : undefined}
+                                                    size="small"
+                                                >
+                                                    {(visaApproved || selectedPatron.isValidVisa) ? 'Approved' : 'Approve Visa'}
+                                                </Button>
+                                            </Box>
+
+                                            {/* Warning if not updated yet */}
+                                            {!(selectedPatron.isUpdated || patronUpdated) && (
+                                                <Alert severity="warning" sx={{ mb: 2 }}>
+                                                    Please update patron information first before approving visa.
+                                                </Alert>
+                                            )}
+
+                                            {/* Success message if approved */}
+                                            {(visaApproved || selectedPatron.isValidVisa) && (
+                                                <Alert severity="success" sx={{ mb: 2 }}>
+                                                    ✓ Visa information has been approved. Waiting for customer signature...
+                                                </Alert>
+                                            )}
+
+                                            <Stack spacing={2}>
+                                                <Stack direction="row" spacing={2}>
+                                                    <TextField
+                                                        label="Visa Number"
+                                                        required
+                                                        value={visaNumber}
+                                                        onChange={(e) => {
+                                                            const newVisaNumber = e.target.value;
+                                                            setVisaNumber(newVisaNumber);
+                                                            // Clear error when user types
+                                                            if (newVisaNumber.trim()) {
+                                                                setVisaNumberError('');
+                                                            }
+                                                            // Clear previous warning
+                                                            setVisaNumberWarning('');
+                                                            // Check visa number
+                                                            if (isEditing && !isVietnamese()) {
+                                                                checkVisaNumber(newVisaNumber);
+                                                            }
+                                                        }}
+                                                        onBlur={(e) => {
+                                                            if (!e.target.value.trim()) {
+                                                                setVisaNumberError('Visa Number is required');
+                                                            } else {
+                                                                setVisaNumberError('');
+                                                            }
+                                                            validateField('visaNumber', e.target.value);
+                                                        }}
+                                                        //disabled={visaApproved || !isEditing}
+                                                        fullWidth
+                                                        size="small"
+                                                        error={!!visaNumberError || !!validationErrors.visaNumber || !!visaNumberWarning}
+                                                        helperText={
+                                                            visaNumberError ||
+                                                            validationErrors.visaNumber ||
+                                                            visaNumberWarning ||
+                                                            (checkingVisa ? 'Checking...' : '')
+                                                        }
+                                                        InputProps={{
+                                                            endAdornment: checkingVisa ? (
+                                                                <CircularProgress size={20} />
+                                                            ) : visaNumberWarning ? (
+                                                                <span style={{ color: '#ff9800' }}>⚠️</span>
+                                                            ) : null
+                                                        }}
+                                                    />
+
+                                                    <TextField
+                                                        label="Visa Expiry Date"
+                                                        type="date"
+                                                        required
+                                                        value={visaExpiryDate?.split('T')[0] || ''}
+                                                        onChange={(e) => {
+                                                            setVisaExpiryDate(e.target.value);
+                                                            if (e.target.value.trim()) {
+                                                                setVisaExpiryDateError('');
+                                                            }
+                                                        }}
+                                                        onBlur={(e) => {
+                                                            if (!e.target.value.trim()) {
+                                                                setVisaExpiryDateError('Visa Expiry Date is required');
+                                                            } else if (new Date(e.target.value) <= new Date()) {
+                                                                setVisaExpiryDateError('Visa Expiry Date must be a future date');
+                                                            } else {
+                                                                setVisaExpiryDateError('');
+                                                            }
+                                                            validateField('visaExpiryDate', e.target.value);
+                                                        }}
+                                                        InputLabelProps={{ shrink: true }}
+                                                        inputProps={{ min: getTomorrowDate() }}
+                                                        //disabled={visaApproved || !isEditing}
+                                                        fullWidth
+                                                        size="small"
+                                                        error={!!visaExpiryDateError || !!validationErrors.visaExpiryDate}
+                                                        helperText={visaExpiryDateError || validationErrors.visaExpiryDate}
+                                                        onFocus={(e) => {
+                                                            const input = e.target as HTMLInputElement;
+                                                            if (input.showPicker) {
+                                                                input.showPicker();
+                                                            }
+                                                        }}
+                                                    />
+                                                </Stack>
+                                            </Stack>
+                                        </CardContent>
+                                    </Card>
+                                )}
 
                                 {/* Workflow Status - Show progress */}
                                 <Card variant="outlined" sx={{ backgroundColor: '#f5f5f5' }}>
@@ -2756,6 +3067,31 @@ const AdminRegistrationPage: React.FC = () => {
                                                 </Box>
                                             )}
 
+                                            {/* Step 2: Valid Visa (only for non-Vietnamese) */}
+                                            {!isVietnamese() && (
+                                                <Box display="flex" alignItems="center" gap={2}>
+                                                    {(selectedPatron.isValidVisa || visaApproved) ? (
+                                                        <CheckCircleIcon sx={{ color: 'success.main', fontSize: 32 }} />
+                                                    ) : (
+                                                        <Box sx={{ width: 32, height: 32, borderRadius: '50%', border: '2px solid #ccc', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: !(selectedPatron.isValidVisa || patronUpdated) ? '#f0f0f0' : 'white' }}>
+                                                            <Typography variant="body2" color={!(selectedPatron.isValidVisa || patronUpdated) ? 'text.disabled' : 'text.secondary'}>2</Typography>
+                                                        </Box>
+                                                    )}
+                                                    <Box flex={1}>
+                                                        <Typography variant="subtitle1" fontWeight="bold" color={!(selectedPatron.isValidVisa || patronUpdated) ? 'text.disabled' : 'inherit'}>
+                                                            Step 2: Approve Visa Information
+                                                        </Typography>
+                                                        <Typography variant="body2" color="text.secondary">
+                                                            {(selectedPatron.isValidVisa || visaApproved)
+                                                                ? '✓ Visa has been approved'
+                                                                : !(selectedPatron.isValidVisa || patronUpdated)
+                                                                    ? '⏳ Complete Step 1 first'
+                                                                    : '⚠️ Please check valid visa'}
+                                                        </Typography>
+                                                    </Box>
+                                                </Box>
+                                            )}
+
                                             {/* Step 3: Signature Completed */}
                                             <Box display="flex" alignItems="center" gap={2}>
                                                 {(selectedPatron.isSigned || editedPatron.isSigned) ? (
@@ -2772,13 +3108,13 @@ const AdminRegistrationPage: React.FC = () => {
                                                         backgroundColor: !(selectedPatron.isUpdated || patronUpdated) ? '#f0f0f0' : 'white'
                                                     }}>
                                                         <Typography variant="body2" color={!(selectedPatron.isUpdated || patronUpdated) ? 'text.disabled' : 'text.secondary'}>
-                                                            {isVietnamese() ? '3' : '2'}
+                                                            {isVietnamese() ? '3' : '3'}
                                                         </Typography>
                                                     </Box>
                                                 )}
                                                 <Box flex={1}>
                                                     <Typography variant="subtitle1" fontWeight="bold" color={!(selectedPatron.isUpdated || patronUpdated) ? 'text.disabled' : 'inherit'}>
-                                                        Step {isVietnamese() ? '3' : '2'}: Customer Signature
+                                                        Step {isVietnamese() ? '3' : '3'}: Customer Signature
                                                     </Typography>
                                                     <Typography variant="body2" color="text.secondary">
                                                         {(selectedPatron.isSigned || editedPatron.isSigned)
@@ -2806,13 +3142,13 @@ const AdminRegistrationPage: React.FC = () => {
                                                         backgroundColor: !canEnrollPlayer() ? '#f0f0f0' : 'white'
                                                     }}>
                                                         <Typography variant="body2" color={!canEnrollPlayer() ? 'text.disabled' : 'text.secondary'}>
-                                                            {isVietnamese() ? '4' : '3'}
+                                                            {isVietnamese() ? '4' : '4'}
                                                         </Typography>
                                                     </Box>
                                                 )}
                                                 <Box flex={1}>
                                                     <Typography variant="subtitle1" fontWeight="bold" color={!canEnrollPlayer() ? 'text.disabled' : 'inherit'}>
-                                                        Step {isVietnamese() ? '4' : '3'}: Enroll Player
+                                                        Step {isVietnamese() ? '4' : '4'}: Enroll Player
                                                     </Typography>
                                                     <Typography variant="body2" color="text.secondary">
                                                         {getEnrollPlayerWarning()}
@@ -3109,6 +3445,12 @@ const AdminRegistrationPage: React.FC = () => {
                                                             size="small"
                                                             error={!!expireDateError}
                                                             helperText={expireDateError}
+                                                            onFocus={(e) => {
+                                                                const input = e.target as HTMLInputElement;
+                                                                if (input.showPicker) {
+                                                                    input.showPicker();
+                                                                }
+                                                            }}
                                                         />
                                                     </Stack>
                                                 </Stack>

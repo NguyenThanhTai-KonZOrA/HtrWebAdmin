@@ -460,6 +460,10 @@ export interface CustomerConfirmationResponse {
 
 export interface UploadManualDocumentRequest {
   PlayerId: number;
+  Documents: ManualDocumentRequest[];
+}
+
+export interface ManualDocumentRequest {
   ManualDocumentFile: File;
   DocumentType: number;
 }

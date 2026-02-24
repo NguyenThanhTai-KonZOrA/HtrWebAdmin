@@ -5,6 +5,16 @@ export interface CheckValidIncomeRequest {
     Files: FileDataRequest[];
 }
 
+export interface CheckValidVisaRequest {
+    PatronId: number;
+    VisaNumber: string;
+    VisaExpiryDate: string;
+}
+
+export interface CheckValidVisaResponse {
+    isValid: boolean;
+}
+
 export interface CheckValidIncomeResponse {
     isValid: boolean;
 }
@@ -63,6 +73,7 @@ export interface PatronResponse {
     isUpdated: boolean;
     city: string;
     postalCode: string;
+    visaNumber: string;
     isValidVisa: boolean;
     visaExpiryDate: string;
 }

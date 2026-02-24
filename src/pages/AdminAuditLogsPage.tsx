@@ -64,7 +64,7 @@ const ENTITY_TYPES = [
 const ACTIONS = [
     'All',
     'UpdatePatron',
-    'SyncImages',    
+    'SyncImages',
     'DeletePatron',
     'RegisterMembership',
     'RequestSignature',
@@ -80,7 +80,9 @@ const ACTIONS = [
     'DeleteFile',
     'GetDocumentByPlayerId',
     'ExportRegistrationReport',
-    'GenerateDocuments'
+    'GenerateDocuments',
+    'CheckValidVisa',
+    'CheckValidIncome'
 ];
 
 const AdminAuditLogsPage: React.FC = () => {
