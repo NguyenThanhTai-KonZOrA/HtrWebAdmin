@@ -2103,7 +2103,7 @@ const AdminRegistrationPage: React.FC = () => {
                                 <TableCell>{patron.identificationCountry !== 'Viet Nam' ? `${patron.firstName} ${patron.lastName}` : `${patron.lastName} ${patron.firstName}`}</TableCell>
                                 <TableCell>{patron.gender || '-'}</TableCell>
                                 <TableCell>{patron.mobilePhone}</TableCell>
-                                <TableCell>{patron.jobTitle === 'Unemployed' ? 'Businessman / Businesswoman' : patron.jobTitle}</TableCell>
+                                <TableCell>{patron.jobTitle === 'Unemployed' ? 'Business Man / Business Woman' : patron.jobTitle}</TableCell>
                                 <TableCell>{patron.position || '-'}</TableCell>
                                 <TableCell>{patron.identificationNumber || '-'}</TableCell>
                                 <TableCell>{getCountryName(patron.identificationCountry)}</TableCell>
