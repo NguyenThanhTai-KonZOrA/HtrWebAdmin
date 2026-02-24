@@ -1,6 +1,6 @@
 import axios from "axios";
 import { showSessionExpiredNotification } from '../utils/sessionExpiredNotification';
-import type { AuditLogPaginationRequest, AuditLogPaginationResponse, AuditLogResponse, AuditLogsRegisterMembershipPaginationResponse, AuditLogsRegisterMembershipRequest, CheckPatronIdentificationRequest, CheckValidIncomeRequest, CheckValidIncomeResponse, CityResponse, CountryResponse, CreateMappingRequest, CreateMappingResponse, CurrentHostNameResponse, CurrentStaffDeviceResponse, GetAllMappingsResponse, GetMappingByStaffDeviceResponse, IncomeFileResponse, MappingDataResponse, OnlineStaffDevicesResponse, PatronFilterRequest, PatronImagesResponse, PatronPagingRequest, PatronPagingResponse, PatronRegisterMembershipRequest, PatronRegisterMembershipResponse, PatronResponse, RenderDocumentResponse, StaffAndPatronDevicesResponse, StaffSignatureRequest, SyncIncomeDocumentRequest, SyncIncomeDocumentResponse, SyncPatronImagesRequest, UpdateMappingRequest, UpdateMappingResponse } from "../registrationType";
+import type { AuditLogPaginationRequest, AuditLogPaginationResponse, AuditLogResponse, AuditLogsRegisterMembershipPaginationResponse, AuditLogsRegisterMembershipRequest, CheckPatronIdentificationRequest, CheckValidIncomeRequest, CheckValidIncomeResponse, CityResponse, CountryResponse, CreateMappingRequest, CreateMappingResponse, CurrentHostNameResponse, CurrentStaffDeviceResponse, DocumentsPagingRequest, DocumentsPagingResponse, GetAllMappingsResponse, GetMappingByStaffDeviceResponse, IncomeFileResponse, MappingDataResponse, OnlineStaffDevicesResponse, PatronFilterRequest, PatronImagesResponse, PatronPagingRequest, PatronPagingResponse, PatronRegisterMembershipRequest, PatronRegisterMembershipResponse, PatronResponse, RenderDocumentResponse, StaffAndPatronDevicesResponse, StaffSignatureRequest, SyncIncomeDocumentRequest, SyncIncomeDocumentResponse, SyncPatronImagesRequest, UpdateMappingRequest, UpdateMappingResponse } from "../registrationType";
 import type { SettingsResponse, CreateSettingsRequest, SettingsInfoResponse, ClearCacheSettingResponse, UpdateSettingsRequest, UpdateSettingsResponse, EmployeePerformanceRequest, EmployeePerformanceResponse, ManageDeviceResponse, ToggleDeviceRequest, DeleteDeviceRequest, ChangeHostnameRequest, CustomerConfirmationRequest, CustomerConfirmationResponse } from "../type";
 import { FormatUtcTime } from "../utils/formatUtcTime";
 
@@ -304,6 +304,21 @@ export const renderDocumentService = {
 
     getDocumentByPlayerId: async (request: CustomerConfirmationRequest): Promise<CustomerConfirmationResponse> => {
         const response = await api.post<ApiEnvelope<CustomerConfirmationResponse>>(`/api/Documents/confirmation`, request);
+        return unwrapApiEnvelope(response);
+    },
+
+    // Request same UploadManualDocumentRequest
+    uploadManualDocument: async (request: FormData): Promise<boolean> => {
+        const response = await api.post<ApiEnvelope<boolean>>(`/api/Documents/upload/manual-document`, request, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        });
+        return unwrapApiEnvelope(response);
+    },
+
+    getSignedDocumentPaginate: async (request: DocumentsPagingRequest): Promise<DocumentsPagingResponse> => {
+        const response = await api.post<ApiEnvelope<DocumentsPagingResponse>>(`/api/Documents/signed/paginate`, request);
         return unwrapApiEnvelope(response);
     }
 };

@@ -16,7 +16,12 @@ import {
     DialogContent,
     DialogActions,
     IconButton,
-    Divider
+    Divider,
+    FormControl,
+    InputLabel,
+    Select,
+    MenuItem,
+    LinearProgress
 } from '@mui/material';
 import {
     Search as SearchIcon,
@@ -31,6 +36,7 @@ import AdminLayout from '../components/layout/AdminLayout';
 import { useSetPageTitle } from '../hooks/useSetPageTitle';
 import { renderDocumentService } from '../services/registrationService';
 import type { CustomerConfirmationRequest, CustomerConfirmationResponse } from '../type';
+import { DocumentTypes } from '../type';
 import { FormatUtcTime } from '../utils/formatUtcTime';
 
 const AdminCustomerConfirmationPage: React.FC = () => {
@@ -44,6 +50,14 @@ const AdminCustomerConfirmationPage: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string>('');
     const [documentData, setDocumentData] = useState<CustomerConfirmationResponse | null>(null);
+
+    // Upload dialog states
+    const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+    const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+    const [selectedDocumentType, setSelectedDocumentType] = useState<number | ''>('');
+    const [uploading, setUploading] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState(0);
+    const [uploadError, setUploadError] = useState('');
 
     // Preview Dialog States
     const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
@@ -183,6 +197,83 @@ const AdminCustomerConfirmationPage: React.FC = () => {
         }
     };
 
+    const documentTypeOptions = [
+        { value: DocumentTypes.HTRForm, label: 'HTR Form' },
+        { value: DocumentTypes.PDPNotification, label: 'PDP Notification' },
+        { value: DocumentTypes.HTPConfirmation, label: 'HTP Confirmation' },
+        { value: DocumentTypes.HTRMembershipTerms, label: 'HTR Membership Terms' }
+    ];
+
+    const handleOpenUploadDialog = () => {
+        setUploadDialogOpen(true);
+        setUploadError('');
+        setUploadProgress(0);
+    };
+
+    const handleCloseUploadDialog = () => {
+        if (uploading) return;
+        setUploadDialogOpen(false);
+        setSelectedFiles([]);
+        setSelectedDocumentType('');
+        setUploadError('');
+        setUploadProgress(0);
+    };
+
+    const handleFileSelection = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const files = event.target.files ? Array.from(event.target.files) : [];
+        setSelectedFiles(files);
+        setUploadError('');
+    };
+
+    const handleUploadFiles = async () => {
+        if (!playerId.trim()) {
+            setUploadError('Player ID is required. Please search first.');
+            return;
+        }
+
+        const playerIdNum = parseInt(playerId);
+        if (isNaN(playerIdNum) || playerIdNum <= 0) {
+            setUploadError('Player ID is invalid. Please search again.');
+            return;
+        }
+
+        if (!selectedFiles.length) {
+            setUploadError('Please select at least one file.');
+            return;
+        }
+
+        if (selectedDocumentType === '') {
+            setUploadError('Please select a document type.');
+            return;
+        }
+
+        try {
+            setUploading(true);
+            setUploadError('');
+            setUploadProgress(0);
+
+            for (let index = 0; index < selectedFiles.length; index += 1) {
+                const file = selectedFiles[index];
+                const formData = new FormData();
+                formData.append('PlayerId', playerIdNum.toString());
+                formData.append('ManualDocumentFile', file);
+                formData.append('DocumentType', selectedDocumentType.toString());
+
+                await renderDocumentService.uploadManualDocument(formData);
+                const progress = Math.round(((index + 1) / selectedFiles.length) * 100);
+                setUploadProgress(progress);
+            }
+
+            handleCloseUploadDialog();
+            await handleSearch();
+        } catch (err: any) {
+            console.error('Upload failed:', err);
+            setUploadError(err.response?.data?.message || 'Upload failed. Please try again.');
+        } finally {
+            setUploading(false);
+        }
+    };
+
     return (
         <AdminLayout>
             <Box sx={{ p: 3 }}>
@@ -242,9 +333,19 @@ const AdminCustomerConfirmationPage: React.FC = () => {
                 {documentData && (
                     <Card>
                         <CardContent>
-                            <Typography variant="h6" gutterBottom sx={{ mb: 3, color: 'primary.main' }}>
-                                Document Information
-                            </Typography>
+                            <Box display="flex" alignItems="center" justifyContent="space-between" sx={{ mb: 3 }}>
+                                <Typography variant="h6" sx={{ color: 'primary.main' }}>
+                                    Document Information
+                                </Typography>
+                                {documentData.isSynchronized && (
+                                    <Button
+                                        variant="contained"
+                                        onClick={handleOpenUploadDialog}
+                                    >
+                                        Upload Manual Document
+                                    </Button>
+                                )}
+                            </Box>
 
                             <Stack spacing={3}>
                                 {/* Customer Information */}
@@ -581,6 +682,105 @@ const AdminCustomerConfirmationPage: React.FC = () => {
                     </Card>
                 )
                 }
+
+                {/* Upload Manual Document Dialog */}
+                <Dialog
+                    open={uploadDialogOpen}
+                    onClose={handleCloseUploadDialog}
+                    maxWidth="sm"
+                    fullWidth
+                >
+                    <DialogTitle>Upload Manual Document</DialogTitle>
+                    <DialogContent dividers>
+                        <Stack spacing={2}>
+                            <Button
+                                variant="outlined"
+                                component="label"
+                                disabled={uploading}
+                            >
+                                Select Files
+                                <input
+                                    type="file"
+                                    multiple
+                                    hidden
+                                    onChange={handleFileSelection}
+                                />
+                            </Button>
+
+                            {selectedFiles.length > 0 && (
+                                <Box>
+                                    <Typography variant="body2" color="text.secondary" gutterBottom>
+                                        Selected files:
+                                    </Typography>
+                                    <Stack spacing={0.5}>
+                                        {selectedFiles.map((file, index) => (
+                                            <Typography key={`${file.name}-${index}`} variant="body2">
+                                                {file.name}
+                                            </Typography>
+                                        ))}
+                                    </Stack>
+                                </Box>
+                            )}
+
+                            <FormControl fullWidth disabled={uploading}>
+                                <InputLabel id="document-type-label">Document Type</InputLabel>
+                                <Select
+                                    labelId="document-type-label"
+                                    label="Document Type"
+                                    value={selectedDocumentType}
+                                    onChange={(event) => {
+                                        setSelectedDocumentType(event.target.value as number);
+                                        setUploadError('');
+                                    }}
+                                >
+                                    {documentTypeOptions.map((option) => {
+                                        if (documentData?.isVietnamese) {
+                                            return (
+                                                <MenuItem key={option.value} value={option.value} disabled={option.value === 2}>
+                                                    {option.label}
+                                                </MenuItem>
+                                            );
+                                        } else {
+                                            return (
+                                                <MenuItem key={option.value} value={option.value} disabled={option.value === 3}>
+                                                    {option.label}
+                                                </MenuItem>
+                                            );
+                                        }
+
+                                    })}
+                                </Select>
+                            </FormControl>
+
+                            {uploading && (
+                                <Box>
+                                    <LinearProgress variant="determinate" value={uploadProgress} />
+                                    <Typography variant="caption" color="text.secondary">
+                                        Uploading... {uploadProgress}%
+                                    </Typography>
+                                </Box>
+                            )}
+
+                            {uploadError && (
+                                <Alert severity="error">
+                                    {uploadError}
+                                </Alert>
+                            )}
+                        </Stack>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={handleCloseUploadDialog} disabled={uploading}>
+                            Cancel
+                        </Button>
+                        <Button
+                            variant="contained"
+                            onClick={handleUploadFiles}
+                            disabled={uploading}
+                        >
+                            {uploading ? 'Uploading...' : 'Upload'}
+                        </Button>
+                    </DialogActions>
+                </Dialog>
 
                 {/* Preview Dialog */}
                 <Dialog

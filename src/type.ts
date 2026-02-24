@@ -455,4 +455,18 @@ export interface CustomerConfirmationResponse {
   fullName?: string;
   identificationNumber?: string;
   isReSigned: boolean;
+  isSynchronized: boolean;
 }
+
+export interface UploadManualDocumentRequest {
+  PlayerId: number;
+  ManualDocumentFile: File;
+  DocumentType: number;
+}
+
+export const DocumentTypes = {
+  HTRForm: 1,
+  PDPNotification: 2,
+  HTPConfirmation: 3,
+  HTRMembershipTerms: 4
+};

@@ -50,6 +50,13 @@ const navItems: NavItem[] = [
         requiredPermission: Permission.VIEW_VERIFICATION_DOCUMENT,
     },
     {
+        key: 'admin-customer-document-report',
+        title: 'Customer Document Report',
+        href: '/admin-customer-document-report',
+        icon: DrawIcon,
+        requiredPermission: Permission.VIEW_VERIFICATION_DOCUMENT,
+    },
+    {
         key: 'admin-migration-income-documents',
         title: 'Income Documents Migration',
         href: '/admin-migration-income-documents',

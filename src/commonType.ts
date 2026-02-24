@@ -18,7 +18,7 @@ export type ApiEnvelope<T> = {
 export const JOB_TITLE_OPTIONS = [
     { value: 'Employed', label: 'Employed' },
     { value: 'Self-employed', label: 'Self-employed' },
-    { value: 'Unemployed', label: 'Unemployed' },
+    { value: 'Unemployed', label: 'Businessman / Businesswoman' },
     { value: 'Other', label: 'Other (Please specify your occupation)' }
 ];
 
