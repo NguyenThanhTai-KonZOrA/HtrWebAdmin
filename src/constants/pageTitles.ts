@@ -18,5 +18,7 @@ export const PAGE_TITLES = {
     EMPLOYEES: "Employee Management",
     ENROLL_MEMBERSHIP_LOGS: "Enrollment Player Logs",
     MANAGE_DEVICES: "Device Management",
+    CUSTOMER_SIGNED_DOCUMENTS: "Customer Signed Documents",
+    CUSTOMER_VERIFICATION_DOCUMENTS: "Customer Verification Documents",
     DEFAULT: "Queue Management System"
 } as const;

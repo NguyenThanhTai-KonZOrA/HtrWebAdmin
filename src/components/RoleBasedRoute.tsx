@@ -1,11 +1,17 @@
 // src/components/RoleBasedRoute.tsx
 import React from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Box, Typography, Button, Container, Paper } from '@mui/material';
-import { Lock as LockIcon, Home as HomeIcon } from '@mui/icons-material';
+import {
+    Lock as LockIcon,
+    Home as HomeIcon,
+    Logout as LogoutIcon
+}
+    from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
 import { Permission } from '../constants/roles';
 import { usePermission } from '../hooks/usePermission';
+
 
 interface RoleBasedRouteProps {
     children: React.ReactNode;
@@ -51,7 +57,7 @@ const RoleBasedRoute: React.FC<RoleBasedRouteProps> = ({
     const { can, canAny, canAll } = usePermission();
     const location = useLocation();
 
-    // Nếu chưa login, redirect về login
+    // If not authenticated, redirect to login
     if (!token) {
         return <Navigate to="/login" state={{ from: location }} replace />;
     }
@@ -67,17 +73,17 @@ const RoleBasedRoute: React.FC<RoleBasedRouteProps> = ({
             : canAny(requiredPermissions);
     }
 
-    // Nếu có quyền, render children
+    // If user has access, render children
     if (hasAccess) {
         return <>{children}</>;
     }
 
-    // Nếu không có quyền và showAccessDenied = true, hiển thị trang Access Denied
+    // If user does not have access and showAccessDenied = true, display Access Denied page
     if (showAccessDenied) {
         return <AccessDeniedPage fallbackPath={fallbackPath} />;
     }
 
-    // Nếu không, redirect về fallback path
+    // If not, redirect to fallback path
     return <Navigate to={fallbackPath} replace />;
 };
 
@@ -87,6 +93,13 @@ const RoleBasedRoute: React.FC<RoleBasedRouteProps> = ({
 const AccessDeniedPage: React.FC<{ fallbackPath: string }> = ({ fallbackPath }) => {
     const navigate = (path: string) => {
         window.location.href = path;
+    };
+
+    const { logout } = useAuth();
+    const handleLogout = async () => {
+        console.log('🚪 Triggering global logout...');
+        await logout();
+        navigate("/login");
     };
 
     return (
@@ -154,6 +167,14 @@ const AccessDeniedPage: React.FC<{ fallbackPath: string }> = ({ fallbackPath }) 
                             onClick={() => window.history.back()}
                         >
                             Go Back
+                        </Button>
+
+                        <Button
+                            variant="outlined"
+                            startIcon={<LogoutIcon />}
+                            onClick={handleLogout}
+                        >
+                            Sign out
                         </Button>
                     </Box>
                 </Paper>

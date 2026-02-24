@@ -48,9 +48,10 @@ import { useSetPageTitle } from '../hooks/useSetPageTitle';
 import { renderDocumentService } from '../services/registrationService';
 import type { DocumentsPagingRequest, DocumentsPagingResponse, PatronDocumentGroup, DocumentResponse } from '../registrationType';
 import { FormatUtcTime } from '../utils/formatUtcTime';
+import { PAGE_TITLES } from '../constants/pageTitles';
 
 const AdminCustomerDocumentReportPage: React.FC = () => {
-    useSetPageTitle('Customer Document Report');
+    useSetPageTitle(PAGE_TITLES.CUSTOMER_SIGNED_DOCUMENTS || 'Customer Signed Documents');
 
     const API_BASE = (window as any)._env_?.API_BASE;
     const ONLINE_API_BASE = (window as any)._env_?.ONLINE_API_BASE;

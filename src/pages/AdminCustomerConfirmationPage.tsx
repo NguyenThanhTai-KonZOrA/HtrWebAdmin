@@ -38,9 +38,10 @@ import { renderDocumentService } from '../services/registrationService';
 import type { CustomerConfirmationRequest, CustomerConfirmationResponse } from '../type';
 import { DocumentTypes } from '../type';
 import { FormatUtcTime } from '../utils/formatUtcTime';
+import { PAGE_TITLES } from '../constants/pageTitles';
 
 const AdminCustomerConfirmationPage: React.FC = () => {
-    useSetPageTitle('Customer Verification Documents');
+    useSetPageTitle(PAGE_TITLES.CUSTOMER_VERIFICATION_DOCUMENTS || 'Customer Verification Documents');
 
     const API_BASE = (window as any)._env_?.API_BASE;
     const ONLINE_API_BASE = (window as any)._env_?.ONLINE_API_BASE;

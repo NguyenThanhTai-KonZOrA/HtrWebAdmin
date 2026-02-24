@@ -187,11 +187,11 @@ function AppContent() {
           </ProtectedRoute>
         } />
 
-        <Route path="/admin-customer-document-report" element={
+        <Route path="/admin-signed-documents" element={
           <ProtectedRoute>
             <RoleBasedRoute
-              requiredPermission={Permission.VIEW_VERIFICATION_DOCUMENT}
-              fallbackPath="/admin-customer-document-report"
+              requiredPermission={Permission.VIEW_SIGNED_DOCUMENT_REPORT}
+              fallbackPath="/admin-signed-documents"
               showAccessDenied={true}
             >
               <AdminCustomerDocumentReportPage />

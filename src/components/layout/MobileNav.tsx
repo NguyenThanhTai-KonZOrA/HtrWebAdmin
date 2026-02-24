@@ -21,7 +21,8 @@ import {
     Devices as DevicesIcon,
     AssessmentTwoTone as AssessmentIcon,
     DrawTwoTone as DrawIcon,
-    ManageSearchTwoTone as ManageSearchIcon
+    ManageSearchTwoTone as ManageSearchIcon,
+    AppRegistrationRounded as AppRegistrationRoundedIcon,
 } from '@mui/icons-material';
 import type { NavItem } from '../../commonType';
 import { Permission } from '../../constants/roles';
@@ -50,11 +51,11 @@ const navItems: NavItem[] = [
         requiredPermission: Permission.VIEW_VERIFICATION_DOCUMENT,
     },
     {
-        key: 'admin-customer-document-report',
-        title: 'Customer Document Report',
-        href: '/admin-customer-document-report',
-        icon: DrawIcon,
-        requiredPermission: Permission.VIEW_VERIFICATION_DOCUMENT,
+        key: 'admin-signed-documents',
+        title: 'Customer Signed Documents',
+        href: '/admin-signed-documents',
+        icon: AppRegistrationRoundedIcon,
+        requiredPermission: Permission.VIEW_SIGNED_DOCUMENT_REPORT,
     },
     {
         key: 'admin-migration-income-documents',
