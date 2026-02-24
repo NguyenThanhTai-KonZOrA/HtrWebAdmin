@@ -281,6 +281,7 @@ const AdminCustomerDocumentReportPage: React.FC = () => {
                                     <TableHead>
                                         <TableRow sx={{ backgroundColor: 'action.hover' }}>
                                             <TableCell width="50px" />
+                                            <TableCell sx={{ minWidth: 150 }}><strong>Registration Type</strong></TableCell>
                                             <TableCell><strong>Player ID</strong></TableCell>
                                             <TableCell><strong>Full Name</strong></TableCell>
                                             <TableCell><strong>ID Number</strong></TableCell>
@@ -320,6 +321,11 @@ const AdminCustomerDocumentReportPage: React.FC = () => {
                                                                 )}
                                                             </IconButton>
                                                         )}
+                                                    </TableCell>
+                                                    <TableCell align="center">
+                                                        <Chip label={patron.registrationType == 1 ? 'Online' : 'Manual'}
+                                                            color={patron.registrationType == 1 ? 'success' : 'secondary'}
+                                                            size='small' />
                                                     </TableCell>
                                                     <TableCell>{patron.playerId}</TableCell>
                                                     <TableCell>

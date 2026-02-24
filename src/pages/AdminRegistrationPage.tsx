@@ -1340,6 +1340,12 @@ const AdminRegistrationPage: React.FC = () => {
                 updatedPatron.position = specifyPosition;
             }
 
+            // Update visa information for non-Vietnamese
+            if (!isVietnamese()) {
+                updatedPatron.visaNumber = visaNumber;
+                updatedPatron.visaExpiryDate = visaExpiryDate;
+            }
+
             await patronService.updatePatron(updatedPatron);
             setDialogSuccess('Patron updated successfully!');
             setPatronUpdated(true);
@@ -2935,6 +2941,10 @@ const AdminRegistrationPage: React.FC = () => {
                                                         onChange={(e) => {
                                                             const newVisaNumber = e.target.value;
                                                             setVisaNumber(newVisaNumber);
+                                                            // Update editedPatron to track unsaved changes
+                                                            if (editedPatron) {
+                                                                setEditedPatron({ ...editedPatron, visaNumber: newVisaNumber });
+                                                            }
                                                             // Clear error when user types
                                                             if (newVisaNumber.trim()) {
                                                                 setVisaNumberError('');
@@ -2980,6 +2990,10 @@ const AdminRegistrationPage: React.FC = () => {
                                                         value={visaExpiryDate?.split('T')[0] || ''}
                                                         onChange={(e) => {
                                                             setVisaExpiryDate(e.target.value);
+                                                            // Update editedPatron to track unsaved changes
+                                                            if (editedPatron) {
+                                                                setEditedPatron({ ...editedPatron, visaExpiryDate: e.target.value });
+                                                            }
                                                             if (e.target.value.trim()) {
                                                                 setVisaExpiryDateError('');
                                                             }
