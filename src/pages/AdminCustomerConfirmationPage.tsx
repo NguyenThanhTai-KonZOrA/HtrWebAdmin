@@ -726,7 +726,7 @@ const AdminCustomerConfirmationPage: React.FC = () => {
                                 component="label"
                                 disabled={uploading}
                             >
-                                Select Files
+                                Select File(s)
                                 <input
                                     type="file"
                                     multiple
@@ -739,7 +739,7 @@ const AdminCustomerConfirmationPage: React.FC = () => {
                             {filesWithTypes.length > 0 && (
                                 <Box>
                                     <Typography variant="body2" color="text.secondary" gutterBottom sx={{ mb: 1 }}>
-                                        Selected files ({filesWithTypes.length}):
+                                        Selected file(s) ({filesWithTypes.length}):
                                     </Typography>
                                     <Stack spacing={1.5}>
                                         {filesWithTypes.map((item, index) => (

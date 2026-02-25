@@ -433,7 +433,7 @@ const AdminRegistrationReport: React.FC = () => {
                                                                     <Chip label="No" color="default" size="small" />
                                                                 )}
                                                             </TableCell> */}
-                                                            <TableCell>{formatDate(patron.createdTime)}</TableCell>
+                                                            <TableCell>{FormatUtcTime.formatDateDDMMMYYYY(patron.createdTime)}</TableCell>
                                                         </TableRow>
                                                     ))}
                                                 </TableBody>
