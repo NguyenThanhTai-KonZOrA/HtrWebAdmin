@@ -82,14 +82,14 @@ export function MainNav(): React.JSX.Element {
             const connectionInfo = signalRService.getConnectionInfo();
             const inGroup = connectionInfo.isInStaffGroup;
 
-            console.log('🔄 Updating SignalR status:', {
-                isConnected,
-                currentState: signalRConnected,
-                connectionState: connectionInfo.state,
-                connectionId: connectionInfo.connectionId,
-                staffDeviceId: connectionInfo.staffDeviceId,
-                isInStaffGroup: inGroup
-            });
+            // console.log('🔄 Updating SignalR status:', {
+            //     isConnected,
+            //     currentState: signalRConnected,
+            //     connectionState: connectionInfo.state,
+            //     connectionId: connectionInfo.connectionId,
+            //     staffDeviceId: connectionInfo.staffDeviceId,
+            //     isInStaffGroup: inGroup
+            // });
 
             // Update connection state if different
             if (isConnected !== signalRConnected) {

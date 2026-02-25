@@ -73,9 +73,9 @@ export interface PatronResponse {
     isUpdated: boolean;
     city: string;
     postalCode: string;
-    visaNumber: string;
+    visaNumber?: string;
     isValidVisa: boolean;
-    visaExpiryDate: string;
+    visaExpiryDate?: string;
 }
 
 export interface PatronImagesResponse {

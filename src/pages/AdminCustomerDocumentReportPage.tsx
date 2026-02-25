@@ -336,7 +336,7 @@ const AdminCustomerDocumentReportPage: React.FC = () => {
                                                     <TableCell>{patron.idNumber || '-'}</TableCell>
                                                     <TableCell>{patron.gender || '-'}</TableCell>
                                                     <TableCell>{FormatUtcTime.formatDateWithoutTime(patron.birthday)}</TableCell>
-                                                    <TableCell>{patron.jobTitle === 'Unemployed' ? 'Businessman / Businesswoman' : patron.jobTitle}</TableCell>
+                                                    <TableCell>{patron.jobTitle === 'Unemployed' ? 'Business Man / Business Woman' : patron.jobTitle}</TableCell>
                                                     <TableCell>{patron.position || '-'}</TableCell>
                                                     <TableCell>{FormatUtcTime.formatDateTime(patron.signedDate)}</TableCell>
                                                     <TableCell align="center">

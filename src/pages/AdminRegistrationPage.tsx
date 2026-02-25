@@ -1283,7 +1283,6 @@ const AdminRegistrationPage: React.FC = () => {
 
     // Handle patron update
     const handleUpdatePatron = async () => {
-        debugger;
         if (!editedPatron) return;
 
         // Validate Vietnamese phone number format first
@@ -1307,7 +1306,8 @@ const AdminRegistrationPage: React.FC = () => {
             return;
         }
 
-        if (visaNumberWarning) {
+
+        if (!isVietnamese() && visaNumberWarning) {
             setDialogError('Cannot update: Visa number already exists in the system.');
             return;
         }
@@ -1505,6 +1505,11 @@ const AdminRegistrationPage: React.FC = () => {
     // Handle visa approval
     const handleApproveVisa = async () => {
         if (!selectedPatron || !visaNumber || !visaExpiryDate) return;
+
+        if (visaNumberWarning && visaNumberWarning.trim() !== '') {
+            setDialogError(visaNumberWarning);
+            return;
+        }
 
         try {
             setApprovingVisa(true);
@@ -1891,6 +1896,10 @@ const AdminRegistrationPage: React.FC = () => {
 
         // Must be foreign national
         if (isVietnamese()) {
+            return false;
+        }
+
+        if (visaNumberWarning && visaNumberWarning.trim() !== '') {
             return false;
         }
 

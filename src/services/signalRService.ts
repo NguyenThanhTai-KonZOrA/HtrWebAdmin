@@ -97,9 +97,9 @@ class SignalRService {
             // Start connection
             await this.connection.start();
             console.log('✅ SignalR connection established');
-            console.log('🔌 Connection ID:', this.connection.connectionId);
-            console.log('📱 Current staffDeviceId:', this.staffDeviceId);
-            console.log('💻 Current staffDeviceName:', this.staffDeviceName);
+            // console.log('🔌 Connection ID:', this.connection.connectionId);
+            // console.log('📱 Current staffDeviceId:', this.staffDeviceId);
+            // console.log('💻 Current staffDeviceName:', this.staffDeviceName);
 
             // ✅ STEP 1: Register all stored event listeners FIRST (before device registration)
             // This ensures listeners are ready even if device registration is delayed
@@ -137,21 +137,21 @@ class SignalRService {
 
         // ✅ Listen for StaffDeviceRegistered confirmation from backend
         this.connection.on('StaffDeviceRegistered', (response: any) => {
-            console.log('📨 Received StaffDeviceRegistered event from backend:', response);
-            console.log('   - Success:', response.success);
-            console.log('   - Message:', response.message);
-            console.log('   - StaffDeviceId:', response.staffDeviceId);
+            // console.log('📨 Received StaffDeviceRegistered event from backend:', response);
+            // console.log('   - Success:', response.success);
+            // console.log('   - Message:', response.message);
+            // console.log('   - StaffDeviceId:', response.staffDeviceId);
 
             if (response.success) {
                 this.isInStaffGroup = true;
-                console.log(`✅ ✅ ✅ CONFIRMED: Device is NOW in staff group: Staff_${response.staffDeviceId}`);
-                console.log(`✅ ✅ ✅ Backend message: ${response.message}`);
-                console.log(`✅ ✅ ✅ Will receive SignatureCompleted messages for this device`);
+                // console.log(`✅ ✅ ✅ CONFIRMED: Device is NOW in staff group: Staff_${response.staffDeviceId}`);
+                // console.log(`✅ ✅ ✅ Backend message: ${response.message}`);
+                // console.log(`✅ ✅ ✅ Will receive SignatureCompleted messages for this device`);
             } else {
                 this.isInStaffGroup = false;
-                console.error(`❌ ❌ ❌ FAILED: Device registration rejected by backend`);
-                console.error(`❌ ❌ ❌ Backend message: ${response.message}`);
-                console.error(`❌ ❌ ❌ Will NOT receive SignatureCompleted messages`);
+                // console.error(`❌ ❌ ❌ FAILED: Device registration rejected by backend`);
+                // console.error(`❌ ❌ ❌ Backend message: ${response.message}`);
+                // console.error(`❌ ❌ ❌ Will NOT receive SignatureCompleted messages`);
 
                 // Retry registration after 5 seconds
                 setTimeout(() => {
@@ -209,8 +209,8 @@ class SignalRService {
     public async registerStaffDevice(): Promise<void> {
         console.log('📝 registerStaffDevice called');
         console.log('🔗 Connection:', this.connection ? 'Available' : 'NULL');
-        console.log('🆔 StaffDeviceId:', this.staffDeviceId);
-        console.log('💻 StaffDeviceName:', this.staffDeviceName);
+        // console.log('🆔 StaffDeviceId:', this.staffDeviceId);
+        // console.log('💻 StaffDeviceName:', this.staffDeviceName);
 
         if (!this.connection || !this.staffDeviceId || !this.staffDeviceName) {
             console.log('ℹ️ Cannot register staff device - connection, staffDeviceId or deviceName not available');
@@ -449,20 +449,20 @@ class SignalRService {
     // Register all stored event listeners (called after initial connection and reconnection)
     private registerStoredEventListeners(): void {
         if (!this.connection || this.connection.state !== signalR.HubConnectionState.Connected) {
-            console.warn('⚠️ Cannot register stored event listeners - not connected');
+            // console.warn('⚠️ Cannot register stored event listeners - not connected');
             return;
         }
 
         if (this.eventListeners.size === 0) {
-            console.log('ℹ️ No stored event listeners to register yet - will register when callbacks are added');
+            // console.log('ℹ️ No stored event listeners to register yet - will register when callbacks are added');
             return;
         }
 
-        console.log('');
-        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-        console.log(`📝 Registering ${this.eventListeners.size} stored event listener(s)...`);
-        console.log(`📡 Expected group: Staff_${this.staffDeviceId}`);
-        console.log(`🔌 Connection ID: ${this.connection.connectionId}`);
+        // console.log('');
+        // console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        // console.log(`📝 Registering ${this.eventListeners.size} stored event listener(s)...`);
+        // console.log(`📡 Expected group: Staff_${this.staffDeviceId}`);
+        // console.log(`🔌 Connection ID: ${this.connection.connectionId}`);
 
         for (const [eventName, callbacks] of this.eventListeners.entries()) {
             try {
@@ -481,10 +481,10 @@ class SignalRService {
         }
 
         // Log final state
-        console.log(`📊 Total active event listeners: ${this.eventListeners.size}`);
-        console.log(`💡 Ready to receive messages from group: Staff_${this.staffDeviceId}`);
-        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-        console.log('');
+        // console.log(`📊 Total active event listeners: ${this.eventListeners.size}`);
+        // console.log(`💡 Ready to receive messages from group: Staff_${this.staffDeviceId}`);
+        // console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        // console.log('');
     }
 
     // Store event listener for re-registration
@@ -554,12 +554,12 @@ class SignalRService {
         // ✅ Backend sends "SignatureCompleted" (PascalCase) via Group(Staff_{staffDeviceId})
         const eventName = 'SignatureCompleted';
 
-        console.log('');
-        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-        console.log('📝 onSignatureCompleted called - storing callback');
-        console.log('   Connection state:', this.connection?.state || 'No connection');
-        console.log('   StaffDeviceId:', this.staffDeviceId || 'Not set');
-        console.log('   IsInStaffGroup:', this.isInStaffGroup);
+        // console.log('');
+        // console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        // console.log('📝 onSignatureCompleted called - storing callback');
+        // console.log('   Connection state:', this.connection?.state || 'No connection');
+        // console.log('   StaffDeviceId:', this.staffDeviceId || 'Not set');
+        // console.log('   IsInStaffGroup:', this.isInStaffGroup);
 
         // Create wrapped callback with acknowledge logic
         const wrappedCallback = (message: any) => {
@@ -617,17 +617,17 @@ class SignalRService {
         // Only register immediately if connection is ready
         if (!this.connection) {
             console.warn('⚠️ SignalR connection not initialized yet');
-            console.warn('   → Listener STORED and will auto-register when connection established');
-            console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-            console.log('');
+            // console.warn('   → Listener STORED and will auto-register when connection established');
+            // console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+            // console.log('');
             return;
         }
 
         if (this.connection.state !== signalR.HubConnectionState.Connected) {
             console.warn('⚠️ SignalR not connected yet (state:', this.connection.state, ')');
-            console.warn('   → Listener STORED and will auto-register when connected');
-            console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-            console.log('');
+            // console.warn('   → Listener STORED and will auto-register when connected');
+            // console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+            // console.log('');
             return;
         }
 
@@ -642,11 +642,11 @@ class SignalRService {
         // Register the WRAPPED callback (with acknowledge logic)
         this.connection.on(eventName, wrappedCallback);
 
-        console.log(`✅ Registered ${eventName} event listener successfully`);
-        console.log(`📡 NOW listening for messages from group: Staff_${this.staffDeviceId}`);
-        console.log(`💡 Test: signalRDebug.testMessage()`);
-        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-        console.log('');
+        // console.log(`✅ Registered ${eventName} event listener successfully`);
+        // console.log(`📡 NOW listening for messages from group: Staff_${this.staffDeviceId}`);
+        // console.log(`💡 Test: signalRDebug.testMessage()`);
+        // console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        // console.log('');
     }
 
     // Listen to new registration event
@@ -654,12 +654,12 @@ class SignalRService {
         // ✅ Listen to all possible case variations from backend
         const eventNames = ['NewRegistration', 'newregistration', 'newRegistration'];
 
-        console.log('');
-        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-        console.log('📝 onNewRegistration called - storing callback');
-        console.log('   Connection state:', this.connection?.state || 'No connection');
-        console.log('   StaffDeviceId:', this.staffDeviceId || 'Not set');
-        console.log('   IsInStaffGroup:', this.isInStaffGroup);
+        // console.log('');
+        // console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        // console.log('📝 onNewRegistration called - storing callback');
+        // console.log('   Connection state:', this.connection?.state || 'No connection');
+        // console.log('   StaffDeviceId:', this.staffDeviceId || 'Not set');
+        // console.log('   IsInStaffGroup:', this.isInStaffGroup);
 
         // Create a wrapper callback that will be used for all event name variations
         const wrappedCallback = (message: any) => {
@@ -708,8 +708,8 @@ class SignalRService {
         }
 
         // Connection is ready - register now for ALL case variations
-        console.log('✅ SignalR IS CONNECTED - registering listeners for all case variations');
-        console.log('   Event names:', eventNames);
+        // console.log('✅ SignalR IS CONNECTED - registering listeners for all case variations');
+        // console.log('   Event names:', eventNames);
         console.log('   Expected group: Staff_' + this.staffDeviceId);
         console.log('   Connection ID:', this.connection.connectionId);
 
@@ -721,12 +721,12 @@ class SignalRService {
         // Register the same callback for all event name variations
         eventNames.forEach(name => {
             this.connection!.on(name, wrappedCallback);
-            console.log(`✅ Registered listener for "${name}"`);
+            // console.log(`✅ Registered listener for "${name}"`);
         });
 
-        console.log(`📡 NOW listening for messages from group: Staff_${this.staffDeviceId}`);
-        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-        console.log('');
+        // console.log(`📡 NOW listening for messages from group: Staff_${this.staffDeviceId}`);
+        // console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        // console.log('');
     }
 
     // Unregister signature completed event
