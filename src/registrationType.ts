@@ -416,4 +416,5 @@ export interface DocumentResponse {
     fileUrl: string;
     uploadedDate: string;
     documentType: string;
+    isOnline: boolean;
 }

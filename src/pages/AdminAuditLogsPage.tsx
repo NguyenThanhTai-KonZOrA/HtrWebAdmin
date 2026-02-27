@@ -82,7 +82,8 @@ const ACTIONS = [
     'ExportRegistrationReport',
     'GenerateDocuments',
     'CheckValidVisa',
-    'CheckValidIncome'
+    'CheckValidIncome',
+    'UploadManualDocument'
 ];
 
 const AdminAuditLogsPage: React.FC = () => {

@@ -180,6 +180,7 @@ const AdminRegistrationPage: React.FC = () => {
 
     // Document HTML states
     const [documentHtml, setDocumentHtml] = useState<string>('');
+    const [pdfDocumentUrl, setPdfDocumentUrl] = useState<string>('');
     const [loadingDocument, setLoadingDocument] = useState(false);
 
     // Validation errors
@@ -882,7 +883,7 @@ const AdminRegistrationPage: React.FC = () => {
         try {
             setDialogError(null);
             setDialogSuccess(null);
-
+            setPdfDocumentUrl('');
             // Reset validation warnings
             setPhoneNumberWarning('');
             setIdNumberWarning('');
@@ -1606,7 +1607,14 @@ const AdminRegistrationPage: React.FC = () => {
                 String(selectedPatron.pid),
                 String(selectedPatron.playerId)
             );
-            setDocumentHtml(response.htmlContent);
+
+            // if htmlContent is not empty and extension is .pdf then render the pdf in iframe
+            if (response.htmlContent && response.htmlContent.trim() !== '' && getFileType(response.htmlContent.trim()) === 'pdf') {
+                setPdfDocumentUrl(Api_URL + response.htmlContent.trim());
+            } else {
+                setDocumentHtml(response.htmlContent);
+            }
+
             setDialogSuccess('Document loaded successfully!');
         } catch (err: any) {
             setDialogError(err?.message || 'Failed to load document.');
@@ -3565,6 +3573,16 @@ const AdminRegistrationPage: React.FC = () => {
                                                     }}
                                                     dangerouslySetInnerHTML={{ __html: documentHtml }}
                                                 />
+                                            )}
+                                            {pdfDocumentUrl && (
+                                                <Box sx={{ mt: 2 }}>
+                                                    <iframe
+                                                        src={pdfDocumentUrl}
+                                                        width="100%"
+                                                        height="400px"
+                                                        style={{ border: 'none' }}
+                                                    />
+                                                </Box>
                                             )}
                                         </Stack>
                                     </CardContent>

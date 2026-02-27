@@ -135,9 +135,9 @@ const AdminCustomerDocumentReportPage: React.FC = () => {
     };
 
     // Handle preview
-    const handlePreview = (document: DocumentResponse, registrationType: number) => {
+    const handlePreview = (document: DocumentResponse) => {
         let finnalUrl = API_BASE;
-        if (registrationType === 1) {
+        if (document.isOnline) {
             finnalUrl = ONLINE_API_BASE;
         }
         const url = document.fileUrl.startsWith('http')
@@ -367,14 +367,14 @@ const AdminCustomerDocumentReportPage: React.FC = () => {
                                                                                                 variant="outlined"
                                                                                                 size="small"
                                                                                                 startIcon={<VisibilityIcon />}
-                                                                                                onClick={() => handlePreview(document, patron.registrationType)}
+                                                                                                onClick={() => handlePreview(document)}
                                                                                             >
                                                                                                 Review
                                                                                             </Button>
                                                                                         }
                                                                                     >
                                                                                         <ListItemButton
-                                                                                            onClick={() => handlePreview(document, patron.registrationType)}
+                                                                                            onClick={() => handlePreview(document)}
                                                                                             sx={{ pr: 12 }}
                                                                                         >
                                                                                             <ListItemIcon>
