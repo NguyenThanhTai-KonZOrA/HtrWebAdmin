@@ -39,6 +39,8 @@ import type { CustomerConfirmationRequest, CustomerConfirmationResponse } from '
 import { DocumentTypes } from '../type';
 import { FormatUtcTime } from '../utils/formatUtcTime';
 import { PAGE_TITLES } from '../constants/pageTitles';
+import { useSnackbar } from "../contexts/SnackbarContext";
+import { extractErrorMessage, logError } from "../utils/errorHandler";
 
 const AdminCustomerConfirmationPage: React.FC = () => {
     useSetPageTitle(PAGE_TITLES.CUSTOMER_VERIFICATION_DOCUMENTS || 'Customer Verification Documents');
@@ -46,6 +48,7 @@ const AdminCustomerConfirmationPage: React.FC = () => {
     const API_BASE = (window as any)._env_?.API_BASE;
     const ONLINE_API_BASE = (window as any)._env_?.ONLINE_API_BASE;
 
+    const { showSnackbar } = useSnackbar();
     // States
     const [playerId, setPlayerId] = useState<string>('');
     const [loading, setLoading] = useState(false);
@@ -95,9 +98,10 @@ const AdminCustomerConfirmationPage: React.FC = () => {
             if (!response.documentPath && !response.htrFormPath && !response.filePDPNotificationPath) {
                 setError('No documents found for this Player ID');
             }
-        } catch (err: any) {
-            console.error('Error fetching document:', err);
-            setError(err.response?.data?.message || 'Failed to fetch document. Please try again.');
+        } catch (err: unknown) {
+            const errorMessage = extractErrorMessage(err, "Failed to fetch document. Please try again.");
+            logError('AdminCustomerConfirmationPage.handleSearch', err);
+            showSnackbar(errorMessage, "error");
             setDocumentData(null);
         } finally {
             setLoading(false);
@@ -145,9 +149,10 @@ const AdminCustomerConfirmationPage: React.FC = () => {
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-        } catch (err) {
-            console.error('Error downloading document:', err);
-            setError('Failed to download document');
+        } catch (err: unknown) {
+            const errorMessage = extractErrorMessage(err, "Failed to download document. Please try again.");
+            logError('AdminCustomerConfirmationPage.handleDownload', err);
+            showSnackbar(errorMessage, "error");
         }
     };
 
@@ -165,9 +170,10 @@ const AdminCustomerConfirmationPage: React.FC = () => {
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-        } catch (err) {
-            console.error('Error downloading document:', err);
-            setError('Failed to download document');
+        } catch (err: unknown) {
+            const errorMessage = extractErrorMessage(err, "Failed to download document. Please try again.");
+            logError('AdminCustomerConfirmationPage.handleViewDownload', err);
+            showSnackbar(errorMessage, "error");
         }
     };
 
@@ -295,9 +301,10 @@ const AdminCustomerConfirmationPage: React.FC = () => {
                 setUploadError('');
                 setUploading(false);
             }, 1000); // Show success for 1 second
-        } catch (err: any) {
-            console.error('Upload failed:', err);
-            setUploadError(err.response?.data?.message || 'Upload failed. Please try again.');
+        } catch (err: unknown) {
+            const errorMessage = extractErrorMessage(err, "Upload failed. Please try again.");
+            logError('AdminCustomerConfirmationPage.handleUploadFiles', err);
+            showSnackbar(errorMessage, "error");
             setUploading(false);
         }
     };

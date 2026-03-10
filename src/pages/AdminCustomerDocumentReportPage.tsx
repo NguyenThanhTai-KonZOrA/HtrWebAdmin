@@ -49,10 +49,13 @@ import { renderDocumentService } from '../services/registrationService';
 import type { DocumentsPagingRequest, DocumentsPagingResponse, PatronDocumentGroup, DocumentResponse } from '../registrationType';
 import { FormatUtcTime } from '../utils/formatUtcTime';
 import { PAGE_TITLES } from '../constants/pageTitles';
+import { extractErrorMessage, logError } from '../utils/errorHandler';
+import { useSnackbar } from '../contexts/SnackbarContext';
 
 const AdminCustomerDocumentReportPage: React.FC = () => {
     useSetPageTitle(PAGE_TITLES.CUSTOMER_SIGNED_DOCUMENTS || 'Customer Signed Documents');
 
+    const { showSnackbar } = useSnackbar();
     const API_BASE = (window as any)._env_?.API_BASE;
     const ONLINE_API_BASE = (window as any)._env_?.ONLINE_API_BASE;
 
@@ -95,9 +98,10 @@ const AdminCustomerDocumentReportPage: React.FC = () => {
             if (response.totalRecords === 0) {
                 setError('No documents found');
             }
-        } catch (err: any) {
-            console.error('Error fetching documents:', err);
-            setError(err.response?.data?.message || 'Failed to fetch documents. Please try again.');
+        } catch (err: unknown) {
+            const errorMessage = extractErrorMessage(err, "Failed to fetch documents. Please try again.");
+            logError('AdminCustomerDocumentReportPage.loadData', err);
+            showSnackbar(errorMessage, "error");
             setData(null);
         } finally {
             setLoading(false);
@@ -168,9 +172,10 @@ const AdminCustomerDocumentReportPage: React.FC = () => {
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-        } catch (err) {
-            console.error('Error downloading document:', err);
-            setError('Failed to download document');
+        } catch (err: unknown) {
+            const errorMessage = extractErrorMessage(err, "Failed to download document. Please try again.");
+            logError('AdminCustomerDocumentReportPage.handleViewDownload', err);
+            showSnackbar(errorMessage, "error");
         }
     };
 

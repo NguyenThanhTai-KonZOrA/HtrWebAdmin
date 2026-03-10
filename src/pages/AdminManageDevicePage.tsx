@@ -42,13 +42,15 @@ import {
 import { useState, useEffect, useMemo } from "react";
 import AdminLayout from "../components/layout/AdminLayout";
 import { manageDeviceService } from "../services/registrationService";
-import type { ManageDeviceResponse, DeviceInfo, ToggleDeviceRequest, DeleteDeviceRequest, ChangeHostnameRequest } from "../type";
+import type { DeviceInfo, ToggleDeviceRequest, DeleteDeviceRequest, ChangeHostnameRequest } from "../type";
 import { useSetPageTitle } from "../hooks/useSetPageTitle";
 import { PAGE_TITLES } from "../constants/pageTitles";
+import { extractErrorMessage, logError } from '../utils/errorHandler';
+import { useSnackbar } from '../contexts/SnackbarContext';
 
 export default function AdminManageDevicePage() {
     useSetPageTitle(PAGE_TITLES.MANAGE_DEVICES || "Manage Devices");
-
+    const { showSnackbar } = useSnackbar();
     const [devices, setDevices] = useState<DeviceInfo[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -69,14 +71,6 @@ export default function AdminManageDevicePage() {
     const [hostnameDialogLoading, setHostnameDialogLoading] = useState(false);
     const [newHostname, setNewHostname] = useState("");
 
-    const showSnackbar = (message: string, severity: "success" | "error") => {
-        setSnackbar({ open: true, message, severity });
-    };
-
-    const handleCloseSnackbar = () => {
-        setSnackbar({ ...snackbar, open: false });
-    };
-
     const loadDevices = async () => {
         try {
             setLoading(true);
@@ -85,15 +79,9 @@ export default function AdminManageDevicePage() {
             // Combine both patron and staff devices into one array
             const allDevices = [...data.patronDevices, ...data.staffDevices];
             setDevices(allDevices);
-        } catch (error: any) {
-            console.error("Error loading devices:", error);
-            let errorMessage = "Failed to load devices data";
-            if (error?.response?.data?.message) {
-                errorMessage = error.response.data.message;
-            } else if (error?.message) {
-                errorMessage = error.message;
-            }
-            setError(errorMessage);
+        } catch (error: unknown) {
+            const errorMessage = extractErrorMessage(error, "Failed to load devices. Please try again.");
+            logError('AdminManageDevicePage.loadDevices', error);
             showSnackbar(errorMessage, "error");
         } finally {
             setLoading(false);
@@ -158,14 +146,9 @@ export default function AdminManageDevicePage() {
                 "success"
             );
             await loadDevices();
-        } catch (error: any) {
-            console.error("Error toggling device status:", error);
-            let errorMessage = "Failed to change device status";
-            if (error?.response?.data?.message) {
-                errorMessage = error.response.data.message;
-            } else if (error?.message) {
-                errorMessage = error.message;
-            }
+        } catch (error: unknown) {
+            const errorMessage = extractErrorMessage(error, "Failed to change device status. Please try again.");
+            logError('AdminManageDevicePage.handleToggleStatus', error);
             showSnackbar(errorMessage, "error");
         }
     };
@@ -195,14 +178,9 @@ export default function AdminManageDevicePage() {
             showSnackbar(`Device "${selectedDevice.deviceName}" has been deleted successfully`, "success");
             handleCloseDeleteDialog();
             await loadDevices();
-        } catch (error: any) {
-            console.error("Error deleting device:", error);
-            let errorMessage = "Failed to delete device";
-            if (error?.response?.data?.message) {
-                errorMessage = error.response.data.message;
-            } else if (error?.message) {
-                errorMessage = error.message;
-            }
+        } catch (error: unknown) {
+            const errorMessage = extractErrorMessage(error, "Failed to delete device. Please try again.");
+            logError('AdminManageDevicePage.handleConfirmDelete', error);
             showSnackbar(errorMessage, "error");
         } finally {
             setDeleteDialogLoading(false);
@@ -237,14 +215,9 @@ export default function AdminManageDevicePage() {
             showSnackbar(`Hostname changed to "${newHostname.trim()}" successfully`, "success");
             handleCloseHostnameDialog();
             await loadDevices();
-        } catch (error: any) {
-            console.error("Error changing hostname:", error);
-            let errorMessage = "Failed to change hostname";
-            if (error?.response?.data?.message) {
-                errorMessage = error.response.data.message;
-            } else if (error?.message) {
-                errorMessage = error.message;
-            }
+        } catch (error: unknown) {
+            const errorMessage = extractErrorMessage(error, "Failed to change hostname. Please try again.");
+            logError('AdminManageDevicePage.handleConfirmChangeHostname', error);
             showSnackbar(errorMessage, "error");
         } finally {
             setHostnameDialogLoading(false);
@@ -533,18 +506,6 @@ export default function AdminManageDevicePage() {
                     </Button>
                 </DialogActions>
             </Dialog>
-
-            {/* Snackbar for notifications */}
-            <Snackbar
-                open={snackbar.open}
-                autoHideDuration={6000}
-                onClose={handleCloseSnackbar}
-                anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-            >
-                <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: "100%" }}>
-                    {snackbar.message}
-                </Alert>
-            </Snackbar>
         </AdminLayout>
     );
 }
