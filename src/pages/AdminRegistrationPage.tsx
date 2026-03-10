@@ -1551,6 +1551,70 @@ const AdminRegistrationPage: React.FC = () => {
         }
     };
 
+    // Modal helper functions for enrollment status
+    const showInfoModal = (title: string, message: string) => {
+        Swal.fire({
+            icon: 'info',
+            title: title,
+            html: message.replace(/\n/g, '<br>'),
+            confirmButtonText: 'OK',
+            customClass: {
+                container: 'swal-high-zindex'
+            }
+        });
+    };
+
+    const showSuccessModal = (title: string, message: string) => {
+        Swal.fire({
+            icon: 'success',
+            title: title,
+            html: message.replace(/\n/g, '<br>'),
+            confirmButtonText: 'OK',
+            timer: 3000,
+            customClass: {
+                container: 'swal-high-zindex'
+            }
+        });
+    };
+
+    const showErrorModal = (title: string, message: string) => {
+        Swal.fire({
+            icon: 'error',
+            title: title,
+            html: message.replace(/\n/g, '<br>'),
+            confirmButtonText: 'OK',
+            customClass: {
+                container: 'swal-high-zindex'
+            }
+        });
+    };
+
+    const showWarningModal = (title: string, message: string) => {
+        Swal.fire({
+            icon: 'warning',
+            title: title,
+            html: message.replace(/\n/g, '<br>'),
+            confirmButtonText: 'OK',
+            customClass: {
+                container: 'swal-high-zindex'
+            }
+        });
+    };
+
+    const hideLoadingModal = () => {
+        Swal.close();
+    };
+
+    const refreshPatronData = async (_patronId: number) => {
+        // Refresh data tables
+        await loadNewRegistrations();
+        await loadMemberships();
+
+        // Close dialogs
+        setEnrollDialogOpen(false);
+        setDialogOpen(false);
+    };
+
     // Handle enroll player
     const handleEnrollPlayer = async () => {
         if (!selectedPatron) return;
@@ -1564,16 +1628,72 @@ const AdminRegistrationPage: React.FC = () => {
             };
 
             const response = await patronService.registerMembership(request);
-            showSnackbar(`Player enrolled successfully! Membership Number: ${response.membershipNumber}`, 'success');
-            setEnrollDialogOpen(false);
-            setDialogOpen(false);
 
-            // Refresh data
-            await loadNewRegistrations();
-            await loadMemberships();
+            // Handle different statuses
+            switch (response.status) {
+                case 0: // Pending
+                case 1: // Processing
+                    showInfoModal(
+                        'In Progress',
+                        response.message || `Request is being processed. Please wait...`
+                    );
+                    break;
+
+                case 2: // Success
+                    hideLoadingModal();
+                    showSuccessModal(
+                        'Registration Successful!',
+                        `Membership Number: ${response.membershipNumber || 'N/A'}\n${response.message || ''}`
+                    );
+                    await refreshPatronData(selectedPatron.pid);
+                    break;
+
+                case 3: // Failed
+                    hideLoadingModal();
+                    showErrorModal(
+                        'Registration Failed',
+                        response.message || 'An error occurred. Please try again.'
+                    );
+                    break;
+
+                case 4: // Timeout
+                    hideLoadingModal();
+                    showWarningModal(
+                        'Request Timeout',
+                        response.message || 'The system is processing too many requests. Please try again in a few minutes.'
+                    );
+                    break;
+
+                case 5: // AlreadyExists
+                    hideLoadingModal();
+                    showInfoModal(
+                        'Already a Member',
+                        `Patron already has a membership: ${response.membershipNumber || 'N/A'}\n${response.message || ''}`
+                    );
+                    await refreshPatronData(selectedPatron.pid);
+                    break;
+
+                default:
+                    // Fallback for unknown status
+                    hideLoadingModal();
+                    if (response.isSuccess) {
+                        showSuccessModal(
+                            'Success',
+                            response.message || `Player enrolled successfully! Membership Number: ${response.membershipNumber}`
+                        );
+                        await refreshPatronData(selectedPatron.pid);
+                    } else {
+                        showErrorModal(
+                            'Error',
+                            response.message || 'An unknown error occurred.'
+                        );
+                    }
+                    break;
+            }
         } catch (error: any) {
             // Handle HTTP error responses (400, 500, etc.)
-            let errorMessage = "Failed to send signature request.";
+            hideLoadingModal();
+            let errorMessage = "Failed to enroll player.";
             if (error?.response?.data?.message) {
                 errorMessage = error.response.data.message;
             } else if (error?.response?.data?.data) {
@@ -1585,7 +1705,8 @@ const AdminRegistrationPage: React.FC = () => {
             }
 
             setDialogError(errorMessage);
-            console.error('Error requesting signature:', errorMessage);
+            showErrorModal('System Error', errorMessage);
+            console.error('Error enrolling player:', errorMessage);
         } finally {
             setEnrolling(false);
         }

@@ -118,6 +118,12 @@ export interface PatronRegisterMembershipRequest {
 export interface PatronRegisterMembershipResponse {
     membershipNumber: string;
     phoneNumber: string;
+    errorMessage: string;
+    isSuccess: boolean;
+    message: string;
+    queuePosition?: number;
+    status?: number; // 0: in queue, 1: Processing, 2: Success, 3: Failed, 4: Timeout, 5: Already a member
+    waitTimeMs?: number;
 }
 
 export interface CountryResponse {
