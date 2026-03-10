@@ -1,85 +1,66 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-
-// Auto logout after 300 minutes of inactivity
-const IDLE_TIMEOUT = 300 * 60 * 1000; // 300 minutes
+import { AUTH_TIMEOUTS } from '../constants/timeouts';
+import { logInfo } from '../utils/errorHandler';
+import { authManager } from '../utils/authManager';
 
 /**
  * Hook auto logout user after a period of inactivity
- * Monitors events: mousemove, mousedown, keydown, scroll, touchstart
+ * Uses authManager's centralized activity tracking to avoid duplicate event listeners
  */
 export const useAutoLogout = () => {
   const { logout, token } = useAuth();
   const timeoutRef = useRef<number | null>(null);
-  const lastActivityRef = useRef<number>(Date.now());
 
-  // Reset timer on user activity
-  const resetTimer = useCallback(() => {
-    // Only reset timer if user is logged in
+  // Use ref to store logout function to avoid dependency issues
+  const logoutRef = useRef(logout);
+
+  // Update logout ref when it changes
+  useEffect(() => {
+    logoutRef.current = logout;
+  }, [logout]);
+
+  // Check for inactivity periodically
+  const checkInactivity = useCallback(() => {
     if (!token) return;
 
-    lastActivityRef.current = Date.now();
+    const lastActivity = authManager.getLastActivity();
+    const inactiveTime = Date.now() - lastActivity;
 
-    // Clear timeout
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
+    if (inactiveTime >= AUTH_TIMEOUTS.IDLE_TIMEOUT) {
+      logInfo('Auto Logout', 'Logging out due to inactivity (30 minutes)');
+      logoutRef.current();
     }
+  }, [token]);
 
-    // Set new timeout
-    timeoutRef.current = setTimeout(async () => {
-      console.log('🕒 Auto logout due to inactivity (300 minutes)');
-      await logout();
-    }, IDLE_TIMEOUT);
-  }, [logout, token]);
-
-  // Set up event listeners for user activity
-  const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
-
+  // Set up periodic inactivity check
   useEffect(() => {
     // If no token, no need to track
     if (!token) {
       if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
+        clearInterval(timeoutRef.current);
         timeoutRef.current = null;
       }
       return;
     }
 
-    // Initialize timer
-    resetTimer();
-
-    // Add event listeners
-    events.forEach(event => {
-      document.addEventListener(event, resetTimer, true);
-    });
+    // Check inactivity every minute
+    timeoutRef.current = window.setInterval(checkInactivity, 60000);
 
     // Cleanup
     return () => {
       if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-      events.forEach(event => {
-        document.removeEventListener(event, resetTimer, true);
-      });
-    };
-  }, [resetTimer, token]);
-
-  // Cleanup when component unmount
-  useEffect(() => {
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
+        clearInterval(timeoutRef.current);
       }
     };
-  }, []);
+  }, [checkInactivity, token]);
 
   return {
-    resetTimer,
-    getLastActivity: () => lastActivityRef.current,
+    getLastActivity: () => authManager.getLastActivity(),
     getRemainingTime: () => {
       if (!token) return 0;
-      const elapsed = Date.now() - lastActivityRef.current;
-      return Math.max(0, IDLE_TIMEOUT - elapsed);
+      const elapsed = Date.now() - authManager.getLastActivity();
+      return Math.max(0, AUTH_TIMEOUTS.IDLE_TIMEOUT - elapsed);
     }
   };
 };

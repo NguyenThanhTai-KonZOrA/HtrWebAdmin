@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import { Box, CircularProgress, Typography, LinearProgress } from '@mui/material';
+import { logWarning, logInfo, logError } from '../utils/errorHandler';
 
 interface AppLoadingContextType {
     isAppReady: boolean;
@@ -40,11 +41,33 @@ export const AppLoadingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
                 await new Promise(resolve => setTimeout(resolve, 500));
 
                 setLoadingStage('Initializing services...');
-                setProgress(70);
+                setProgress(50);
 
-                // ℹ️ NOTE: SignalR is now initialized in AppDataContext after fetching staffDevice
-                // This ensures we always have the correct staffDeviceId from API, not localStorage
-                console.log('ℹ️ [AppLoadingContext] SignalR initialization delegated to AppDataContext');
+                // Check if we have staffDeviceId from localStorage or any other source
+                let retryCount = 0;
+                const maxRetries = 3;
+
+                while (retryCount < maxRetries) {
+                    try {
+                        setLoadingStage(`Connecting to notification service... (${retryCount + 1}/${maxRetries})`);
+                        setProgress(60 + (retryCount * 10));
+
+                        // Try to get staffDeviceId from localStorage first
+                        const savedStaffDeviceId = localStorage.getItem('staffDeviceId');
+                        break; // Success, exit retry loop
+                    } catch (error) {
+                        retryCount++;
+                        logWarning('AppLoadingContext', `SignalR connection attempt ${retryCount} failed`, error);
+
+                        if (retryCount >= maxRetries) {
+                            logInfo('AppLoadingContext', 'SignalR connection failed after max retries, continuing without it');
+                            // Don't throw error, just continue without SignalR
+                        } else {
+                            // Wait before retry
+                            await new Promise(resolve => setTimeout(resolve, 1000));
+                        }
+                    }
+                }
 
                 setLoadingStage('Finalizing...');
                 setProgress(90);
@@ -56,8 +79,8 @@ export const AppLoadingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
                     setProgress(100);
                     setIsAppReady(true);
                 }
-            } catch (error) {
-                console.error('❌ App initialization failed:', error);
+            } catch (error: unknown) {
+                logError('AppLoadingContext.initialize', error);
                 // Even if initialization fails, allow app to continue
                 if (mounted) {
                     setProgress(100);
@@ -94,7 +117,7 @@ export const AppLoadingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
                 sx={{
                     position: 'fixed',
                     inset: 0,
-                    bgcolor: '#f8fafc',
+                    bgcolor: 'background.default',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
@@ -108,39 +131,39 @@ export const AppLoadingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
                         maxWidth: 400,
                         width: '90%',
                         p: 4,
-                        bgcolor: 'white',
+                        bgcolor: 'background.paper',
                         borderRadius: 2,
                         boxShadow: 3,
                     }}
                 >
-                    <CircularProgress 
-                        size={60} 
+                    <CircularProgress
+                        size={60}
                         sx={{ mb: 3, color: 'primary.main' }}
                     />
-                    
-                    <Typography 
-                        variant="h6" 
-                        sx={{ 
-                            mb: 2, 
+
+                    <Typography
+                        variant="h6"
+                        sx={{
+                            mb: 2,
                             color: 'primary.main',
-                            fontWeight: 600 
+                            fontWeight: 600
                         }}
                     >
                         Registration Management System
                     </Typography>
-                    
-                    <Typography 
-                        variant="body1" 
-                        sx={{ 
-                            mb: 3, 
-                            color: 'text.secondary' 
+
+                    <Typography
+                        variant="body1"
+                        sx={{
+                            mb: 3,
+                            color: 'text.secondary'
                         }}
                     >
                         {loadingStage}
                     </Typography>
-                    
-                    <LinearProgress 
-                        variant="determinate" 
+
+                    <LinearProgress
+                        variant="determinate"
                         value={progress}
                         sx={{
                             height: 6,
@@ -151,13 +174,13 @@ export const AppLoadingProvider: React.FC<{ children: React.ReactNode }> = ({ ch
                             }
                         }}
                     />
-                    
-                    <Typography 
-                        variant="caption" 
-                        sx={{ 
-                            mt: 1, 
+
+                    <Typography
+                        variant="caption"
+                        sx={{
+                            mt: 1,
                             display: 'block',
-                            color: 'text.secondary' 
+                            color: 'text.secondary'
                         }}
                     >
                         {Math.round(progress)}% Complete

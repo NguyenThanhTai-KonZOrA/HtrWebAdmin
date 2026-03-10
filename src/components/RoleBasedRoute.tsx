@@ -1,6 +1,6 @@
 // src/components/RoleBasedRoute.tsx
 import React from 'react';
-import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { Box, Typography, Button, Container, Paper } from '@mui/material';
 import {
     Lock as LockIcon,
@@ -11,19 +11,19 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { Permission } from '../constants/roles';
 import { usePermission } from '../hooks/usePermission';
-
+import { logInfo } from '../utils/errorHandler';
 
 interface RoleBasedRouteProps {
     children: React.ReactNode;
     requiredPermission?: Permission;
     requiredPermissions?: Permission[];
-    requireAll?: boolean; // true = cần tất cả permissions, false = chỉ cần 1 trong số đó
-    fallbackPath?: string; // Redirect path nếu không có quyền
-    showAccessDenied?: boolean; // Hiển thị trang Access Denied thay vì redirect
+    requireAll?: boolean; // true = Need all permissions, false = only need 1 of them
+    fallbackPath?: string; // Redirect path if no permission
+    showAccessDenied?: boolean; // Show Access Denied page instead of redirect
 }
 
 /**
- * Component bảo vệ route dựa trên permissions
+ * Component to protect route based on permissions
  * 
  * Usage examples:
  * 
@@ -57,7 +57,7 @@ const RoleBasedRoute: React.FC<RoleBasedRouteProps> = ({
     const { can, canAny, canAll } = usePermission();
     const location = useLocation();
 
-    // If not authenticated, redirect to login
+    // If not logged in, redirect to login
     if (!token) {
         return <Navigate to="/login" state={{ from: location }} replace />;
     }
@@ -73,12 +73,12 @@ const RoleBasedRoute: React.FC<RoleBasedRouteProps> = ({
             : canAny(requiredPermissions);
     }
 
-    // If user has access, render children
+    // If has access, render children
     if (hasAccess) {
         return <>{children}</>;
     }
 
-    // If user does not have access and showAccessDenied = true, display Access Denied page
+    // If no access and showAccessDenied = true, show Access Denied page
     if (showAccessDenied) {
         return <AccessDeniedPage fallbackPath={fallbackPath} />;
     }
@@ -96,8 +96,9 @@ const AccessDeniedPage: React.FC<{ fallbackPath: string }> = ({ fallbackPath }) 
     };
 
     const { logout } = useAuth();
+
     const handleLogout = async () => {
-        console.log('🚪 Triggering global logout...');
+        logInfo('RoleBasedRoute', 'Triggering global logout');
         await logout();
         navigate("/login");
     };

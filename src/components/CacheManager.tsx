@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button, Dialog, DialogTitle, DialogContent, DialogActions, Typography, Box, Alert } from '@mui/material';
 import CacheBuster from '../utils/cacheBuster';
+import { logError } from '../utils/errorHandler';
 
 interface CacheManagerProps {
     showButton?: boolean;
@@ -40,7 +41,7 @@ const CacheManager: React.FC<CacheManagerProps> = ({
                 CacheBuster.forceReload();
             }, 1000);
         } catch (error) {
-            console.error('Failed to clear cache:', error);
+            logError('CacheManager.clearCache', error);
         } finally {
             setIsClearing(false);
         }

@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { logInfo } from '../utils/errorHandler';
 
 /**
  * Hook is detect logout from another tab and redirect to login page
@@ -13,13 +14,13 @@ export const useGlobalLogout = () => {
     const handleStorageChange = (e: StorageEvent) => {
       // when token is removed from another tab
       if (e.key === 'token' && e.newValue === null) {
-        console.log('🚪 Detected logout from another tab, redirecting to login...');
+        logInfo('Global Logout', 'Detected logout from another tab, redirecting to login...');
         navigate('/login');
       }
 
       // or if a custom logout event is received
       if (e.key === 'logout-event') {
-        console.log('🚪 Received logout event from another tab');
+        logInfo('Global Logout', 'Received logout event from another tab');
         localStorage.removeItem('logout-event'); // Clean up
         navigate('/login');
       }
@@ -42,7 +43,7 @@ export const useGlobalLogout = () => {
 
     // Trigger event for other tabs
     localStorage.setItem('logout-event', Date.now().toString());
-    
+
     // Navigate current tab
     navigate('/login');
   };

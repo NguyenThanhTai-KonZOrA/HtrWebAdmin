@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { logWarning } from '../utils/errorHandler';
 
 interface NetworkStatus {
   isOnline: boolean;
@@ -32,10 +33,10 @@ export const useNetworkStatus = (): NetworkStatus => {
     };
 
     const updateConnectionInfo = () => {
-      const connection = (navigator as any).connection || 
-                        (navigator as any).mozConnection || 
-                        (navigator as any).webkitConnection;
-      
+      const connection = (navigator as any).connection ||
+        (navigator as any).mozConnection ||
+        (navigator as any).webkitConnection;
+
       if (connection) {
         setConnectionType(connection.effectiveType);
         // Consider slow connections as potentially problematic
@@ -64,14 +65,14 @@ export const useNetworkStatus = (): NetworkStatus => {
           cache: 'no-cache',
           signal: controller.signal
         });
-        
+
         clearTimeout(timeoutId);
         const connected = response.ok;
         setIsConnected(connected);
         networkStatusTracker.setConnectedStatus(connected);
         setLastConnectivityCheck(new Date());
       } catch (error) {
-        console.warn('Network connectivity test failed:', error);
+        logWarning('NetworkStatus', 'Connectivity test failed', error);
         setIsConnected(false);
         networkStatusTracker.setConnectedStatus(false);
         setLastConnectivityCheck(new Date());
@@ -86,7 +87,7 @@ export const useNetworkStatus = (): NetworkStatus => {
     // Event listeners
     window.addEventListener('online', updateOnlineStatus);
     window.addEventListener('offline', updateOnlineStatus);
-    
+
     // Connection change listener (if supported)
     const connection = (navigator as any).connection;
     if (connection) {
@@ -104,11 +105,11 @@ export const useNetworkStatus = (): NetworkStatus => {
     return () => {
       window.removeEventListener('online', updateOnlineStatus);
       window.removeEventListener('offline', updateOnlineStatus);
-      
+
       if (connection) {
         connection.removeEventListener('change', updateConnectionInfo);
       }
-      
+
       clearInterval(connectivityInterval);
     };
   }, []);

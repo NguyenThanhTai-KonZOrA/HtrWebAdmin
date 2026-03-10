@@ -1,9 +1,10 @@
 import { useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { logInfo, logError } from '../utils/errorHandler';
 
 /**
  * Hook check version application to force logout when there is a new deployment
- * Check version.json every 30 seconds
+ * Check version.json every 5 minutes
  */
 export const useVersionCheck = () => {
   const { logout, token } = useAuth();
@@ -18,7 +19,7 @@ export const useVersionCheck = () => {
       const data = await response.json();
       return data.version || null;
     } catch (error) {
-      console.error('Error fetching version:', error);
+      logError('Version Check', error);
       return null;
     }
   };
@@ -36,20 +37,20 @@ export const useVersionCheck = () => {
       currentVersionRef.current = newVersion;
       // Save version to localStorage to persist across sessions
       localStorage.setItem('app-version', newVersion);
-      console.log('📦 App version initialized:', newVersion);
+      logInfo('Version Check', `App version initialized: ${newVersion}`);
       return;
     }
 
     // Check for version change
     if (newVersion !== currentVersionRef.current) {
-      console.log('🚀 New version detected:', newVersion, 'Current:', currentVersionRef.current);
-      console.log('🚪 Forcing logout due to new deployment...');
+      logInfo('Version Check', `New version detected: ${newVersion}, Current: ${currentVersionRef.current}`);
+      logInfo('Version Check', 'Forcing logout due to new deployment...');
 
       // Clear version to force check again
       localStorage.removeItem('app-version');
 
+      // Logout once to clear session
       await logout();
-      logout();
     }
   };
 

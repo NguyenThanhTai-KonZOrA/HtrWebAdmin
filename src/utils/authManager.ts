@@ -1,4 +1,7 @@
 import { authAdminService } from "../services/authService";
+import { AUTH_TIMEOUTS } from "../constants/timeouts";
+import { logInfo, logWarning, logError } from "./errorHandler";
+
 
 interface TokenData {
     accessToken: string;
@@ -12,12 +15,6 @@ class AuthManager {
     private tokenExpirationKey = 'token_expiration';
     private refreshInterval: number | null = null;
     private lastActivity: number = Date.now();
-
-    // Time refresh token before expiry (5 minutes)
-    private refreshBeforeExpiry = 5 * 60 * 1000;
-
-    // Time of inactivity before stopping auto-refresh (30 minutes)
-    private inactivityThreshold = 30 * 60 * 1000;
 
     private onLogoutCallback: (() => void) | null = null;
 
@@ -42,8 +39,13 @@ class AuthManager {
         this.lastActivity = Date.now();
     }
 
+    // Expose last activity time for other modules (e.g., useAutoLogout)
+    getLastActivity(): number {
+        return this.lastActivity;
+    }
+
     private isUserActive(): boolean {
-        return (Date.now() - this.lastActivity) < this.inactivityThreshold;
+        return (Date.now() - this.lastActivity) < AUTH_TIMEOUTS.IDLE_TIMEOUT;
     }
 
     saveTokens(accessToken: string, refreshToken: string, expiration: string) {
@@ -83,11 +85,11 @@ class AuthManager {
         try {
             const refreshToken = this.getRefreshToken();
             if (!refreshToken) {
-                console.warn('⚠️ No refresh token available');
+                logWarning('Token Refresh', 'No refresh token available');
                 return false;
             }
 
-            console.log('🔄 Refreshing access token...');
+            logInfo('Token Refresh', 'Refreshing access token...');
 
             const result = await authAdminService.refreshToken({ refreshToken });
 
@@ -97,15 +99,15 @@ class AuthManager {
                     result.refreshToken,
                     result.tokenExpiration
                 );
-                console.log('✅ Token refreshed successfully');
+                logInfo('Token Refresh', 'Token refreshed successfully');
                 return true;
             } else {
-                console.error('❌ Invalid refresh token response');
+                logError('Token Refresh', 'Invalid refresh token response');
                 this.handleRefreshFailure();
                 return false;
             }
         } catch (error) {
-            console.error('❌ Error refreshing token:', error);
+            logError('Token Refresh', error);
             this.handleRefreshFailure();
             return false;
         }
@@ -122,7 +124,7 @@ class AuthManager {
     startAutoRefresh() {
         this.stopAutoRefresh();
 
-        this.refreshInterval = setInterval(() => {
+        this.refreshInterval = window.setInterval(() => {
             const expiration = this.getTokenExpiration();
             if (!expiration) {
                 this.stopAutoRefresh();
@@ -135,27 +137,27 @@ class AuthManager {
             // Only refresh if user is active
             if (this.isUserActive()) {
                 // Refresh token before expiry (5 minutes)
-                if (timeUntilExpiry < this.refreshBeforeExpiry && timeUntilExpiry > 0) {
+                if (timeUntilExpiry < AUTH_TIMEOUTS.REFRESH_BEFORE_EXPIRY && timeUntilExpiry > 0) {
                     const secondsUntilExpiry = Math.floor(timeUntilExpiry / 1000);
-                    console.log(`⏰ Token will expire in ${secondsUntilExpiry} seconds, refreshing...`);
+                    logInfo('Token Refresh', `Token will expire in ${secondsUntilExpiry} seconds, refreshing...`);
                     this.refreshToken();
                 } else if (timeUntilExpiry <= 0) {
-                    console.log('⏰ Token has expired');
+                    logInfo('Token Refresh', 'Token has expired');
                     this.handleRefreshFailure();
                 }
             } else {
-                console.log('⏸️ User inactive, skipping token refresh');
+                logInfo('Token Refresh', 'User inactive, skipping token refresh');
             }
         }, 60000); // Check every minute
 
-        console.log('✅ Auto-refresh started');
+        logInfo('Token Refresh', 'Auto-refresh started');
     }
 
     stopAutoRefresh() {
         if (this.refreshInterval) {
             clearInterval(this.refreshInterval);
             this.refreshInterval = null;
-            console.log('⏹️ Auto-refresh stopped');
+            logInfo('Token Refresh', 'Auto-refresh stopped');
         }
     }
 
@@ -164,10 +166,10 @@ class AuthManager {
             const token = this.getAccessToken();
             if (token) {
                 await authAdminService.revokeToken();
-                console.log('✅ Token revoked successfully');
+                logInfo('Logout', 'Token revoked successfully');
             }
         } catch (error) {
-            console.error('❌ Error revoking token:', error);
+            logError('Logout', error);
         } finally {
             this.clearTokens();
             // Trigger logout callback

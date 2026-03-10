@@ -1,5 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { AUTH_TIMEOUTS } from '../constants/timeouts';
+import { logInfo } from '../utils/errorHandler';
 
 /**
  * Hook to periodically validate token
@@ -16,25 +18,25 @@ export const useTokenValidator = () => {
             return;
         }
 
-        console.log('🔐 Starting periodic token validation...');
+        logInfo('Token Validator', 'Starting periodic token validation...');
 
         // Validate immediately on mount
         validateAndRefreshToken();
 
         // Then validate every 5 minutes
         intervalRef.current = window.setInterval(async () => {
-            console.log('🔍 Periodic token validation check...');
+            logInfo('Token Validator', 'Periodic token validation check...');
             const isValid = await validateAndRefreshToken();
-            
+
             if (!isValid) {
-                console.log('❌ Token validation failed, user will be logged out');
+                logInfo('Token Validator', 'Token validation failed, user will be logged out');
             }
-        }, 1 * 60 * 1000); // 5 minutes
+        }, AUTH_TIMEOUTS.TOKEN_VALIDATION_INTERVAL);
 
         // Cleanup on unmount
         return () => {
             if (intervalRef.current) {
-                console.log('🧹 Clearing token validation interval');
+                logInfo('Token Validator', 'Clearing token validation interval');
                 clearInterval(intervalRef.current);
             }
         };

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { authService } from "../services/registrationService";
 import { authManager } from "../utils/authManager";
+import { logInfo, logError } from "../utils/errorHandler";
 
 interface AuthContextType {
   user: string | null;
@@ -52,18 +53,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const isExpired = authService.isTokenExpired(savedToken);
 
         if (isExpired) {
-          console.log('🔒 Token is expired (client-side check), clearing...');
+          logInfo('AuthContext', '🔒 Token is expired (client-side check), clearing...');
           clearSession();
           setIsLoading(false);
           return;
         }
 
         // Validate token with server
-        console.log('🔍 Validating token with server...');
+        logInfo('AuthContext', '🔍 Validating token with server...');
         const isValid = await authService.validateToken();
 
         if (isValid) {
-          console.log('✅ Token is valid, restoring session...');
+          logInfo('AuthContext', '✅ Token is valid, restoring session...');
           setToken(savedToken);
           setUser(savedUser);
           setRole(savedRole);
@@ -72,7 +73,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             authManager.startAutoRefresh();
           }
         } else {
-          console.log('❌ Token is invalid, clearing session...');
+          logInfo('AuthContext', '❌ Token is invalid, clearing session...');
           clearSession();
         }
       }
@@ -94,7 +95,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Check client-side expiration first
     if (authService.isTokenExpired(currentToken)) {
-      console.log('🔒 Token expired, logging out...');
+      logInfo('AuthContext', '🔒 Token expired, logging out...');
       clearSession();
       return false;
     }
@@ -103,7 +104,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const isValid = await authService.validateToken();
 
     if (!isValid) {
-      console.log('❌ Token invalid, logging out...');
+      logInfo('AuthContext', '❌ Token invalid, logging out...');
       clearSession();
       return false;
     }
@@ -116,7 +117,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const handleStorageChange = (e: StorageEvent) => {
       // when token is removed from another tab
       if (e.key === 'token' && e.newValue === null) {
-        console.log('🚪 Token removed from another tab, clearing local state...');
+        logInfo('AuthContext', '🚪 Token removed from another tab, clearing local state...');
         setUser(null);
         setToken(null);
         setRole(null);
@@ -124,7 +125,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       // when logout event is received from another tab
       if (e.key === 'logout-event') {
-        console.log('🚪 Logout event received from another tab');
+        logInfo('AuthContext', '🚪 Logout event received from another tab');
         setUser(null);
         setToken(null);
         setRole(null);
@@ -176,6 +177,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       );
       return JSON.parse(jsonPayload);
     } catch {
+      logError('AuthContext', '❌ Failed to parse JWT');
       return null;
     }
   }

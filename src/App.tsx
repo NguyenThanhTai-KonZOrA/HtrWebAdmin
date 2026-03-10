@@ -24,6 +24,7 @@ import AdminSyncIncomeDocumentPage from './pages/AdminSyncIncomeDocumentPage'
 import AdminRegistrationReport from './pages/AdminRegistrationReport'
 import AdminCustomerConfirmationPage from './pages/AdminCustomerConfirmationPage'
 import AdminCustomerDocumentReportPage from './pages/AdminCustomerDocumentReportPage'
+import ErrorBoundary from './components/ErrorBoundary'
 
 function AppContent() {
   const networkStatus = useNetworkStatus();
@@ -206,17 +207,19 @@ function AppContent() {
 
 function App() {
   return (
-    <Router>
-      <AppDataProvider>
-        <PageTitleProvider>
-          <AppLoadingProvider>
-            <SessionManager>
-              <AppContent />
-            </SessionManager>
-          </AppLoadingProvider>
-        </PageTitleProvider>
-      </AppDataProvider>
-    </Router>
+    <ErrorBoundary>
+      <Router>
+        <AppDataProvider>
+          <PageTitleProvider>
+            <AppLoadingProvider>
+              <SessionManager>
+                <AppContent />
+              </SessionManager>
+            </AppLoadingProvider>
+          </PageTitleProvider>
+        </AppDataProvider>
+      </Router>
+    </ErrorBoundary>
   )
 }
 
